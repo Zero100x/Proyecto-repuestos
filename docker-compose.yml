@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: repuestos_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: repuestos_user
+      POSTGRES_PASSWORD: repuestos_dev_2026
+      POSTGRES_DB: repuestos_db
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U repuestos_user -d repuestos_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.6
+    container_name: repuestos_meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: repuestos_meili_master_key_2026
+      MEILI_ENV: development
+    ports:
+      - '7700:7700'
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:7700/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  meilisearch_data:

@@ -1,0 +1,268 @@
+// Prisma Schema — Plataforma de Repuestos Automotrices
+// Cubre Sprint 1 (Fundación) y Sprint 2 (Búsqueda y Resultados)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// SPRINT 1 — GESTIÓN DE ACCESO (PDCIRA-4, PDCIRA-5)
+// ============================================================
+
+enum RoleType {
+  BUYER            // Comprador
+  STORE_ADMIN      // Administrador de almacén
+  PLATFORM_ADMIN   // Administrador de plataforma
+}
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  passwordHash  String     @map("password_hash")
+  firstName     String     @map("first_name")
+  lastName      String     @map("last_name")
+  phone         String?
+  isActive      Boolean    @default(true) @map("is_active")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  // Relaciones
+  roles         UserRole[]
+  store         Store?     @relation(fields: [storeId], references: [id])
+  storeId       String?    @map("store_id")
+
+  @@map("users")
+}
+
+model Role {
+  id          String     @id @default(uuid())
+  name        RoleType   @unique
+  description String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  // Relaciones
+  users       UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  roleId    String   @map("role_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relaciones
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+// ============================================================
+// SPRINT 1 — SEDES Y BODEGAS (PDCIRA-6)
+// ============================================================
+
+model Store {
+  id          String     @id @default(uuid())
+  name        String
+  nit         String?    @unique  // Identificación fiscal
+  phone       String?
+  email       String?
+  isActive    Boolean    @default(true) @map("is_active")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  // Relaciones
+  locations   Location[]
+  users       User[]
+
+  @@map("stores")
+}
+
+model Location {
+  id          String     @id @default(uuid())
+  storeId     String     @map("store_id")
+  name        String                          // Ej: "Sede Norte", "Bodega Central"
+  address     String
+  city        String
+  state       String?
+  latitude    Float?
+  longitude   Float?
+  phone       String?
+  whatsapp    String?
+  isActive    Boolean    @default(true) @map("is_active")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  // Relaciones
+  store       Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  inventory   Inventory[]
+
+  @@map("locations")
+}
+
+// ============================================================
+// SPRINT 1 — CATÁLOGO MAESTRO DE REPUESTOS (PDCIRA-7)
+// Modelo de compatibilidad inspirado en ACES/PIES
+// ============================================================
+
+model VehicleMake {
+  id        String         @id @default(uuid())
+  name      String         @unique   // Ej: "Toyota", "Chevrolet"
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  // Relaciones
+  models    VehicleModel[]
+
+  @@map("vehicle_makes")
+}
+
+model VehicleModel {
+  id        String        @id @default(uuid())
+  makeId    String        @map("make_id")
+  name      String                          // Ej: "Corolla", "Spark"
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  // Relaciones
+  make      VehicleMake   @relation(fields: [makeId], references: [id], onDelete: Cascade)
+  years     VehicleYear[]
+
+  @@unique([makeId, name])
+  @@map("vehicle_models")
+}
+
+model VehicleYear {
+  id        String           @id @default(uuid())
+  modelId   String           @map("model_id")
+  year      Int                              // Ej: 2020, 2021
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  // Relaciones
+  model     VehicleModel     @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  versions  VehicleVersion[]
+
+  @@unique([modelId, year])
+  @@map("vehicle_years")
+}
+
+model VehicleVersion {
+  id        String              @id @default(uuid())
+  yearId    String              @map("year_id")
+  name      String                              // Ej: "LE", "SE", "XLE", "1.6L MT"
+  engine    String?                             // Ej: "1.8L 4-cyl", "2.0L Turbo"
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  // Relaciones
+  year          VehicleYear         @relation(fields: [yearId], references: [id], onDelete: Cascade)
+  compatibility PartCompatibility[]
+
+  @@unique([yearId, name])
+  @@map("vehicle_versions")
+}
+
+model PartCategory {
+  id          String   @id @default(uuid())
+  name        String   @unique   // Ej: "Frenos", "Motor", "Suspensión"
+  slug        String   @unique
+  description String?
+  parentId    String?  @map("parent_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relaciones (categorías anidadas)
+  parent      PartCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    PartCategory[] @relation("CategoryTree")
+  parts       Part[]
+
+  @@map("part_categories")
+}
+
+enum PartCondition {
+  NEW         // Nueva
+  USED        // Usada
+  REFURBISHED // Remanufacturada
+}
+
+model Part {
+  id            String    @id @default(uuid())
+  categoryId    String    @map("category_id")
+  name          String                          // Ej: "Pastillas de freno delanteras"
+  slug          String    @unique
+  description   String?
+  brand         String?                         // Marca del repuesto (no del vehículo)
+  weight        Float?                          // Peso en kg
+  imageUrl      String?   @map("image_url")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relaciones
+  category      PartCategory        @relation(fields: [categoryId], references: [id])
+  partNumbers   PartNumber[]
+  compatibility PartCompatibility[]
+  inventory     Inventory[]
+
+  @@map("parts")
+}
+
+model PartNumber {
+  id        String   @id @default(uuid())
+  partId    String   @map("part_id")
+  number    String                          // Número de parte
+  type      String   @default("OEM")       // "OEM", "AFTERMARKET", "UNIVERSAL"
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relaciones
+  part      Part     @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  @@unique([partId, number])
+  @@index([number])
+  @@map("part_numbers")
+}
+
+// Tabla pivote: qué repuesto es compatible con qué versión de vehículo
+model PartCompatibility {
+  id          String         @id @default(uuid())
+  partId      String         @map("part_id")
+  versionId   String         @map("version_id")
+  notes       String?                          // Notas adicionales de compatibilidad
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  // Relaciones
+  part        Part           @relation(fields: [partId], references: [id], onDelete: Cascade)
+  version     VehicleVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([partId, versionId])
+  @@map("part_compatibility")
+}
+
+// ============================================================
+// SPRINT 1-2 — INVENTARIO / EXISTENCIAS (Base para PDCIRA-9)
+// ============================================================
+
+model Inventory {
+  id          String        @id @default(uuid())
+  partId      String        @map("part_id")
+  locationId  String        @map("location_id")
+  price       Float                            // Precio en moneda local
+  stock       Int           @default(0)
+  condition   PartCondition @default(NEW)
+  isAvailable Boolean       @default(true) @map("is_available")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  // Relaciones
+  part        Part          @relation(fields: [partId], references: [id], onDelete: Cascade)
+  location    Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([partId, locationId, condition])
+  @@index([partId])
+  @@index([locationId])
+  @@map("inventory")
+}

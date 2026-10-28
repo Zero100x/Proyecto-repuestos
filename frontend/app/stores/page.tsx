@@ -40,120 +40,120 @@ interface DirectoryStore {
 const INITIAL_STORES: DirectoryStore[] = [
   {
     id: 'store-depot-central',
-    name: 'AutoPart Depot Central',
+    name: 'AutoPart Depot Central Pasto',
     badge: 'RECOMENDADO • MAYOR STOCK',
-    distanceKm: 4.2,
+    distanceKm: 1.4,
     type: 'Centro Principal',
     verifiedOEM: true,
     openStatus: 'Abierto ahora',
     rating: 4.9,
     reviewCount: 184,
-    address: 'Av. de los Industriales 4800, Polígono Norte',
-    city: 'Bogotá',
-    latitude: 4.7212,
-    longitude: -74.0531,
+    address: 'Av. Boyacá / Carrera 19 # 14-35, Barrio Julián Bucheli',
+    city: 'Pasto',
+    latitude: 1.2084,
+    longitude: -77.2765,
     imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
     hours: 'Hoy 08:00 - 19:00 (Continuo)',
     stockCount: 1820,
     stockLabel: 'Stock Activo: 1,820 referencias en estantería',
     specialtyOrOEM: 'Marcas OEM: Bosch, Brembo, Garrett, Denso',
-    counterInfo: 'Mostrador: Puerta 5B',
-    phone: '+57 1 654 3210',
+    counterInfo: 'Mostrador: Julián Bucheli Local 5B',
+    phone: '+57 602 723 4510',
     whatsapp: '+573002001000',
-    nodeId: 'APP-BOG-01',
-    estimatedVanMinutes: '14 - 18 minutos',
+    nodeId: 'APP-PAS-01',
+    estimatedVanMinutes: '8 - 12 minutos',
     estimatedPickupTime: 'Listo en 30 min',
     hasImmediatePickup: true,
     hasExpressDelivery: true,
     hasLiveApi: true,
-    mapCoords: { x: 275, y: 115, label: 'Depot Central (4.2KM)' },
+    mapCoords: { x: 245, y: 120, label: 'Depot Central (1.4KM)' },
   },
   {
     id: 'store-express-sur',
-    name: 'Repuestos Express Sur',
-    distanceKm: 12.8,
+    name: 'Repuestos Express Sur Nariño',
+    distanceKm: 2.6,
     type: 'Distribuidor Multimarca',
     verifiedOEM: true,
     openStatus: 'Abierto',
     rating: 4.7,
     reviewCount: 92,
-    address: 'Ruta Provincial 21, Km 12.5',
-    city: 'Bogotá',
-    latitude: 4.6542,
-    longitude: -74.0722,
+    address: 'Av. Idema # 12-80, Sector Potrerillo / Salida Sur',
+    city: 'Pasto',
+    latitude: 1.1985,
+    longitude: -77.2720,
     imageUrl: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=900&q=80',
     hours: 'Hoy 08:30 - 18:00',
     stockCount: 2150,
     stockLabel: 'Stock: 2,150 referencias',
     specialtyOrOEM: 'Especialidad: Frenos, Suspensión, Filtros',
-    counterInfo: 'Box de Entrega Rápida',
-    phone: '+57 1 654 3211',
+    counterInfo: 'Box de Entrega Rápida Sur',
+    phone: '+57 602 729 1820',
     whatsapp: '+573002001002',
-    nodeId: 'APP-SUR-04',
-    estimatedVanMinutes: '24 - 30 minutos',
+    nodeId: 'APP-PAS-02',
+    estimatedVanMinutes: '12 - 16 minutos',
     estimatedPickupTime: 'Listo en 30 min',
     hasImmediatePickup: true,
     hasExpressDelivery: false,
     hasLiveApi: true,
-    mapCoords: { x: 310, y: 245, label: 'Sur (12.8KM)' },
+    mapCoords: { x: 280, y: 225, label: 'Express Sur (2.6KM)' },
   },
   {
     id: 'store-logistica-motriz',
-    name: 'Logística Motriz & Componentes #1',
-    distanceKm: 18.5,
+    name: 'Logística Motriz & Componentes Galeras',
+    distanceKm: 3.4,
     type: 'Centro Logístico B2B',
     verifiedOEM: true,
     openStatus: 'Despacho 24/7 B2B',
     rating: 4.8,
     reviewCount: 350,
-    address: 'Corredor Industrial Este, Nave 4',
-    city: 'Medellín',
-    latitude: 6.2314,
-    longitude: -75.5891,
+    address: 'Av. Panamericana Km 2 # 28-15, Sector Pandiaco',
+    city: 'Pasto',
+    latitude: 1.2248,
+    longitude: -77.2882,
     imageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=900&q=80',
     hours: 'Operación Continua 24 Horas',
     stockCount: 14500,
     stockLabel: 'Inventario Industrial: 14,500 referencias',
     specialtyOrOEM: 'Especialidad: Transmisión, Motores completos',
-    counterInfo: 'Muelle Carga Pesada',
-    phone: '+57 4 444 1234',
+    counterInfo: 'Muelle Carga Pesada Panamericana',
+    phone: '+57 602 731 4400',
     whatsapp: '+573003002001',
-    nodeId: 'APP-IND-02',
-    estimatedVanMinutes: '35 - 45 minutos',
-    estimatedPickupTime: 'Listo en 45 min',
-    hasImmediatePickup: false,
+    nodeId: 'APP-PAS-03',
+    estimatedVanMinutes: '15 - 20 minutos',
+    estimatedPickupTime: 'Listo en 30 min',
+    hasImmediatePickup: true,
     hasExpressDelivery: true,
     hasLiveApi: true,
-    mapCoords: { x: 120, y: 95, label: 'Logística Motriz (18.5KM)' },
+    mapCoords: { x: 140, y: 95, label: 'Logística Galeras (3.4KM)' },
   },
   {
     id: 'store-iberia-repuestos',
-    name: 'Almacén Iberia Repuestos',
-    distanceKm: 24.1,
+    name: 'Almacén Parque Bolívar Repuestos',
+    distanceKm: 1.9,
     type: 'Mayorista Especializado',
     verifiedOEM: true,
     openStatus: 'Hoy hasta las 19:30',
     rating: 4.6,
     reviewCount: 65,
-    address: 'Calle Metalurgia 58, Pol. San José',
-    city: 'Bogotá',
-    latitude: 4.6950,
-    longitude: -74.0850,
+    address: 'Calle 18 # 19-52, Sector Parque Bolívar',
+    city: 'Pasto',
+    latitude: 1.2112,
+    longitude: -77.2740,
     imageUrl: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=900&q=80',
     hours: 'Atención hasta 19:30',
     stockCount: 1350,
     stockLabel: 'Referencias: 1,350 disponibles',
     specialtyOrOEM: 'Enfoque: Carrocería, Iluminación LED',
-    counterInfo: 'Acceso Rápido N-II',
-    phone: '+57 1 789 4561',
+    counterInfo: 'Acceso Rápido Calle 18',
+    phone: '+57 602 722 8910',
     whatsapp: '+573004003001',
-    nodeId: 'APP-IBE-08',
-    estimatedVanMinutes: '38 - 48 minutos',
+    nodeId: 'APP-PAS-04',
+    estimatedVanMinutes: '10 - 14 minutos',
     estimatedPickupTime: 'Listo en 30 min',
     hasImmediatePickup: true,
     hasExpressDelivery: true,
     hasLiveApi: false,
-    mapCoords: { x: 205, y: 160, label: 'Iberia (3.9KM)' },
+    mapCoords: { x: 195, y: 155, label: 'Parque Bolívar (1.9KM)' },
   },
 ];
 
@@ -182,7 +182,14 @@ export default function StoresDirectoryPage() {
             st.locations?.[0] ||
             apiLocations.find(l => l.storeId === st.id) ||
             apiLocations[0];
-          const dist = 3.2 + index * 3.8;
+          // If coordinates are from an old Bogotá/Medellín seed (> 3.0 lat), place them in Pasto automotive zones
+          const rawLat = loc?.latitude;
+          const rawLon = loc?.longitude;
+          const isPastoCoord = rawLat && rawLat > 0.8 && rawLat < 1.8;
+          const finalLat = isPastoCoord ? rawLat : 1.2084 + index * 0.0055;
+          const finalLon = isPastoCoord && rawLon ? rawLon : -77.2765 - index * 0.0045;
+          const dist = 1.2 + index * 1.1;
+
           return {
             id: st.id,
             name: st.name,
@@ -193,10 +200,13 @@ export default function StoresDirectoryPage() {
             openStatus: 'Abierto ahora',
             rating: 4.8,
             reviewCount: 45 + index * 20,
-            address: loc?.address || 'Av. Principal # 45-20',
-            city: loc?.city || 'Bogotá',
-            latitude: loc?.latitude ?? 4.6542 + index * 0.02,
-            longitude: loc?.longitude ?? -74.0722 + index * 0.015,
+            address:
+              loc?.address && !loc.address.includes('134') && !loc.address.includes('63F')
+                ? loc.address
+                : `Carrera 19 # ${14 + index * 2}-30, Barrio Julián Bucheli`,
+            city: 'Pasto',
+            latitude: finalLat,
+            longitude: finalLon,
             imageUrl:
               st.imageUrl ||
               loc?.imageUrl ||
@@ -205,10 +215,10 @@ export default function StoresDirectoryPage() {
             stockCount: 1200 + index * 350,
             stockLabel: `Stock Activo: ${(1200 + index * 350).toLocaleString()} referencias`,
             specialtyOrOEM: 'Marcas OEM: Bosch, Valeo, ACDelco, Gates',
-            counterInfo: `Sede ${loc?.name || 'Central'}`,
-            phone: loc?.phone || st.phone || '+57 1 654 3210',
+            counterInfo: `Sede ${loc?.name?.replace('Bogotá', 'Pasto').replace('Medellín', 'Pasto') || 'Pasto Centro'}`,
+            phone: loc?.phone || st.phone || '+57 602 723 4510',
             whatsapp: loc?.whatsapp || '+573002001000',
-            nodeId: `APP-NODE-0${index + 5}`,
+            nodeId: `APP-PAS-0${index + 5}`,
             estimatedVanMinutes: `${15 + index * 5} - ${20 + index * 5} minutos`,
             estimatedPickupTime: 'Listo en 30 min',
             hasImmediatePickup: true,
@@ -308,13 +318,13 @@ export default function StoresDirectoryPage() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200/90 rounded-full text-xs font-mono font-bold tracking-wider uppercase mb-3 shadow-2xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>RED LOGÍSTICA CONECTADA • Cobertura Nacional 98.4%</span>
+              <span>RED LOGÍSTICA CONECTADA • Cobertura Pasto y Nariño 98.4%</span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight font-heading">
-              Red de Almacenes y Distribuidores Autorizados
+              Red de Almacenes y Distribuidores en Pasto
             </h1>
             <p className="text-sm sm:text-base text-gray-600 mt-1.5 max-w-2xl leading-relaxed">
-              Encuentra centros de distribución y depósitos de repuestos con inventario en tiempo real,
+              Encuentra centros de distribución y almacenes de repuestos en Pasto, Nariño con inventario en tiempo real,
               retiro inmediato en mostrador o despacho express.
             </p>
           </div>
@@ -369,7 +379,7 @@ export default function StoresDirectoryPage() {
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Bogotá, Madrid, Polígono Industrial..."
+                  placeholder="Julián Bucheli, Parque Bolívar, Av. Panamericana..."
                   className="w-full pl-9 pr-8 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-600 focus:bg-white text-gray-900 transition-colors placeholder:text-gray-400 font-medium"
                 />
                 {searchQuery && (
@@ -467,8 +477,8 @@ export default function StoresDirectoryPage() {
               <span className="text-gray-400 font-medium">Filtros Activos:</span>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full border border-gray-200 font-medium">
                 <span>
-                  {searchQuery ? searchQuery : 'Madrid'} (
-                  {selectedDistance === 'all' ? 'Toda la región' : selectedDistance})
+                  {searchQuery ? searchQuery : 'Pasto, Nariño'} (
+                  {selectedDistance === 'all' ? 'Toda la ciudad' : selectedDistance})
                 </span>
                 <button
                   onClick={() => setSelectedDistance('all')}
@@ -1010,7 +1020,7 @@ export default function StoresDirectoryPage() {
               <div className="px-4 py-2 bg-[#050b18] border-t border-slate-800 flex items-center justify-between gap-2 text-[11px] font-mono text-emerald-400">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-sm text-emerald-400">traffic</span>
-                  <span>Tráfico Fluido: Autopista Norte / N-VI Despejado</span>
+                  <span>Tráfico Fluido: Av. Panamericana / Av. Boyacá Despejado</span>
                 </div>
                 <span className="text-[10px] text-slate-400">
                   {selectedStore.latitude.toFixed(3)}, {selectedStore.longitude.toFixed(3)}

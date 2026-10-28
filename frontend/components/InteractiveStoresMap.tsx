@@ -41,12 +41,12 @@ export default function InteractiveStoresMap({
       if (leafletMapRef.current) return;
 
       const selected = stores.find(s => s.id === selectedStoreId) || stores[0];
-      const centerLat = selected?.latitude || 4.6542;
-      const centerLon = selected?.longitude || -74.0722;
+      const centerLat = selected?.latitude || 1.2136;
+      const centerLon = selected?.longitude || -77.2811;
 
       const map = L.map(mapContainerRef.current, {
         center: [centerLat, centerLon],
-        zoom: 12,
+        zoom: 14,
         zoomControl: false,
       });
 
@@ -151,3 +151,4 @@ export default function InteractiveStoresMap({
     </div>
   );
 }
+

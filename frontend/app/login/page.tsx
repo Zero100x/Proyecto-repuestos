@@ -25,10 +25,10 @@ export default function LoginPage() {
     'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80'
   );
   const [storeLocation, setStoreLocation] = useState<StoreLocationValue>({
-    address: 'Carrera 24 # 63F-15, 7 de Agosto',
-    city: 'Bogotá',
-    latitude: 4.6542,
-    longitude: -74.0722,
+    address: 'Carrera 19 # 14-35, Barrio Julián Bucheli',
+    city: 'Pasto',
+    latitude: 1.2084,
+    longitude: -77.2765,
   });
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);

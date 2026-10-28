@@ -162,40 +162,40 @@ async function main() {
     create: { userId: buyer.id, roleId: roles[0].id },
   });
 
-  // Sedes
+  // Sedes en Pasto, Nariño
   const loc1a = await prisma.location.create({
     data: {
-      storeId: store1.id, name: 'Sede Norte',
-      address: 'Calle 170 #15-30', city: 'Bogotá', state: 'Cundinamarca',
-      latitude: 4.7515, longitude: -74.0297,
-      phone: '+573002001002', whatsapp: '+573002001002',
+      storeId: store1.id, name: 'Sede Julián Bucheli',
+      address: 'Carrera 19 #14-35, Barrio Julián Bucheli', city: 'Pasto', state: 'Nariño',
+      latitude: 1.2084, longitude: -77.2765,
+      phone: '+576027234510', whatsapp: '+573002001002',
     },
   });
 
   const loc1b = await prisma.location.create({
     data: {
-      storeId: store1.id, name: 'Bodega Sur',
-      address: 'Av. 1 de Mayo #25-80', city: 'Bogotá', state: 'Cundinamarca',
-      latitude: 4.5981, longitude: -74.1132,
-      phone: '+573002001003', whatsapp: '+573002001003',
+      storeId: store1.id, name: 'Bodega Parque Bolívar',
+      address: 'Calle 18 #19-52, Sector Parque Bolívar', city: 'Pasto', state: 'Nariño',
+      latitude: 1.2112, longitude: -77.2740,
+      phone: '+576027228910', whatsapp: '+573002001003',
     },
   });
 
   const loc2 = await prisma.location.create({
     data: {
-      storeId: store2.id, name: 'Sede Principal',
-      address: 'Carrera 30 #45-67', city: 'Bogotá', state: 'Cundinamarca',
-      latitude: 4.6486, longitude: -74.0833,
-      phone: '+573003002002', whatsapp: '+573003002002',
+      storeId: store2.id, name: 'Sede Av. Panamericana',
+      address: 'Av. Panamericana Km 2 #28-15, Pandiaco', city: 'Pasto', state: 'Nariño',
+      latitude: 1.2248, longitude: -77.2882,
+      phone: '+576027314400', whatsapp: '+573003002002',
     },
   });
 
   const loc3 = await prisma.location.create({
     data: {
-      storeId: store3.id, name: 'Centro de Distribución',
-      address: 'Zona Industrial Calle 13 #68-90', city: 'Bogotá', state: 'Cundinamarca',
-      latitude: 4.6294, longitude: -74.1178,
-      phone: '+573004003001', whatsapp: '+573004003001',
+      storeId: store3.id, name: 'Centro de Distribución Sur',
+      address: 'Av. Idema #12-80, Sector Potrerillo', city: 'Pasto', state: 'Nariño',
+      latitude: 1.1985, longitude: -77.2720,
+      phone: '+576027291820', whatsapp: '+573004003001',
     },
   });
 

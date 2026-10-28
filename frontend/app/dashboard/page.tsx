@@ -120,11 +120,11 @@ export default function DashboardPage() {
   // New Location Form State
   const [newLocForm, setNewLocForm] = useState({
     name: '',
-    address: 'Carrera 24 # 63F-15, 7 de Agosto',
-    city: 'Bogotá',
-    state: 'Cundinamarca',
-    latitude: 4.6542,
-    longitude: -74.0722,
+    address: 'Carrera 19 # 14-35, Barrio Julián Bucheli',
+    city: 'Pasto',
+    state: 'Nariño',
+    latitude: 1.2084,
+    longitude: -77.2765,
     imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
     phone: '',
     whatsapp: '',
@@ -518,11 +518,11 @@ export default function DashboardPage() {
       setIsNewLocationModalOpen(false);
       setNewLocForm({
         name: '',
-        address: 'Carrera 24 # 63F-15, 7 de Agosto',
-        city: 'Bogotá',
-        state: 'Cundinamarca',
-        latitude: 4.6542,
-        longitude: -74.0722,
+        address: 'Carrera 19 # 14-35, Barrio Julián Bucheli',
+        city: 'Pasto',
+        state: 'Nariño',
+        latitude: 1.2084,
+        longitude: -77.2765,
         imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
         phone: '',
         whatsapp: '',

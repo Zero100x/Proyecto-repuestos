@@ -24,46 +24,46 @@ interface GeoSuggestion {
 
 const QUICK_AUTO_HUBS: GeoSuggestion[] = [
   {
-    displayName: 'Sector 7 de Agosto — Bogotá (Zona Repuestos)',
-    address: 'Carrera 24 # 63F-15, 7 de Agosto',
-    city: 'Bogotá',
-    lat: 4.6542,
-    lon: -74.0722,
+    displayName: 'Barrio Julián Bucheli / Av. Boyacá — Pasto (Zona Repuestos)',
+    address: 'Carrera 19 # 14-35, Barrio Julián Bucheli',
+    city: 'Pasto',
+    lat: 1.2084,
+    lon: -77.2765,
   },
   {
-    displayName: 'Paloquemao / Av. NQS — Bogotá',
-    address: 'Av. Carrera 30 # 19-40, Paloquemao',
-    city: 'Bogotá',
-    lat: 4.6168,
-    lon: -74.0885,
+    displayName: 'Sector Parque Bolívar / Calle 18 — Pasto',
+    address: 'Calle 18 # 19-52, Parque Bolívar',
+    city: 'Pasto',
+    lat: 1.2112,
+    lon: -77.2740,
   },
   {
-    displayName: 'Autopista Norte / Calle 134 — Bogotá',
-    address: 'Calle 134 # 45-20, Prado / Norte',
-    city: 'Bogotá',
-    lat: 4.7212,
-    lon: -74.0531,
+    displayName: 'Av. Panamericana / Sector Pandiaco — Pasto',
+    address: 'Av. Panamericana # 28-15, Pandiaco',
+    city: 'Pasto',
+    lat: 1.2248,
+    lon: -77.2882,
   },
   {
-    displayName: 'La Bayadera / Calle 30 — Medellín',
-    address: 'Calle 30 # 65-45, Belén / Bayadera',
-    city: 'Medellín',
-    lat: 6.2314,
-    lon: -75.5891,
+    displayName: 'Av. Los Estudiantes / Maridíaz — Pasto',
+    address: 'Calle 20 # 32-40, Av. Los Estudiantes',
+    city: 'Pasto',
+    lat: 1.2215,
+    lon: -77.2858,
   },
   {
-    displayName: 'Corredor Industrial Barrio Triste — Medellín',
-    address: 'Carrera 57 # 44-32, Jesús Nazareno',
-    city: 'Medellín',
-    lat: 6.2486,
-    lon: -75.5742,
+    displayName: 'Av. Idema / Sector Potrerillo — Pasto',
+    address: 'Av. Idema # 12-80, Salida Sur',
+    city: 'Pasto',
+    lat: 1.1985,
+    lon: -77.2720,
   },
   {
-    displayName: 'Zona Industrial Calle 15 — Cali',
-    address: 'Calle 15 # 10-45, San Nicolás',
-    city: 'Cali',
-    lat: 3.4516,
-    lon: -76.5320,
+    displayName: 'Centro / Plaza de Nariño — Pasto',
+    address: 'Calle 19 # 24-60, Centro',
+    city: 'Pasto',
+    lat: 1.2136,
+    lon: -77.2811,
   },
 ];
 
@@ -91,10 +91,10 @@ export default function StoreLocationPicker({ value, onChange }: StoreLocationPi
 
       const initialLat = Number.isFinite(valueRef.current.latitude)
         ? valueRef.current.latitude
-        : 4.6542;
+        : 1.2084;
       const initialLon = Number.isFinite(valueRef.current.longitude)
         ? valueRef.current.longitude
-        : -74.0722;
+        : -77.2765;
 
       const map = L.map(mapContainerRef.current, {
         center: [initialLat, initialLon],
@@ -148,7 +148,7 @@ export default function StoreLocationPicker({ value, onChange }: StoreLocationPi
               addrObj.municipality ||
               addrObj.state ||
               valueRef.current.city ||
-              'Bogotá';
+              'Pasto';
             const formattedAddress =
               [road + houseNumber, neighbourhood].filter(Boolean).join(', ') ||
               data.display_name?.split(',').slice(0, 2).join(',') ||
@@ -234,16 +234,21 @@ export default function StoreLocationPicker({ value, onChange }: StoreLocationPi
     }
   }, [value.latitude, value.longitude, mapReady]);
 
-  // Search address via Nominatim API
+  // Search address via Nominatim API (prioritizing Pasto, Nariño)
   const handleSearchAddress = async () => {
     const q = searchQuery.trim();
     if (!q) return;
+
+    const queryWithPasto =
+      q.toLowerCase().includes('pasto') || q.toLowerCase().includes('nariño')
+        ? q
+        : `${q}, Pasto, Nariño, Colombia`;
 
     setSearching(true);
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          q
+          queryWithPasto
         )}&addressdetails=1&limit=5`,
         { headers: { 'Accept-Language': 'es' } }
       );
@@ -253,7 +258,7 @@ export default function StoreLocationPicker({ value, onChange }: StoreLocationPi
           const mapped: GeoSuggestion[] = data.map((item: any) => {
             const addr = item.address || {};
             const city =
-              addr.city || addr.town || addr.municipality || addr.state || 'Bogotá';
+              addr.city || addr.town || addr.municipality || addr.state || 'Pasto';
             const shortAddr = item.display_name.split(',').slice(0, 2).join(', ');
             return {
               displayName: item.display_name,
@@ -351,7 +356,7 @@ export default function StoreLocationPicker({ value, onChange }: StoreLocationPi
                   handleSearchAddress();
                 }
               }}
-              placeholder="Buscar calle, barrio o ciudad (Ej: Calle 134 # 45-20, Bogotá)..."
+              placeholder="Buscar calle o barrio en Pasto (Ej: Julián Bucheli, Av. Panamericana, Parque Bolívar)..."
               className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-blue-600 text-gray-900"
             />
           </div>
@@ -392,7 +397,7 @@ export default function StoreLocationPicker({ value, onChange }: StoreLocationPi
       {/* Quick Zone Chips */}
       <div className="flex items-center gap-1.5 flex-wrap">
         <span className="text-[10px] font-mono text-gray-400 uppercase font-semibold">
-          Zonas Rápidas:
+          Zonas en Pasto:
         </span>
         {QUICK_AUTO_HUBS.slice(0, 4).map(hub => (
           <button
@@ -401,7 +406,7 @@ export default function StoreLocationPicker({ value, onChange }: StoreLocationPi
             onClick={() => handleSelectSuggestion(hub)}
             className="px-2 py-0.5 bg-white hover:bg-blue-50 text-gray-600 hover:text-blue-700 border border-gray-200 rounded text-[10px] font-medium transition-colors cursor-pointer"
           >
-            {hub.city} ({hub.address.split(',')[0]})
+            {hub.address.split(',')[1]?.trim() || hub.address.split(',')[0]}
           </button>
         ))}
       </div>
@@ -411,7 +416,7 @@ export default function StoreLocationPicker({ value, onChange }: StoreLocationPi
         <div ref={mapContainerRef} className="w-full h-full z-10" />
         <div className="absolute bottom-2 left-2 z-20 bg-gray-900/85 backdrop-blur-xs text-white px-2.5 py-1 rounded-md text-[10px] font-mono pointer-events-none flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Haz clic en el mapa o arrastra el pin 📍 para ajustar tu fachada</span>
+          <span>Haz clic en el mapa de Pasto o arrastra el pin 📍 a tu local</span>
         </div>
       </div>
 
@@ -426,7 +431,7 @@ export default function StoreLocationPicker({ value, onChange }: StoreLocationPi
             required
             value={value.address}
             onChange={e => onChange({ ...value, address: e.target.value })}
-            placeholder="Ej: Carrera 24 # 63F-15"
+            placeholder="Ej: Carrera 19 # 14-35, Barrio Julián Bucheli"
             className="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-blue-600 text-gray-900 font-medium"
           />
         </div>
@@ -439,7 +444,7 @@ export default function StoreLocationPicker({ value, onChange }: StoreLocationPi
             required
             value={value.city}
             onChange={e => onChange({ ...value, city: e.target.value })}
-            placeholder="Ej: Bogotá"
+            placeholder="Pasto, Nariño"
             className="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-blue-600 text-gray-900 font-medium"
           />
         </div>
@@ -455,7 +460,7 @@ export default function StoreLocationPicker({ value, onChange }: StoreLocationPi
             step="any"
             value={value.latitude}
             onChange={e =>
-              onChange({ ...value, latitude: parseFloat(e.target.value) || 4.6542 })
+              onChange({ ...value, latitude: parseFloat(e.target.value) || 1.2084 })
             }
             className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-gray-200 rounded-lg text-gray-700"
           />
@@ -469,7 +474,7 @@ export default function StoreLocationPicker({ value, onChange }: StoreLocationPi
             step="any"
             value={value.longitude}
             onChange={e =>
-              onChange({ ...value, longitude: parseFloat(e.target.value) || -74.0722 })
+              onChange({ ...value, longitude: parseFloat(e.target.value) || -77.2765 })
             }
             className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-gray-200 rounded-lg text-gray-700"
           />
@@ -478,3 +483,4 @@ export default function StoreLocationPicker({ value, onChange }: StoreLocationPi
     </div>
   );
 }
+

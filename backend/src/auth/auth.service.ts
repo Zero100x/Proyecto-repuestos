@@ -77,8 +77,8 @@ export class AuthService {
 
     if (isStoreRegistration) {
       const storeName = dto.storeName?.trim() || `Almacén ${dto.firstName} ${dto.lastName}`.trim();
-      const storeCity = dto.storeCity?.trim() || 'Bogotá';
-      const storeAddress = dto.storeAddress?.trim() || 'Zona Industrial / Principal';
+      const storeCity = dto.storeCity?.trim() || 'Pasto';
+      const storeAddress = dto.storeAddress?.trim() || 'Carrera 19 # 14-35, Barrio Julián Bucheli';
 
       // Verificar si el NIT ya existe para evitar error de unique constraint
       let cleanNit = dto.storeNit?.trim() || undefined;
@@ -101,9 +101,9 @@ export class AuthService {
               name: `Sede Principal — ${storeCity}`,
               address: storeAddress,
               city: storeCity,
-              state: storeCity === 'Medellín' ? 'Antioquia' : 'Cundinamarca',
-              latitude: dto.storeLatitude ?? 4.711,
-              longitude: dto.storeLongitude ?? -74.0721,
+              state: 'Nariño',
+              latitude: dto.storeLatitude ?? 1.2084,
+              longitude: dto.storeLongitude ?? -77.2765,
               imageUrl: dto.storeImageUrl || undefined,
               phone: dto.phone,
               whatsapp: dto.phone,

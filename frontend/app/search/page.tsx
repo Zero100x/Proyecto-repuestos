@@ -39,21 +39,21 @@ function SearchContent() {
 
   const requestGps = () => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
-      setUserCoords({ latitude: 4.7110, longitude: -74.0721 }); // Bogotá Centro
-      setGpsCityName('Bogotá (Demo)');
+      setUserCoords({ latitude: 1.2136, longitude: -77.2811 }); // Pasto Centro
+      setGpsCityName('Pasto, Nariño');
       return;
     }
     setGpsLoading(true);
     navigator.geolocation.getCurrentPosition(
       pos => {
         setUserCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-        setGpsCityName('Tu Ubicación');
+        setGpsCityName('Tu Ubicación (Pasto)');
         setGpsLoading(false);
       },
       err => {
         console.warn('Geolocation fallback:', err.message);
-        setUserCoords({ latitude: 4.7110, longitude: -74.0721 });
-        setGpsCityName('Bogotá Centro');
+        setUserCoords({ latitude: 1.2136, longitude: -77.2811 });
+        setGpsCityName('Pasto Centro');
         setGpsLoading(false);
       },
       { timeout: 8000 }

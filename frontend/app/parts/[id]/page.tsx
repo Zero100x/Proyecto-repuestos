@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import WhatsAppLeadModal from '../../../components/WhatsAppLeadModal';
@@ -11,7 +11,7 @@ import { fetchPartById, fetchParts, formatPriceCOP } from '../../../lib/api';
 import { Part, InventoryItem, ReservationItem } from '../../../lib/types';
 import { useCompare } from '../../../lib/compareContext';
 
-export default function ProductDetailPage() {
+function ProductDetailContent() {
   const params = useParams();
   const partId = params?.id as string;
 
@@ -431,5 +431,23 @@ export default function ProductDetailPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function ProductDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="max-w-[1240px] mx-auto px-4 md:px-8 py-12 pt-[90px]">
+          <div className="h-6 w-48 bg-[var(--surface-container-high)] rounded mb-8 animate-pulse" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-7 h-96 bg-[var(--surface-container-high)] rounded-2xl animate-pulse" />
+            <div className="lg:col-span-5 h-96 bg-[var(--surface-container-high)] rounded-2xl animate-pulse" />
+          </div>
+        </main>
+      }
+    >
+      <ProductDetailContent />
+    </Suspense>
   );
 }

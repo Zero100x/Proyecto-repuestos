@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import Link from 'next/link';
 import VehicleCascadeSelector from '../components/VehicleCascadeSelector';
 import { fetchStores } from '../lib/api';
@@ -8,8 +8,93 @@ export const metadata = {
   description: 'Encuentra repuestos OEM y de posventa en almacenes verificados de San Juan de Pasto con compatibilidad garantizada.',
 };
 
-export default async function HomePage() {
+async function FeaturedWarehousesList() {
   const stores = await fetchStores().catch(() => []);
+  const warehouses = stores.map(st => {
+    const loc = st.locations?.[0];
+    return {
+      name: st.name,
+      address: loc ? `${loc.address}, ${loc.city}` : 'San Juan de Pasto, Nariño',
+      stock: 'Disponible en sede',
+      distance: 'Pasto, Nariño',
+      badge: 'Almacén Verificado',
+      verified: true,
+      image: st.imageUrl || loc?.imageUrl || '/assets/warehouse.svg',
+    };
+  });
+
+  if (warehouses.length === 0) {
+    return (
+      <div className="p-8 bg-surface-container-lowest border border-outline-variant rounded-xl text-center text-secondary text-sm">
+        No hay almacenes registrados aún en San Juan de Pasto.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+      {warehouses.map((wh, idx) => (
+        <div
+          key={idx}
+          className="flex flex-col sm:flex-row bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+        >
+          <div className="sm:w-1/3 bg-surface-container h-44 sm:h-auto flex items-center justify-center p-4">
+            <img
+              src={wh.image}
+              alt={wh.name}
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <div className="sm:w-2/3 p-6 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-surface-variant text-on-surface-variant font-label-sm text-label-sm px-2 py-1 rounded-sm uppercase tracking-wider font-semibold">
+                  {wh.badge}
+                </span>
+                {wh.verified && (
+                  <span className="flex items-center text-secondary text-xs font-mono">
+                    <span className="material-symbols-outlined text-[14px] mr-1 text-emerald-600">
+                      check_circle
+                    </span>
+                    Verificado
+                  </span>
+                )}
+              </div>
+              <h3 className="font-title-md text-title-md text-primary mb-1">
+                {wh.name}
+              </h3>
+              <p className="font-body-md text-body-md text-secondary text-sm">
+                {wh.address}
+              </p>
+            </div>
+
+            <div className="mt-4 flex gap-6 pt-4 border-t border-outline-variant items-center justify-between">
+              <div className="flex gap-4">
+                <div className="flex flex-col">
+                  <span className="font-label-sm text-label-sm text-secondary uppercase">Inventario</span>
+                  <span className="font-body-md text-sm font-semibold text-primary">{wh.stock}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-label-sm text-label-sm text-secondary uppercase">Distancia</span>
+                  <span className="font-body-md text-sm font-semibold text-primary">{wh.distance}</span>
+                </div>
+              </div>
+
+              <Link
+                href={`/search?store=${encodeURIComponent(wh.name)}`}
+                className="px-3 py-1.5 bg-surface-container-high hover:bg-primary hover:text-white text-primary text-xs font-heading font-bold rounded transition-colors"
+              >
+                Ver Stock
+              </Link>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function HomePage() {
   const categories = [
     {
       title: 'Motor',
@@ -33,19 +118,6 @@ export default async function HomePage() {
       fallbackImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBoCqlJqptbHcXi5VnUxNz_M7kLs_SfPsU2KGQ-bAtltELfDBbstQoEIyGGyP58hhlWKGH_sGobbM2Ys74xupZM4noF7NzpUookkbzrMimaC7CutjXHBCPVg3zd8PCYM2b81TOCa8jyYXVwyVU6J0AoEJR4tYXscQaj3O9x0dgtc8hRaEqw8HWqL8vkYSgSbVJ9paiQWAVg8vKFZbnLkAUrJQwCUyNC44a5yJKK-uqkmQJT_ZFSjV9n',
     },
   ];
-
-  const warehouses = stores.map(st => {
-    const loc = st.locations?.[0];
-    return {
-      name: st.name,
-      address: loc ? `${loc.address}, ${loc.city}` : 'San Juan de Pasto, Nariño',
-      stock: 'Disponible en sede',
-      distance: 'Pasto, Nariño',
-      badge: 'Almacén Verificado',
-      verified: true,
-      image: st.imageUrl || loc?.imageUrl || '/assets/warehouse.svg',
-    };
-  });
 
   return (
     <div className="bg-surface text-on-surface antialiased pt-[68px] min-h-screen flex flex-col">
@@ -173,65 +245,16 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
-              {warehouses.map((wh, idx) => (
-                <div
-                  key={idx}
-                  className="flex flex-col sm:flex-row bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="sm:w-1/3 bg-surface-container h-44 sm:h-auto flex items-center justify-center p-4">
-                    <img
-                      src={wh.image}
-                      alt={wh.name}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <div className="sm:w-2/3 p-6 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="bg-surface-variant text-on-surface-variant font-label-sm text-label-sm px-2 py-1 rounded-sm uppercase tracking-wider font-semibold">
-                          {wh.badge}
-                        </span>
-                        {wh.verified && (
-                          <span className="flex items-center text-secondary text-xs font-mono">
-                            <span className="material-symbols-outlined text-[14px] mr-1 text-emerald-600">
-                              check_circle
-                            </span>
-                            Verificado
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="font-title-md text-title-md text-primary mb-1">
-                        {wh.name}
-                      </h3>
-                      <p className="font-body-md text-body-md text-secondary text-sm">
-                        {wh.address}
-                      </p>
-                    </div>
-
-                    <div className="mt-4 flex gap-6 pt-4 border-t border-outline-variant items-center justify-between">
-                      <div className="flex gap-4">
-                        <div className="flex flex-col">
-                          <span className="font-label-sm text-label-sm text-secondary uppercase">Inventario</span>
-                          <span className="font-body-md text-sm font-semibold text-primary">{wh.stock}</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-label-sm text-label-sm text-secondary uppercase">Distancia</span>
-                          <span className="font-body-md text-sm font-semibold text-primary">{wh.distance}</span>
-                        </div>
-                      </div>
-
-                      <Link
-                        href={`/search?store=${encodeURIComponent(wh.name)}`}
-                        className="px-3 py-1.5 bg-surface-container-high hover:bg-primary hover:text-white text-primary text-xs font-heading font-bold rounded transition-colors"
-                      >
-                        Ver Stock
-                      </Link>
-                    </div>
-                  </div>
+            <Suspense
+              fallback={
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+                  <div className="h-44 bg-surface-container-lowest border border-outline-variant rounded-xl animate-pulse" />
+                  <div className="h-44 bg-surface-container-lowest border border-outline-variant rounded-xl animate-pulse" />
                 </div>
-              ))}
-            </div>
+              }
+            >
+              <FeaturedWarehousesList />
+            </Suspense>
           </div>
         </section>
 

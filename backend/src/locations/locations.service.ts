@@ -142,14 +142,19 @@ export class LocationsService {
   // ============ STORES (Almacenes) ============
 
   async findAllStores(page = 1, limit = 50) {
-    const skip = (page - 1) * limit;
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, Number(limit) || 50));
+    const skip = (pageNum - 1) * limitNum;
 
     const [stores, total] = await Promise.all([
       this.prisma.store.findMany({
         skip,
-        take: limit,
+        take: limitNum,
         include: {
-          locations: { where: { isActive: true } },
+          locations: {
+            where: { isActive: true },
+            include: { _count: { select: { inventory: true } } },
+          },
           _count: { select: { locations: true, users: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -159,7 +164,7 @@ export class LocationsService {
 
     return {
       data: stores,
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+      meta: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) },
     };
   }
 

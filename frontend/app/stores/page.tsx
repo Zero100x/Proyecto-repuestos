@@ -90,9 +90,10 @@ export default function StoresDirectoryPage() {
         }
 
         const backendEnhanced: DirectoryStore[] = apiStores.map((st, index) => {
+          const matchedLoc = apiLocations.find(l => l.storeId === st.id);
           const loc =
             st.locations?.[0] ||
-            apiLocations.find(l => l.storeId === st.id) ||
+            matchedLoc ||
             apiLocations[0];
           const rawLat = loc?.latitude;
           const rawLon = loc?.longitude;
@@ -100,7 +101,7 @@ export default function StoresDirectoryPage() {
           const finalLat = isPastoCoord ? rawLat : 1.2084 + index * 0.0055;
           const finalLon = isPastoCoord && rawLon ? rawLon : -77.2765 - index * 0.0045;
           const dist = 1.2 + index * 1.1;
-          const realStockCount = loc?._count?.inventory ?? 2;
+          const realStockCount = loc?._count?.inventory ?? matchedLoc?._count?.inventory ?? 2;
 
           return {
             id: st.id,

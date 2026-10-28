@@ -22,8 +22,10 @@ export class LocationsController {
   @ApiOperation({ summary: 'Listar almacenes (Público)' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
-  findAllStores(@Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.locationsService.findAllStores(page, limit);
+  findAllStores(@Query('page') page?: string, @Query('limit') limit?: string) {
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, Number(limit) || 50));
+    return this.locationsService.findAllStores(pageNum, limitNum);
   }
 
   @Get('stores/:id')

@@ -21,8 +21,10 @@ export class UsersController {
   @ApiOperation({ summary: 'Listar todos los usuarios (PDCIRA-5)' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  findAll(@Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.usersService.findAll(page, limit);
+  findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
+    return this.usersService.findAll(pageNum, limitNum);
   }
 
   @Get(':id')

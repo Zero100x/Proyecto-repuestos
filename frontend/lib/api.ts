@@ -190,7 +190,7 @@ export async function fetchVehicleCascade(makeId?: string, modelId?: string, yea
 
 export async function fetchStores(): Promise<Store[]> {
   try {
-    const res = await fetch(`${API_BASE}/stores?limit=50`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/stores?page=1&limit=50`, { cache: 'no-store' });
     if (res.ok) {
       const json = await res.json();
       const list = Array.isArray(json) ? json : json.data;

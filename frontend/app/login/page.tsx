@@ -81,6 +81,7 @@ export default function LoginPage() {
       const authData = await res.json();
       localStorage.setItem('repuestos_token', authData.accessToken || 'demo-token');
       localStorage.setItem('repuestos_user', JSON.stringify(authData.user || { email, roleType }));
+      window.dispatchEvent(new Event('auth-changed'));
 
       setSuccessMsg('¡Acceso concedido exitosamente!');
       setTimeout(() => {
@@ -94,6 +95,7 @@ export default function LoginPage() {
       console.warn('API error, using fallback demo session:', err);
       localStorage.setItem('repuestos_token', 'demo-jwt-token-repuestos-2026');
       localStorage.setItem('repuestos_user', JSON.stringify({ email, firstName: 'Usuario Demo', roleType }));
+      window.dispatchEvent(new Event('auth-changed'));
       setSuccessMsg('Ingreso concedido (Modo Demo Offline). Redirigiendo...');
       setTimeout(() => {
         router.push(roleType === 'BUYER' ? '/search' : '/dashboard');

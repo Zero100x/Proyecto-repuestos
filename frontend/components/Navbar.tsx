@@ -12,7 +12,9 @@ interface CurrentUserSession {
   lastName?: string;
   name?: string;
   roleType?: string;
+  role?: string;
   roles?: string[];
+  storeId?: string | null;
   store?: { id?: string; name?: string };
 }
 
@@ -94,6 +96,17 @@ export default function Navbar() {
 
   const storeName = user?.store?.name || (user?.roles?.includes('STORE_ADMIN') ? 'Almacén' : '');
 
+  const isStoreUser = Boolean(
+    user && (
+      user.roles?.includes('STORE_ADMIN') ||
+      user.roles?.includes('ADMIN') ||
+      user.roleType === 'STORE' ||
+      (user as any).role === 'STORE' ||
+      user.storeId ||
+      user.store
+    )
+  );
+
   return (
     <header className="bg-surface fixed top-0 left-0 w-full z-50 border-b border-outline-variant shadow-sm backdrop-blur-md bg-surface/95">
       <div className="flex justify-between items-center px-4 md:px-margin-desktop py-3.5 max-w-container-max-width mx-auto">
@@ -139,13 +152,15 @@ export default function Navbar() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3 sm:gap-4">
-          <Link
-            href="/dashboard"
-            className="hidden sm:flex items-center gap-1.5 bg-primary text-on-primary font-button text-button px-4 py-2 rounded hover:bg-primary-container transition-all active:scale-95 shadow-sm"
-          >
-            <span className="material-symbols-outlined text-[18px]">add_business</span>
-            <span>Publicar Repuesto</span>
-          </Link>
+          {mounted && isStoreUser && (
+            <Link
+              href="/dashboard"
+              className="hidden sm:flex items-center gap-1.5 bg-primary text-on-primary font-button text-button px-4 py-2 rounded hover:bg-primary-container transition-all active:scale-95 shadow-sm animate-in fade-in"
+            >
+              <span className="material-symbols-outlined text-[18px]">add_business</span>
+              <span>Publicar Repuesto</span>
+            </Link>
+          )}
 
           <Link
             href="/compare"
@@ -323,13 +338,15 @@ export default function Navbar() {
           ))}
 
           <div className="pt-2 border-t border-outline-variant flex flex-col gap-2">
-            <Link
-              href="/dashboard"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center py-2.5 bg-primary text-white rounded font-button text-xs font-bold"
-            >
-              Portal Almacén / Publicar
-            </Link>
+            {mounted && isStoreUser && (
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-2.5 bg-primary text-white rounded font-button text-xs font-bold"
+              >
+                Portal Almacén / Publicar
+              </Link>
+            )}
 
             {user ? (
               <button

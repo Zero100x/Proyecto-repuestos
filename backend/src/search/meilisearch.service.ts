@@ -67,6 +67,7 @@ export class MeilisearchService implements OnModuleInit {
         'category',
         'makes',
         'models',
+        'storeNames',
         'description',
       ]);
 

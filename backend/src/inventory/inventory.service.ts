@@ -337,7 +337,9 @@ export class InventoryService {
 
       // Auto-detección inteligente por nombre de modelo si no se enviaron versiones manuales
       if (versionIdsToLink.length === 0) {
-        const nameLower = dto.name.toLowerCase();
+        const stripAccents = (s: string) =>
+          s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const nameNormalized = stripAccents(dto.name);
         const models = await tx.vehicleModel.findMany({
           select: {
             name: true,
@@ -346,8 +348,8 @@ export class InventoryService {
         });
 
         for (const m of models) {
-          const modelName = m.name.toLowerCase();
-          if (modelName.length >= 3 && nameLower.includes(modelName)) {
+          const modelName = stripAccents(m.name);
+          if (modelName.length >= 3 && nameNormalized.includes(modelName)) {
             const vIds = m.years.flatMap((y) => y.versions.map((v) => v.id));
             versionIdsToLink.push(...vIds);
           }

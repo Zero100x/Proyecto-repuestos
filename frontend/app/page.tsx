@@ -1,13 +1,15 @@
 import React from 'react';
 import Link from 'next/link';
 import VehicleCascadeSelector from '../components/VehicleCascadeSelector';
+import { fetchStores } from '../lib/api';
 
 export const metadata = {
-  title: 'AutoPart Pro — Buscador de Repuestos Automotrices',
-  description: 'Encuentra millones de componentes OEM y de posventa con compatibilidad garantizada.',
+  title: 'AutoPart Pro — Buscador de Repuestos Automotrices en Pasto, Nariño',
+  description: 'Encuentra repuestos OEM y de posventa en almacenes verificados de San Juan de Pasto con compatibilidad garantizada.',
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const stores = await fetchStores().catch(() => []);
   const categories = [
     {
       title: 'Motor',
@@ -24,34 +26,26 @@ export default function HomePage() {
       fallbackImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1n78KYMjDi50iCUbTedtgdVFqCuzyLwBtMmLkwKfr8oNHUU1kTZybJJRRFHujysqABJeBcW0e_8GrcDB0iujxO-D94-BE39q1lPoRt0qMpYUGsR6f8bA-oAO3FTiWLkVcMKrNSmonP0s20J2dMJcQTzcMf-B8nAzfRICkzHEwesaHBicy-IxFCvZJuDtcokDHu6EWlfxQciTsMSmj_cwdMlgCnrwctl0wwaRofI7qfo2vVXqRc1HK',
     },
     {
-      title: 'Iluminación',
-      desc: 'Ópticas LED matrix, exploradoras y halógenas',
-      href: '/search?category=iluminacion',
+      title: 'Suspensión',
+      desc: 'Amortiguadores, rótulas, terminales y espirales',
+      href: '/search?category=suspension',
       image: '/assets/lighting.svg',
       fallbackImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBoCqlJqptbHcXi5VnUxNz_M7kLs_SfPsU2KGQ-bAtltELfDBbstQoEIyGGyP58hhlWKGH_sGobbM2Ys74xupZM4noF7NzpUookkbzrMimaC7CutjXHBCPVg3zd8PCYM2b81TOCa8jyYXVwyVU6J0AoEJR4tYXscQaj3O9x0dgtc8hRaEqw8HWqL8vkYSgSbVJ9paiQWAVg8vKFZbnLkAUrJQwCUyNC44a5yJKK-uqkmQJT_ZFSjV9n',
     },
   ];
 
-  const warehouses = [
-    {
-      name: 'AutoPart Depot Central',
-      address: 'Av. de los Industriales 4500, Zona Norte.',
-      stock: 'Alto (+15.000 uds)',
-      distance: '4.2 km',
-      badge: 'Centro Principal',
+  const warehouses = stores.map(st => {
+    const loc = st.locations?.[0];
+    return {
+      name: st.name,
+      address: loc ? `${loc.address}, ${loc.city}` : 'San Juan de Pasto, Nariño',
+      stock: 'Disponible en sede',
+      distance: 'Pasto, Nariño',
+      badge: 'Almacén Verificado',
       verified: true,
-      image: '/assets/warehouse.svg',
-    },
-    {
-      name: 'Repuestos Express Sur',
-      address: 'Ruta Provincial 21, Km 12.5.',
-      stock: 'Medio (+6.200 uds)',
-      distance: '12.8 km',
-      badge: 'Distribuidor',
-      verified: false,
-      image: '/assets/warehouse.svg',
-    },
-  ];
+      image: st.imageUrl || loc?.imageUrl || '/assets/warehouse.svg',
+    };
+  });
 
   return (
     <div className="bg-surface text-on-surface antialiased pt-[68px] min-h-screen flex flex-col">
@@ -63,14 +57,14 @@ export default function HomePage() {
             {/* Tag / Tech pill */}
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-mono text-xs mb-4 border border-outline-variant shadow-sm">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>SISTEMA DE GESTIÓN &amp; CONSULTA DE INVENTARIOS</span>
+              <span>RED CENTRALIZADA DE ALMACENES • PASTO, NARIÑO</span>
             </div>
 
             <h1 className="font-display-lg text-3xl sm:text-4xl md:text-display-lg text-primary mb-4 max-w-3xl tracking-tight leading-tight">
-              Precision Parts for Professional Grade Systems.
+              Repuestos de Precisión con Disponibilidad Real en Pasto.
             </h1>
             <p className="font-body-lg text-base sm:text-body-lg text-secondary mb-10 max-w-2xl leading-relaxed">
-              Search millions of OEM and aftermarket components with guaranteed compatibility.
+              Consulta el inventario físico de los almacenes de repuestos de San Juan de Pasto filtrando por Marca, Modelo y Año de tu vehículo.
             </p>
 
             {/* Central Search Module (Bento / Card Module) */}
@@ -228,7 +222,7 @@ export default function HomePage() {
                       </div>
 
                       <Link
-                        href={`/search?store=${encodeURIComponent(wh.name)}`}
+                        href={`/search?q=${encodeURIComponent(wh.name)}`}
                         className="px-3 py-1.5 bg-surface-container-high hover:bg-primary hover:text-white text-primary text-xs font-heading font-bold rounded transition-colors"
                       >
                         Ver Stock

@@ -803,18 +803,11 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={handleQuickDemoLogin}
-                className="flex-1 sm:flex-none px-4 py-2 bg-amber-600 text-white rounded-xl font-heading text-xs font-bold hover:bg-amber-700 transition shadow-sm"
-              >
-                Acceso 1-Clic: Jorge Martínez (Almacén El Motor)
-              </button>
               <Link
                 href="/login"
-                className="px-4 py-2 bg-white border border-amber-300 text-amber-900 rounded-xl font-heading text-xs font-bold hover:bg-amber-100 transition"
+                className="px-5 py-2.5 bg-amber-600 text-white rounded-xl font-heading text-xs font-bold hover:bg-amber-700 transition shadow-sm"
               >
-                Iniciar Sesión
+                Iniciar Sesión / Registrar Cuenta
               </Link>
             </div>
           </div>

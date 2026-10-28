@@ -60,10 +60,10 @@ export async function fetchParts(filters: SearchFilters = {}): Promise<{ data: P
 
     if (res.ok) {
       const json = await res.json();
-      if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+      if (json.data && Array.isArray(json.data)) {
         return {
           data: json.data,
-          total: json.meta?.total || json.data.length,
+          total: json.meta?.total ?? json.data.length,
         };
       }
     }
@@ -188,14 +188,14 @@ export async function fetchStores(): Promise<Store[]> {
     if (res.ok) {
       const json = await res.json();
       const list = Array.isArray(json) ? json : json.data;
-      if (Array.isArray(list) && list.length > 0) {
+      if (Array.isArray(list)) {
         return list;
       }
     }
   } catch (err) {
-    console.warn('Backend stores API error, using mock:', err);
+    console.warn('Backend stores API error:', err);
   }
-  return MOCK_STORES;
+  return [];
 }
 
 export async function fetchLocations(storeId?: string): Promise<Location[]> {
@@ -205,14 +205,14 @@ export async function fetchLocations(storeId?: string): Promise<Location[]> {
     if (res.ok) {
       const json = await res.json();
       const list = Array.isArray(json) ? json : json.data;
-      if (Array.isArray(list) && list.length > 0) {
+      if (Array.isArray(list)) {
         return list;
       }
     }
   } catch (err) {
-    console.warn('Backend locations API error, using mock:', err);
+    console.warn('Backend locations API error:', err);
   }
-  return storeId ? MOCK_LOCATIONS.filter(l => l.storeId === storeId) : MOCK_LOCATIONS;
+  return [];
 }
 
 export async function uploadStoreImage(file: File): Promise<{ imageUrl: string }> {

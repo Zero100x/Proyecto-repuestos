@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MeilisearchService } from '../search/meilisearch.service';
 import {
@@ -8,11 +8,17 @@ import {
 } from './dto/catalog.dto';
 
 @Injectable()
-export class CatalogService {
+export class CatalogService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private meilisearch: MeilisearchService,
   ) {}
+
+  async onModuleInit() {
+    setTimeout(() => {
+      this.syncAllPartsToSearch().catch(() => {});
+    }, 1500);
+  }
 
   // ============ CATEGORÍAS ============
 
@@ -334,6 +340,8 @@ export class CatalogService {
   }
 
   async syncAllPartsToSearch() {
+    await this.meilisearch.clearAllParts();
+
     const parts = await this.prisma.part.findMany({
       where: { isActive: true },
       select: { id: true },

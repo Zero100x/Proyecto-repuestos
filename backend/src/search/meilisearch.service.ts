@@ -137,6 +137,16 @@ export class MeilisearchService implements OnModuleInit {
     }
   }
 
+  // Limpiar todos los documentos del índice antes de resincronizar
+  async clearAllParts() {
+    try {
+      const task = await this.partsIndex.deleteAllDocuments();
+      await this.client.waitForTask(task.taskUid, { timeOutMs: 5000 }).catch(() => {});
+    } catch (error) {
+      this.logger.error('Error limpiando índice de repuestos:', error);
+    }
+  }
+
   // ============ BÚSQUEDA (PDCIRA-8) ============
 
   async searchParts(params: {

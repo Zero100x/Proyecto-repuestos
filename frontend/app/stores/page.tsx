@@ -37,158 +37,70 @@ interface DirectoryStore {
   mapCoords: { x: number; y: number; label: string };
 }
 
-const INITIAL_STORES: DirectoryStore[] = [
-  {
-    id: 'store-depot-central',
-    name: 'AutoPart Depot Central Pasto',
-    badge: 'RECOMENDADO • MAYOR STOCK',
-    distanceKm: 1.4,
-    type: 'Centro Principal',
-    verifiedOEM: true,
-    openStatus: 'Abierto ahora',
-    rating: 4.9,
-    reviewCount: 184,
-    address: 'Av. Boyacá / Carrera 19 # 14-35, Barrio Julián Bucheli',
-    city: 'Pasto',
-    latitude: 1.2084,
-    longitude: -77.2765,
-    imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
-    hours: 'Hoy 08:00 - 19:00 (Continuo)',
-    stockCount: 1820,
-    stockLabel: 'Stock Activo: 1,820 referencias en estantería',
-    specialtyOrOEM: 'Marcas OEM: Bosch, Brembo, Garrett, Denso',
-    counterInfo: 'Mostrador: Julián Bucheli Local 5B',
-    phone: '+57 602 723 4510',
-    whatsapp: '+573002001000',
-    nodeId: 'APP-PAS-01',
-    estimatedVanMinutes: '8 - 12 minutos',
-    estimatedPickupTime: 'Listo en 30 min',
-    hasImmediatePickup: true,
-    hasExpressDelivery: true,
-    hasLiveApi: true,
-    mapCoords: { x: 245, y: 120, label: 'Depot Central (1.4KM)' },
-  },
-  {
-    id: 'store-express-sur',
-    name: 'Repuestos Express Sur Nariño',
-    distanceKm: 2.6,
-    type: 'Distribuidor Multimarca',
-    verifiedOEM: true,
-    openStatus: 'Abierto',
-    rating: 4.7,
-    reviewCount: 92,
-    address: 'Av. Idema # 12-80, Sector Potrerillo / Salida Sur',
-    city: 'Pasto',
-    latitude: 1.1985,
-    longitude: -77.2720,
-    imageUrl: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=900&q=80',
-    hours: 'Hoy 08:30 - 18:00',
-    stockCount: 2150,
-    stockLabel: 'Stock: 2,150 referencias',
-    specialtyOrOEM: 'Especialidad: Frenos, Suspensión, Filtros',
-    counterInfo: 'Box de Entrega Rápida Sur',
-    phone: '+57 602 729 1820',
-    whatsapp: '+573002001002',
-    nodeId: 'APP-PAS-02',
-    estimatedVanMinutes: '12 - 16 minutos',
-    estimatedPickupTime: 'Listo en 30 min',
-    hasImmediatePickup: true,
-    hasExpressDelivery: false,
-    hasLiveApi: true,
-    mapCoords: { x: 280, y: 225, label: 'Express Sur (2.6KM)' },
-  },
-  {
-    id: 'store-logistica-motriz',
-    name: 'Logística Motriz & Componentes Galeras',
-    distanceKm: 3.4,
-    type: 'Centro Logístico B2B',
-    verifiedOEM: true,
-    openStatus: 'Despacho 24/7 B2B',
-    rating: 4.8,
-    reviewCount: 350,
-    address: 'Av. Panamericana Km 2 # 28-15, Sector Pandiaco',
-    city: 'Pasto',
-    latitude: 1.2248,
-    longitude: -77.2882,
-    imageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=900&q=80',
-    hours: 'Operación Continua 24 Horas',
-    stockCount: 14500,
-    stockLabel: 'Inventario Industrial: 14,500 referencias',
-    specialtyOrOEM: 'Especialidad: Transmisión, Motores completos',
-    counterInfo: 'Muelle Carga Pesada Panamericana',
-    phone: '+57 602 731 4400',
-    whatsapp: '+573003002001',
-    nodeId: 'APP-PAS-03',
-    estimatedVanMinutes: '15 - 20 minutos',
-    estimatedPickupTime: 'Listo en 30 min',
-    hasImmediatePickup: true,
-    hasExpressDelivery: true,
-    hasLiveApi: true,
-    mapCoords: { x: 140, y: 95, label: 'Logística Galeras (3.4KM)' },
-  },
-  {
-    id: 'store-iberia-repuestos',
-    name: 'Almacén Parque Bolívar Repuestos',
-    distanceKm: 1.9,
-    type: 'Mayorista Especializado',
-    verifiedOEM: true,
-    openStatus: 'Hoy hasta las 19:30',
-    rating: 4.6,
-    reviewCount: 65,
-    address: 'Calle 18 # 19-52, Sector Parque Bolívar',
-    city: 'Pasto',
-    latitude: 1.2112,
-    longitude: -77.2740,
-    imageUrl: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=900&q=80',
-    hours: 'Atención hasta 19:30',
-    stockCount: 1350,
-    stockLabel: 'Referencias: 1,350 disponibles',
-    specialtyOrOEM: 'Enfoque: Carrocería, Iluminación LED',
-    counterInfo: 'Acceso Rápido Calle 18',
-    phone: '+57 602 722 8910',
-    whatsapp: '+573004003001',
-    nodeId: 'APP-PAS-04',
-    estimatedVanMinutes: '10 - 14 minutos',
-    estimatedPickupTime: 'Listo en 30 min',
-    hasImmediatePickup: true,
-    hasExpressDelivery: true,
-    hasLiveApi: false,
-    mapCoords: { x: 195, y: 155, label: 'Parque Bolívar (1.9KM)' },
-  },
-];
+const DEFAULT_INSPECTOR_PLACEHOLDER: DirectoryStore = {
+  id: 'store-pasto-placeholder',
+  name: 'Cargando almacén verificado...',
+  distanceKm: 1.2,
+  type: 'Centro Principal',
+  verifiedOEM: true,
+  openStatus: 'Abierto ahora',
+  rating: 5.0,
+  reviewCount: 1,
+  address: 'Pasto, Nariño',
+  city: 'Pasto',
+  latitude: 1.2084,
+  longitude: -77.2765,
+  imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
+  hours: 'Hoy 08:00 - 18:30',
+  stockCount: 0,
+  stockLabel: 'Cargando referencias...',
+  specialtyOrOEM: 'Catálogo Verificado',
+  counterInfo: 'Sede Principal Pasto',
+  phone: '+57 300 000 0000',
+  whatsapp: '+573000000000',
+  nodeId: 'APP-PAS-01',
+  estimatedVanMinutes: '10 - 15 minutos',
+  estimatedPickupTime: 'Listo en 30 min',
+  hasImmediatePickup: true,
+  hasExpressDelivery: true,
+  hasLiveApi: true,
+  mapCoords: { x: 200, y: 140, label: 'Pasto (1.2KM)' },
+};
 
 export default function StoresDirectoryPage() {
-  const [storesList, setStoresList] = useState<DirectoryStore[]>(INITIAL_STORES);
+  const [storesList, setStoresList] = useState<DirectoryStore[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDistance, setSelectedDistance] = useState<'5km' | '15km' | '30km' | 'all'>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [immediatePickupOnly, setImmediatePickupOnly] = useState(true);
   const [sortBy, setSortBy] = useState<'distance' | 'stock' | 'rating'>('distance');
-  const [selectedStoreId, setSelectedStoreId] = useState<string>('store-depot-central');
+  const [selectedStoreId, setSelectedStoreId] = useState<string>('');
   const [mapViewMode, setMapViewMode] = useState<'map' | 'radar'>('map');
   const [radarZoom, setRadarZoom] = useState(1);
   const [showAdmissionModal, setShowAdmissionModal] = useState(false);
   const storeCardsRef = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
-  // Sync API / backend stores if present
+  // Sync API / backend stores strictly from database
   useEffect(() => {
     Promise.all([fetchStores(), fetchLocations()])
       .then(([apiStores, apiLocations]) => {
-        if (!apiStores || apiStores.length === 0) return;
+        if (!apiStores || apiStores.length === 0) {
+          setStoresList([]);
+          return;
+        }
 
-        // Enhance backend stores and merge without duplicating
         const backendEnhanced: DirectoryStore[] = apiStores.map((st, index) => {
           const loc =
             st.locations?.[0] ||
             apiLocations.find(l => l.storeId === st.id) ||
             apiLocations[0];
-          // If coordinates are from an old Bogotá/Medellín seed (> 3.0 lat), place them in Pasto automotive zones
           const rawLat = loc?.latitude;
           const rawLon = loc?.longitude;
           const isPastoCoord = rawLat && rawLat > 0.8 && rawLat < 1.8;
           const finalLat = isPastoCoord ? rawLat : 1.2084 + index * 0.0055;
           const finalLon = isPastoCoord && rawLon ? rawLon : -77.2765 - index * 0.0045;
           const dist = 1.2 + index * 1.1;
+          const realStockCount = loc?._count?.inventory ?? 2;
 
           return {
             id: st.id,
@@ -198,13 +110,10 @@ export default function StoresDirectoryPage() {
             type: index % 2 === 0 ? 'Centro Principal' : 'Distribuidor Multimarca',
             verifiedOEM: true,
             openStatus: 'Abierto ahora',
-            rating: 4.8,
-            reviewCount: 45 + index * 20,
-            address:
-              loc?.address && !loc.address.includes('134') && !loc.address.includes('63F')
-                ? loc.address
-                : `Carrera 19 # ${14 + index * 2}-30, Barrio Julián Bucheli`,
-            city: 'Pasto',
+            rating: 5.0,
+            reviewCount: 12 + index * 5,
+            address: loc?.address || 'San Juan de Pasto, Nariño',
+            city: loc?.city || 'Pasto',
             latitude: finalLat,
             longitude: finalLon,
             imageUrl:
@@ -212,35 +121,33 @@ export default function StoresDirectoryPage() {
               loc?.imageUrl ||
               'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
             hours: 'Hoy 08:00 - 18:30',
-            stockCount: 1200 + index * 350,
-            stockLabel: `Stock Activo: ${(1200 + index * 350).toLocaleString()} referencias`,
-            specialtyOrOEM: 'Marcas OEM: Bosch, Valeo, ACDelco, Gates',
-            counterInfo: `Sede ${loc?.name?.replace('Bogotá', 'Pasto').replace('Medellín', 'Pasto') || 'Pasto Centro'}`,
-            phone: loc?.phone || st.phone || '+57 602 723 4510',
-            whatsapp: loc?.whatsapp || '+573002001000',
-            nodeId: `APP-PAS-0${index + 5}`,
-            estimatedVanMinutes: `${15 + index * 5} - ${20 + index * 5} minutos`,
+            stockCount: realStockCount,
+            stockLabel: `Stock Activo: ${realStockCount} ${realStockCount === 1 ? 'referencia' : 'referencias'} en catálogo`,
+            specialtyOrOEM: 'Repuestos Certificados • Retiro y Despacho en Pasto',
+            counterInfo: loc?.name || 'Sede Principal Pasto',
+            phone: loc?.phone || st.phone || '+57 315 800 1122',
+            whatsapp: loc?.whatsapp || st.phone || '+573158001122',
+            nodeId: `APP-PAS-0${index + 1}`,
+            estimatedVanMinutes: `${10 + index * 5} - ${15 + index * 5} minutos`,
             estimatedPickupTime: 'Listo en 30 min',
             hasImmediatePickup: true,
             hasExpressDelivery: true,
             hasLiveApi: true,
             mapCoords: {
-              x: 180 + (index * 60) % 240,
-              y: 110 + (index * 70) % 180,
+              x: 200 + (index * 60) % 180,
+              y: 135 + (index * 50) % 120,
               label: `${st.name.slice(0, 14)} (${dist.toFixed(1)}KM)`,
             },
           };
         });
 
-        // Merge initial stores and unique backend stores
-        const existingNames = new Set(INITIAL_STORES.map(s => s.name.toLowerCase()));
-        const additions = backendEnhanced.filter(b => !existingNames.has(b.name.toLowerCase()));
-        if (additions.length > 0) {
-          setStoresList([...INITIAL_STORES, ...additions]);
+        setStoresList(backendEnhanced);
+        if (backendEnhanced.length > 0) {
+          setSelectedStoreId(backendEnhanced[0].id);
         }
       })
       .catch(err => {
-        console.warn('Stores API error, continuing with curated data:', err);
+        console.warn('Stores API error:', err);
       });
   }, []);
 
@@ -284,7 +191,7 @@ export default function StoresDirectoryPage() {
   // Selected store for inspector
   const selectedStore = useMemo(() => {
     const found = storesList.find(s => s.id === selectedStoreId);
-    return found || filteredStores[0] || storesList[0];
+    return found || filteredStores[0] || storesList[0] || DEFAULT_INSPECTOR_PLACEHOLDER;
   }, [storesList, selectedStoreId, filteredStores]);
 
   const handleSelectStore = (id: string) => {
@@ -305,7 +212,7 @@ export default function StoresDirectoryPage() {
 
   const totalStockCountApprox = useMemo(() => {
     const sum = storesList.reduce((acc, s) => acc + s.stockCount, 0);
-    return `+${Math.max(380, Math.round(sum / 100))}K`;
+    return `${sum} ${sum === 1 ? 'ref.' : 'refs.'}`;
   }, [storesList]);
 
   return (
@@ -340,7 +247,7 @@ export default function StoresDirectoryPage() {
                   DEPÓSITOS ACTIVOS
                 </div>
                 <div className="text-lg font-bold text-gray-900 font-heading">
-                  42 Nodos
+                  {storesList.length} {storesList.length === 1 ? 'Almacén' : 'Almacenes'}
                 </div>
               </div>
             </div>

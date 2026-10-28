@@ -1,13 +1,130 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { join, extname } from 'path';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateStoreDto, CreateLocationDto, UpdateLocationDto } from './dto/locations.dto';
+import { CreateStoreDto, CreateLocationDto, UpdateLocationDto, OnboardStoreDto } from './dto/locations.dto';
 
 @Injectable()
 export class LocationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
+
+  async onboardStoreForUser(userId: string, dto: OnboardStoreDto) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { roles: { include: { role: true } } },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (!dto.name || !dto.name.trim()) {
+      throw new BadRequestException('El nombre del almacén es obligatorio');
+    }
+
+    const storeName = dto.name.trim();
+    const storeCity = dto.city?.trim() || 'Pasto';
+    const storeAddress = dto.address?.trim() || 'Carrera 19 # 14-35, Barrio Julián Bucheli';
+    const storePhone = dto.phone?.trim() || existingUser.phone || '+573158001122';
+    const storeWhatsapp = dto.whatsapp?.trim() || storePhone;
+
+    let cleanNit = dto.nit?.trim() || undefined;
+    if (cleanNit) {
+      const existingNit = await this.prisma.store.findUnique({ where: { nit: cleanNit } });
+      if (existingNit) {
+        cleanNit = `${cleanNit}-${Math.floor(100 + Math.random() * 900)}`;
+      }
+    }
+
+    // Buscar o crear el rol STORE_ADMIN
+    let storeAdminRole = await this.prisma.role.findUnique({
+      where: { name: 'STORE_ADMIN' },
+    });
+    if (!storeAdminRole) {
+      storeAdminRole = await this.prisma.role.create({
+        data: { name: 'STORE_ADMIN', description: 'Administrador de almacén de repuestos' },
+      });
+    }
+
+    const newStore = await this.prisma.store.create({
+      data: {
+        name: storeName,
+        nit: cleanNit,
+        phone: storePhone,
+        email: existingUser.email,
+        imageUrl: dto.imageUrl || undefined,
+        locations: {
+          create: {
+            name: `Sede Principal — ${storeCity}`,
+            address: storeAddress,
+            city: storeCity,
+            state: 'Nariño',
+            latitude: dto.latitude ?? 1.2084,
+            longitude: dto.longitude ?? -77.2765,
+            imageUrl: dto.imageUrl || undefined,
+            phone: storePhone,
+            whatsapp: storeWhatsapp,
+          },
+        },
+      },
+      include: { locations: true },
+    });
+
+    // Asignar rol STORE_ADMIN si aún no lo tiene
+    await this.prisma.userRole.upsert({
+      where: {
+        userId_roleId: {
+          userId: existingUser.id,
+          roleId: storeAdminRole.id,
+        },
+      },
+      update: {},
+      create: {
+        userId: existingUser.id,
+        roleId: storeAdminRole.id,
+      },
+    });
+
+    // Asociar el usuario al nuevo almacén
+    const updatedUser = await this.prisma.user.update({
+      where: { id: existingUser.id },
+      data: {
+        storeId: newStore.id,
+        phone: existingUser.phone || storePhone,
+      },
+      include: {
+        store: { include: { locations: true } },
+        roles: { include: { role: true } },
+      },
+    });
+
+    const roles = updatedUser.roles.map((ur) => ur.role.name);
+    const payload = {
+      sub: updatedUser.id,
+      email: updatedUser.email,
+      roles,
+    };
+
+    return {
+      accessToken: this.jwtService.sign(payload),
+      store: newStore,
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        phone: updatedUser.phone,
+        roles,
+        storeId: updatedUser.storeId ?? null,
+        store: updatedUser.store ?? null,
+      },
+    };
+  }
 
   saveStoreImage(file: Express.Multer.File): { imageUrl: string } {
     const uploadsDir = join(process.cwd(), 'uploads');

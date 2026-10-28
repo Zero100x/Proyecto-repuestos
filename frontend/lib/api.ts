@@ -241,6 +241,49 @@ export async function uploadStoreImage(file: File): Promise<{ imageUrl: string }
   });
 }
 
+export async function onboardUserStore(
+  token: string,
+  data: {
+    name: string;
+    nit?: string;
+    phone?: string;
+    whatsapp?: string;
+    address?: string;
+    city?: string;
+    latitude?: number;
+    longitude?: number;
+    imageUrl?: string;
+  },
+): Promise<{
+  accessToken: string;
+  store: Store;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    roles: string[];
+    storeId: string | null;
+    store?: Store | null;
+  };
+}> {
+  const res = await fetch(`${API_BASE}/stores/onboarding`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || 'No se pudo registrar el almacén');
+  }
+  return res.json();
+}
+
 export async function updateStoreProfile(
   token: string,
   storeId: string,

@@ -27,6 +27,52 @@ export class CreateStoreDto {
   imageUrl?: string;
 }
 
+export class OnboardStoreDto {
+  @ApiProperty({ example: 'Autopartes Galeras Pasto' })
+  @IsString()
+  name: string;
+
+  @ApiPropertyOptional({ example: '900123456-7' })
+  @IsString()
+  @IsOptional()
+  nit?: string;
+
+  @ApiPropertyOptional({ example: '+573158001122' })
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @ApiPropertyOptional({ example: '+573158001122' })
+  @IsString()
+  @IsOptional()
+  whatsapp?: string;
+
+  @ApiPropertyOptional({ example: 'Carrera 19 # 14-35, Barrio Julián Bucheli' })
+  @IsString()
+  @IsOptional()
+  address?: string;
+
+  @ApiPropertyOptional({ example: 'Pasto' })
+  @IsString()
+  @IsOptional()
+  city?: string;
+
+  @ApiPropertyOptional({ example: 1.2084 })
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+
+  @ApiPropertyOptional({ example: -77.2765 })
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+}
+
 export class CreateLocationDto {
   @ApiProperty({ description: 'ID del almacén' })
   @IsUUID()

@@ -122,7 +122,7 @@ export class InventoryService {
         include: {
           part: {
             select: {
-              id: true, name: true, brand: true, imageUrl: true,
+              id: true, name: true, brand: true, imageUrl: true, images: true,
               category: { select: { name: true } },
               partNumbers: { select: { number: true, type: true } },
             },
@@ -206,6 +206,17 @@ export class InventoryService {
     const category = await this.prisma.partCategory.findUnique({ where: { id: dto.categoryId } });
     if (!category) throw new BadRequestException('Categoría no válida');
 
+    const cleanImages = (dto.images ?? [])
+      .map((u) => u?.trim())
+      .filter((u): u is string => Boolean(u))
+      .slice(0, 5);
+    const primaryImageUrl = dto.imageUrl?.trim() || cleanImages[0] || null;
+    const galleryImages = cleanImages.length > 0
+      ? cleanImages
+      : primaryImageUrl
+        ? [primaryImageUrl]
+        : [];
+
     // Si el OEM ya existe en el catálogo maestro, reutilizamos el repuesto (normalización)
     if (dto.oemNumber) {
       const existing = await this.prisma.partNumber.findFirst({
@@ -213,10 +224,13 @@ export class InventoryService {
         select: { partId: true },
       });
       if (existing) {
-        if (dto.imageUrl) {
+        if (primaryImageUrl || galleryImages.length > 0) {
           await this.prisma.part.update({
             where: { id: existing.partId },
-            data: { imageUrl: dto.imageUrl },
+            data: {
+              ...(primaryImageUrl ? { imageUrl: primaryImageUrl } : {}),
+              ...(galleryImages.length > 0 ? { images: galleryImages } : {}),
+            },
           });
         }
         const inv = await this.upsertInventory(existing.partId, dto.locationId, dto.condition ?? 'NEW', dto.price, dto.stock);
@@ -235,7 +249,8 @@ export class InventoryService {
           categoryId: dto.categoryId,
           brand: dto.brand?.trim() || null,
           description: dto.description?.trim() || null,
-          imageUrl: dto.imageUrl || null,
+          imageUrl: primaryImageUrl,
+          images: galleryImages,
         },
       });
 
@@ -245,7 +260,80 @@ export class InventoryService {
         });
       }
 
-      let versionIdsToLink: string[] = dto.compatibleVersionIds ? [...dto.compatibleVersionIds] : [];
+      const versionIdsToLink: string[] = dto.compatibleVersionIds ? [...dto.compatibleVersionIds] : [];
+
+      // Si el almacén envió compatibilidades estructuradas (Marca, Modelo, Rango de años, Versión)
+      if (dto.compatibilities && dto.compatibilities.length > 0) {
+        for (const comp of dto.compatibilities) {
+          const makeName = comp.make?.trim();
+          const modelName = comp.model?.trim();
+          if (!makeName || !modelName) continue;
+
+          // Buscar o crear Marca (case-insensitive para evitar duplicados como "renault" vs "Renault")
+          let makeRecord = await tx.vehicleMake.findFirst({
+            where: { name: { equals: makeName, mode: 'insensitive' } },
+          });
+          if (!makeRecord) {
+            makeRecord = await tx.vehicleMake.create({
+              data: { name: makeName },
+            });
+          }
+
+          // Buscar o crear Modelo
+          let modelRecord = await tx.vehicleModel.findFirst({
+            where: {
+              makeId: makeRecord.id,
+              name: { equals: modelName, mode: 'insensitive' },
+            },
+          });
+          if (!modelRecord) {
+            modelRecord = await tx.vehicleModel.create({
+              data: {
+                makeId: makeRecord.id,
+                name: modelName,
+              },
+            });
+          }
+
+          const rawStart = Number(comp.yearFrom) || new Date().getFullYear();
+          const rawEnd = Number(comp.yearTo) || rawStart;
+          const startYear = Math.max(1970, Math.min(2030, Math.min(rawStart, rawEnd)));
+          const endYear = Math.max(startYear, Math.min(2030, Math.min(startYear + 30, Math.max(rawStart, rawEnd))));
+          const versionName = comp.version?.trim() || 'Estándar / Todas';
+
+          for (let yr = startYear; yr <= endYear; yr++) {
+            const yearRecord = await tx.vehicleYear.upsert({
+              where: {
+                modelId_year: {
+                  modelId: modelRecord.id,
+                  year: yr,
+                },
+              },
+              update: {},
+              create: {
+                modelId: modelRecord.id,
+                year: yr,
+              },
+            });
+
+            const versionRecord = await tx.vehicleVersion.upsert({
+              where: {
+                yearId_name: {
+                  yearId: yearRecord.id,
+                  name: versionName,
+                },
+              },
+              update: {},
+              create: {
+                yearId: yearRecord.id,
+                name: versionName,
+              },
+            });
+
+            versionIdsToLink.push(versionRecord.id);
+          }
+        }
+      }
 
       // Auto-detección inteligente por nombre de modelo si no se enviaron versiones manuales
       if (versionIdsToLink.length === 0) {
@@ -267,8 +355,9 @@ export class InventoryService {
       }
 
       if (versionIdsToLink.length) {
+        const uniqueVersionIds = [...new Set(versionIdsToLink)];
         await tx.partCompatibility.createMany({
-          data: versionIdsToLink.map((versionId) => ({ partId: created.id, versionId })),
+          data: uniqueVersionIds.map((versionId) => ({ partId: created.id, versionId })),
           skipDuplicates: true,
         });
       }

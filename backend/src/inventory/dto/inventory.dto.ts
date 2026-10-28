@@ -1,8 +1,33 @@
 import {
-  IsString, IsOptional, IsNumber, IsUUID, IsEnum, IsArray, Min, MinLength,
+  IsString, IsOptional, IsNumber, IsUUID, IsEnum, IsArray, Min, MinLength, ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PartCondition } from '@prisma/client';
+
+export class PartCompatibilityItemDto {
+  @ApiProperty({ example: 'Renault' })
+  @IsString()
+  make: string;
+
+  @ApiProperty({ example: 'Clio' })
+  @IsString()
+  model: string;
+
+  @ApiProperty({ example: 2012 })
+  @IsNumber()
+  yearFrom: number;
+
+  @ApiPropertyOptional({ example: 2020 })
+  @IsNumber()
+  @IsOptional()
+  yearTo?: number;
+
+  @ApiPropertyOptional({ example: '1.6L 16V' })
+  @IsString()
+  @IsOptional()
+  version?: string;
+}
 
 /** Alta rápida de un repuesto nuevo + número OEM + existencia inicial (Sprint 3) */
 export class CreatePartWithStockDto {
@@ -30,6 +55,12 @@ export class CreatePartWithStockDto {
   @IsOptional()
   imageUrl?: string;
 
+  @ApiPropertyOptional({ type: [String], description: 'Galería de URLs de fotos del repuesto (hasta 5)' })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  images?: string[];
+
   @ApiPropertyOptional({ example: '04465-02220' })
   @IsString()
   @IsOptional()
@@ -40,6 +71,13 @@ export class CreatePartWithStockDto {
   @IsUUID('4', { each: true })
   @IsOptional()
   compatibleVersionIds?: string[];
+
+  @ApiPropertyOptional({ type: [PartCompatibilityItemDto], description: 'Vehículos compatibles (Marca, Modelo, Años, Versión)' })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PartCompatibilityItemDto)
+  @IsOptional()
+  compatibilities?: PartCompatibilityItemDto[];
 
   @ApiProperty({ description: 'Sede donde se registra la existencia inicial' })
   @IsUUID()

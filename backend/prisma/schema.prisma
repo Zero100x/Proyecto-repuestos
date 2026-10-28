@@ -208,6 +208,7 @@ model Part {
   brand         String?                         // Marca del repuesto (no del vehículo)
   weight        Float?                          // Peso en kg
   imageUrl      String?   @map("image_url")
+  images        String[]  @default([])
   isActive      Boolean   @default(true) @map("is_active")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")

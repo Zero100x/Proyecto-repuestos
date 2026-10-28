@@ -326,6 +326,7 @@ export class CatalogService {
       storeNames: [...new Set(part.inventory.map((i) => i.location.store.name))],
       isAvailable: part.inventory.length > 0,
       imageUrl: part.imageUrl,
+      images: part.images ?? (part.imageUrl ? [part.imageUrl] : []),
       updatedAt: part.updatedAt.toISOString(),
     };
 

@@ -7,8 +7,9 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery } from '@ne
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { LocationsService } from './locations.service';
-import { CreateStoreDto, CreateLocationDto, UpdateLocationDto } from './dto/locations.dto';
+import { CreateStoreDto, CreateLocationDto, UpdateLocationDto, OnboardStoreDto } from './dto/locations.dto';
 
 @ApiTags('Stores & Locations')
 @Controller()
@@ -29,6 +30,14 @@ export class LocationsController {
   @ApiOperation({ summary: 'Obtener un almacén (Público)' })
   findOneStore(@Param('id', ParseUUIDPipe) id: string) {
     return this.locationsService.findOneStore(id);
+  }
+
+  @Post('stores/onboarding')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Activar y registrar almacén para el usuario actual' })
+  onboardStore(@CurrentUser('id') userId: string, @Body() dto: OnboardStoreDto) {
+    return this.locationsService.onboardStoreForUser(userId, dto);
   }
 
   @Post('stores/upload-image')

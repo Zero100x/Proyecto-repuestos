@@ -3,15 +3,12 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import StoreImageUploader from '../../components/StoreImageUploader';
-import StoreLocationPicker, { StoreLocationValue } from '../../components/StoreLocationPicker';
 
 export default function LoginPage() {
   const router = useRouter();
 
   // Mode: 'login' | 'register'
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [roleType, setRoleType] = useState<'BUYER' | 'STORE_ADMIN'>('BUYER');
 
   // Form Fields
   const [email, setEmail] = useState('');
@@ -19,17 +16,6 @@ export default function LoginPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
-  const [storeName, setStoreName] = useState('');
-  const [storeNit, setStoreNit] = useState('');
-  const [storeImageUrl, setStoreImageUrl] = useState(
-    'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80'
-  );
-  const [storeLocation, setStoreLocation] = useState<StoreLocationValue>({
-    address: 'Carrera 19 # 14-35, Barrio Julián Bucheli',
-    city: 'Pasto',
-    latitude: 1.2084,
-    longitude: -77.2765,
-  });
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -62,14 +48,7 @@ export default function LoginPage() {
               firstName: firstName.trim(),
               lastName: lastName.trim(),
               phone: phone.trim() || undefined,
-              role: roleType,
-              storeName: roleType === 'STORE_ADMIN' ? storeName.trim() : undefined,
-              storeNit: roleType === 'STORE_ADMIN' ? storeNit.trim() || undefined : undefined,
-              storeAddress: roleType === 'STORE_ADMIN' ? storeLocation.address.trim() : undefined,
-              storeCity: roleType === 'STORE_ADMIN' ? storeLocation.city.trim() : undefined,
-              storeLatitude: roleType === 'STORE_ADMIN' ? storeLocation.latitude : undefined,
-              storeLongitude: roleType === 'STORE_ADMIN' ? storeLocation.longitude : undefined,
-              storeImageUrl: roleType === 'STORE_ADMIN' ? storeImageUrl || undefined : undefined,
+              role: 'BUYER',
             };
 
       const res = await fetch(url, {
@@ -90,24 +69,23 @@ export default function LoginPage() {
 
       const authData = await res.json();
       localStorage.setItem('repuestos_token', authData.accessToken || 'token');
-      localStorage.setItem('repuestos_user', JSON.stringify(authData.user || { email, roleType }));
+      localStorage.setItem('repuestos_user', JSON.stringify(authData.user || { email }));
       window.dispatchEvent(new Event('auth-changed'));
 
-      const userRoles: string[] = authData.user?.roles || [roleType];
-      const isStoreOrAdmin =
-        userRoles.includes('STORE_ADMIN') ||
-        userRoles.includes('ADMIN') ||
-        userRoles.includes('PLATFORM_ADMIN') ||
-        Boolean(authData.user?.storeId);
+      const hasActiveStore = Boolean(
+        authData.user?.storeId ||
+        authData.user?.store?.id ||
+        authData.user?.roles?.includes('PLATFORM_ADMIN')
+      );
 
       setSuccessMsg(
         mode === 'login'
-          ? `¡Bienvenido${authData.user?.firstName ? `, ${authData.user.firstName}` : ''}! Redirigiendo a tu panel...`
-          : '¡Cuenta creada con éxito! Redirigiendo...'
+          ? `¡Bienvenido${authData.user?.firstName ? `, ${authData.user.firstName}` : ''}! Redirigiendo...`
+          : '¡Cuenta creada con éxito! Redirigiendo al catálogo...'
       );
 
       setTimeout(() => {
-        if (isStoreOrAdmin) {
+        if (hasActiveStore) {
           router.push('/dashboard');
         } else {
           router.push('/search');
@@ -243,52 +221,6 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* Role Selector Bento (Only visible when Registering) */}
-              {mode === 'register' && (
-                <div className="mb-5 animate-in fade-in duration-200">
-                  <label className="block font-mono text-[11px] text-[var(--secondary)] mb-2 uppercase tracking-wider font-semibold">
-                    Tipo de Cuenta
-                  </label>
-                  <div className="grid grid-cols-2 p-1 bg-[var(--surface-container)] rounded-xl border border-[var(--outline-variant)]">
-                    <button
-                      type="button"
-                      onClick={() => setRoleType('BUYER')}
-                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-heading text-xs font-bold transition-all ${
-                        roleType === 'BUYER'
-                          ? 'bg-white text-[var(--primary)] shadow-sm border border-[var(--outline-variant)]'
-                          : 'text-[var(--secondary)] hover:text-[var(--primary)]'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-base">build</span>
-                      <div className="text-left">
-                        <div>Taller / Comprador</div>
-                        <div className="font-mono text-[9px] text-[var(--secondary)] font-normal hidden sm:block">
-                          Cotiza y retira
-                        </div>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setRoleType('STORE_ADMIN')}
-                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-heading text-xs font-bold transition-all ${
-                        roleType === 'STORE_ADMIN'
-                          ? 'bg-white text-[var(--primary)] shadow-sm border border-[var(--outline-variant)]'
-                          : 'text-[var(--secondary)] hover:text-[var(--primary)]'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-base">store</span>
-                      <div className="text-left">
-                        <div>Almacén Vendedor</div>
-                        <div className="font-mono text-[9px] text-[var(--secondary)] font-normal hidden sm:block">
-                          Inventario y stock
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* Main Form */}
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 {mode === 'register' && (
@@ -322,56 +254,17 @@ export default function LoginPage() {
                       </div>
                     </div>
 
-                    {roleType === 'STORE_ADMIN' && (
-                      <div className="space-y-4 bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-2xl p-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block font-mono text-[11px] text-[var(--secondary)] mb-1 uppercase tracking-wider font-semibold">
-                              Nombre del Almacén *
-                            </label>
-                            <div className="relative">
-                              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[var(--secondary)] text-base pointer-events-none">
-                                storefront
-                              </span>
-                              <input
-                                type="text"
-                                required
-                                value={storeName}
-                                onChange={e => setStoreName(e.target.value)}
-                                placeholder="Ej. Repuestos El Motor del Norte"
-                                className="w-full bg-white border border-[var(--outline-variant)] rounded-xl pl-9 pr-3 py-2 text-xs text-[var(--on-surface)] focus:border-[var(--primary)] outline-none"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block font-mono text-[11px] text-[var(--secondary)] mb-1 uppercase tracking-wider font-semibold">
-                              NIT / Identificación Fiscal
-                            </label>
-                            <input
-                              type="text"
-                              value={storeNit}
-                              onChange={e => setStoreNit(e.target.value)}
-                              placeholder="Ej. 900.123.456-7"
-                              className="w-full bg-white border border-[var(--outline-variant)] rounded-xl px-3 py-2 text-xs text-[var(--on-surface)] focus:border-[var(--primary)] outline-none"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Store Facade Image Uploader */}
-                        <StoreImageUploader
-                          value={storeImageUrl}
-                          onChange={setStoreImageUrl}
-                          storeName={storeName}
-                        />
-
-                        {/* Interactive Map & GPS Coordinates Picker */}
-                        <StoreLocationPicker
-                          value={storeLocation}
-                          onChange={setStoreLocation}
-                        />
+                    <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200/80 flex items-start gap-2.5 text-xs text-slate-700">
+                      <span className="material-symbols-outlined text-base text-[var(--primary)] shrink-0 mt-0.5">
+                        storefront
+                      </span>
+                      <div>
+                        <span className="font-heading font-bold text-[var(--primary)]">
+                          ¿Tienes un almacén de repuestos en Pasto?
+                        </span>{' '}
+                        Al crear tu cuenta única podrás registrar tu almacén desde el menú superior para desbloquear tu Panel de Inventario.
                       </div>
-                    )}
+                    </div>
                   </>
                 )}
 

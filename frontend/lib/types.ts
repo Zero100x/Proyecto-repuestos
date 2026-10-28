@@ -111,6 +111,7 @@ export interface Part {
   brand?: string;
   weight?: number;
   imageUrl?: string;
+  images?: string[];
   isActive: boolean;
   category?: PartCategory;
   partNumbers?: PartNumber[];
@@ -184,6 +185,7 @@ export interface StoreInventoryItem {
     name: string;
     brand?: string;
     imageUrl?: string;
+    images?: string[];
     category?: { name: string; slug?: string };
     partNumbers?: Array<{ number: string; type: string }>;
   };
@@ -209,12 +211,21 @@ export interface BulkUploadReport {
   dryRun: boolean;
 }
 
+export interface PartCompatibilityInput {
+  make: string;
+  model: string;
+  yearFrom: number;
+  yearTo?: number;
+  version?: string;
+}
+
 export interface CreatePartWithStockDto {
   name: string;
   brand?: string;
   categoryId: string;
   description?: string;
   imageUrl?: string;
+  images?: string[];
   oemNumber?: string;
   aftermarketNumbers?: string[];
   locationId: string;
@@ -222,6 +233,7 @@ export interface CreatePartWithStockDto {
   stock: number;
   condition?: PartCondition;
   versionIds?: string[];
+  compatibilities?: PartCompatibilityInput[];
 }
 
 /* ==========================================================================

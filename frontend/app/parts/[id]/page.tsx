@@ -105,11 +105,14 @@ export default function ProductDetailPage() {
     setVoucherModalOpen(true);
   };
 
-  const images = part.imageUrl
-    ? [part.imageUrl, part.imageUrl]
-    : [
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuCtsicmR6RzUGPu9JMuOBUJpnvR-TCle5j7u0JZtSu4_k_hsuVuMYO-iVeGr0lqWApM4KmLhVuCcqE3g7U4HCb_-IfCHe5zL2N2q6C46dYbOAdzdo83kcqSeeEsdycFL8EZ5qWIqycDEovWh8Ad-l7KIvgDBUjkZi-6UBJ2mT6-wNz8G4CjyA0oaePh816PFQtVsd35c3nGr6mI8ut_VMEPc_LIbgzhnIyySUdhkfX8DGonpqeQeofy',
-      ];
+  const images =
+    part.images && part.images.length > 0
+      ? part.images
+      : part.imageUrl
+      ? [part.imageUrl]
+      : [
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuCtsicmR6RzUGPu9JMuOBUJpnvR-TCle5j7u0JZtSu4_k_hsuVuMYO-iVeGr0lqWApM4KmLhVuCcqE3g7U4HCb_-IfCHe5zL2N2q6C46dYbOAdzdo83kcqSeeEsdycFL8EZ5qWIqycDEovWh8Ad-l7KIvgDBUjkZi-6UBJ2mT6-wNz8G4CjyA0oaePh816PFQtVsd35c3nGr6mI8ut_VMEPc_LIbgzhnIyySUdhkfX8DGonpqeQeofy',
+        ];
 
   return (
     <div className="bg-surface text-on-surface min-h-screen flex flex-col antialiased">
@@ -195,7 +198,7 @@ export default function ProductDetailPage() {
                         </div>
                         <div className="text-[var(--secondary)] text-xs mt-0.5 flex items-center gap-1">
                           <span className="material-symbols-outlined text-sm">location_on</span>
-                          {item.location?.address || 'Dirección de la sede'}, {item.location?.city || 'Bogotá'}
+                          {item.location?.address || 'Dirección de la sede'}, {item.location?.city || 'Pasto'}
                         </div>
                       </div>
 

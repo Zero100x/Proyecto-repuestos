@@ -94,18 +94,16 @@ export default function Navbar() {
       : user.name || user.email?.split('@')[0] || 'Mi Cuenta'
     : '';
 
-  const storeName = user?.store?.name || (user?.roles?.includes('STORE_ADMIN') ? 'Almacén' : '');
-
-  const isStoreUser = Boolean(
+  const hasStore = Boolean(
     user && (
-      user.roles?.includes('STORE_ADMIN') ||
-      user.roles?.includes('ADMIN') ||
-      user.roleType === 'STORE' ||
-      (user as any).role === 'STORE' ||
       user.storeId ||
-      user.store
+      user.store?.id ||
+      user.roles?.includes('PLATFORM_ADMIN')
     )
   );
+
+  const storeName = hasStore ? (user?.store?.name || 'Almacén Verificado') : '';
+  const isStoreUser = hasStore;
 
   return (
     <header className="bg-surface fixed top-0 left-0 w-full z-50 border-b border-outline-variant shadow-sm backdrop-blur-md bg-surface/95">
@@ -232,16 +230,35 @@ export default function Navbar() {
                     )}
                   </div>
 
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-primary hover:bg-surface-container transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-base text-secondary">
-                      dashboard
-                    </span>
-                    <span>Panel de Control B2B</span>
-                  </Link>
+                  {isStoreUser ? (
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-primary hover:bg-surface-container transition-colors font-semibold"
+                    >
+                      <span className="material-symbols-outlined text-base text-primary">
+                        inventory_2
+                      </span>
+                      <span>Panel de Inventario</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center justify-between px-4 py-2.5 text-xs text-primary hover:bg-amber-50/70 transition-colors font-semibold"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <span className="material-symbols-outlined text-base text-amber-600">
+                          add_business
+                        </span>
+                        <span>Registrar mi Almacén</span>
+                      </span>
+                      <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 font-mono text-[9px] font-bold rounded flex items-center gap-0.5">
+                        <span className="material-symbols-outlined text-[11px]">lock</span>
+                        B2B
+                      </span>
+                    </Link>
+                  )}
 
                   <Link
                     href="/search"
@@ -338,13 +355,13 @@ export default function Navbar() {
           ))}
 
           <div className="pt-2 border-t border-outline-variant flex flex-col gap-2">
-            {mounted && isStoreUser && (
+            {mounted && user && (
               <Link
                 href="/dashboard"
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full text-center py-2.5 bg-primary text-white rounded font-button text-xs font-bold"
               >
-                Portal Almacén / Publicar
+                {isStoreUser ? 'Panel de Inventario' : 'Registrar mi Almacén'}
               </Link>
             )}
 

@@ -16,6 +16,8 @@ import {
   createStoreLocation,
   fetchCategories,
   uploadPartImage,
+  uploadStoreImage,
+  onboardUserStore,
   fetchStoreLeads,
   fetchStoreLeadStats,
   updateLeadStatus,
@@ -31,6 +33,7 @@ import {
   BulkUploadReport,
   Location,
   CreatePartWithStockDto,
+  PartCompatibilityInput,
   LeadItem,
   LeadStats,
   LeadStatus,
@@ -110,12 +113,37 @@ export default function DashboardPage() {
     condition: 'NEW' as 'NEW' | 'USED' | 'REFURBISHED',
     description: '',
   });
-  const [partImageFile, setPartImageFile] = useState<File | null>(null);
-  const [partImagePreview, setPartImagePreview] = useState<string | null>(null);
+  const [partGallery, setPartGallery] = useState<
+    Array<{ id: string; file?: File; previewUrl: string; name?: string }>
+  >([]);
   const [partImageUrlInput, setPartImageUrlInput] = useState<string>('');
   const [useUrlMode, setUseUrlMode] = useState<boolean>(false);
+  const [partCompatibilities, setPartCompatibilities] = useState<PartCompatibilityInput[]>([]);
+  const [compatDraft, setCompatDraft] = useState({
+    make: 'Renault',
+    customMake: '',
+    model: '',
+    yearFrom: '2012',
+    yearTo: '2022',
+    version: '',
+  });
   const [creatingPart, setCreatingPart] = useState(false);
   const [newPartError, setNewPartError] = useState<string | null>(null);
+
+  // Store Onboarding State (for users without a store yet)
+  const [onboardForm, setOnboardForm] = useState({
+    name: '',
+    nit: '',
+    phone: '',
+    whatsapp: '',
+    address: 'Carrera 19 # 14-35, Barrio Julián Bucheli',
+    city: 'Pasto',
+    latitude: 1.2084,
+    longitude: -77.2765,
+    imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
+  });
+  const [onboardingStore, setOnboardingStore] = useState(false);
+  const [onboardError, setOnboardError] = useState<string | null>(null);
 
   // New Location Form State
   const [newLocForm, setNewLocForm] = useState({
@@ -288,16 +316,64 @@ export default function DashboardPage() {
     [reservationSearch],
   );
 
-  // Trigger loading when token is available or filter changes
+  const hasStore = Boolean(
+    user && (
+      user.storeId ||
+      user.store?.id ||
+      user.roles?.includes('PLATFORM_ADMIN')
+    )
+  );
+
+  // Trigger loading when token is available AND user has an active store
   useEffect(() => {
-    if (token) {
+    if (token && hasStore) {
       loadMetadata(token);
       loadSummary(token);
       loadInventory(token);
       loadLeadsData(token);
       loadReservationsData(token);
     }
-  }, [token, loadMetadata, loadSummary, loadInventory, loadReservationsData]);
+  }, [token, hasStore, loadMetadata, loadSummary, loadInventory, loadReservationsData]);
+
+  // Handle Store Onboarding for accounts without a store yet
+  const handleOnboardStoreSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    if (!onboardForm.name.trim()) {
+      setOnboardError('Ingresa el nombre comercial de tu almacén en Pasto.');
+      return;
+    }
+
+    setOnboardingStore(true);
+    setOnboardError(null);
+    try {
+      const result = await onboardUserStore(token, {
+        name: onboardForm.name.trim(),
+        nit: onboardForm.nit.trim() || undefined,
+        phone: onboardForm.phone.trim() || user?.phone || undefined,
+        whatsapp: onboardForm.whatsapp.trim() || onboardForm.phone.trim() || user?.phone || undefined,
+        address: onboardForm.address.trim() || 'Carrera 19 # 14-35, Barrio Julián Bucheli',
+        city: onboardForm.city.trim() || 'Pasto',
+        latitude: onboardForm.latitude,
+        longitude: onboardForm.longitude,
+        imageUrl: onboardForm.imageUrl || undefined,
+      });
+
+      localStorage.setItem('repuestos_token', result.accessToken);
+      localStorage.setItem('repuestos_user', JSON.stringify(result.user));
+      setToken(result.accessToken);
+      setUser(result.user);
+      window.dispatchEvent(new Event('auth-changed'));
+      showToast(
+        `¡Almacén "${result.store.name}" registrado en Pasto! Tu Panel de Inventario ya está activo.`,
+        'success'
+      );
+    } catch (err: any) {
+      setOnboardError(err.message || 'No se pudo activar tu almacén');
+    } finally {
+      setOnboardingStore(false);
+    }
+  };
 
   // Handle Search Input Debounce
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -422,6 +498,35 @@ export default function DashboardPage() {
     }
   };
 
+  // Helper to add a vehicle compatibility chip
+  const handleAddCompatibilityDraft = () => {
+    const resolvedMake = (compatDraft.make === '__OTHER__' ? compatDraft.customMake : compatDraft.make).trim();
+    const resolvedModel = compatDraft.model.trim();
+    if (!resolvedMake || !resolvedModel) return;
+
+    const yFrom = Number(compatDraft.yearFrom) || 2015;
+    const yTo = Number(compatDraft.yearTo) || yFrom;
+    const newEntry: PartCompatibilityInput = {
+      make: resolvedMake,
+      model: resolvedModel,
+      yearFrom: Math.min(yFrom, yTo),
+      yearTo: Math.max(yFrom, yTo),
+      version: compatDraft.version.trim() || undefined,
+    };
+
+    setPartCompatibilities(prev => {
+      const exists = prev.some(
+        c =>
+          c.make.toLowerCase() === newEntry.make.toLowerCase() &&
+          c.model.toLowerCase() === newEntry.model.toLowerCase() &&
+          c.yearFrom === newEntry.yearFrom &&
+          c.yearTo === newEntry.yearTo
+      );
+      return exists ? prev : [...prev, newEntry];
+    });
+    setCompatDraft(prev => ({ ...prev, model: '', version: '' }));
+  };
+
   // Handle New Part Submission (PDCIRA-13)
   const handleNewPartSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -438,18 +543,51 @@ export default function DashboardPage() {
     setCreatingPart(true);
     setNewPartError(null);
     try {
-      let finalImageUrl: string | undefined = undefined;
-
-      // 1. Subir imagen local si fue seleccionada
-      if (partImageFile) {
-        try {
-          const uploadRes = await uploadPartImage(token, partImageFile);
-          finalImageUrl = uploadRes.url;
-        } catch (imgErr: any) {
-          console.warn('Error subiendo imagen física:', imgErr);
+      // 1. Procesar galería multi-imagen (hasta 5 fotos)
+      const uploadedUrls: string[] = [];
+      for (const item of partGallery.slice(0, 5)) {
+        if (item.file) {
+          try {
+            const uploadRes = await uploadPartImage(token, item.file);
+            if (uploadRes?.url) {
+              uploadedUrls.push(uploadRes.url);
+              continue;
+            }
+          } catch {
+            // Fallback a uploadStoreImage / DataURL
+            const fallbackRes = await uploadStoreImage(item.file);
+            if (fallbackRes?.imageUrl) {
+              uploadedUrls.push(fallbackRes.imageUrl);
+            }
+          }
+        } else if (item.previewUrl) {
+          uploadedUrls.push(item.previewUrl);
         }
-      } else if (partImageUrlInput.trim()) {
-        finalImageUrl = partImageUrlInput.trim();
+      }
+
+      if (partImageUrlInput.trim() && uploadedUrls.length < 5 && !uploadedUrls.includes(partImageUrlInput.trim())) {
+        uploadedUrls.push(partImageUrlInput.trim());
+      }
+
+      const finalCompatibilities = [...partCompatibilities];
+      // Si el usuario escribió un modelo en el borrador pero olvidó darle "+ Agregar", lo incluimos automáticamente
+      const draftMake = (compatDraft.make === '__OTHER__' ? compatDraft.customMake : compatDraft.make).trim();
+      const draftModel = compatDraft.model.trim();
+      if (draftMake && draftModel) {
+        const yFrom = Number(compatDraft.yearFrom) || 2015;
+        const yTo = Number(compatDraft.yearTo) || yFrom;
+        const alreadyIn = finalCompatibilities.some(
+          c => c.make.toLowerCase() === draftMake.toLowerCase() && c.model.toLowerCase() === draftModel.toLowerCase()
+        );
+        if (!alreadyIn) {
+          finalCompatibilities.push({
+            make: draftMake,
+            model: draftModel,
+            yearFrom: Math.min(yFrom, yTo),
+            yearTo: Math.max(yFrom, yTo),
+            version: compatDraft.version.trim() || undefined,
+          });
+        }
       }
 
       const dto: CreatePartWithStockDto = {
@@ -462,12 +600,14 @@ export default function DashboardPage() {
         stock: Number(newPartForm.stock) || 0,
         condition: newPartForm.condition,
         description: newPartForm.description.trim() || undefined,
-        imageUrl: finalImageUrl,
+        imageUrl: uploadedUrls[0] || undefined,
+        images: uploadedUrls.length > 0 ? uploadedUrls : undefined,
+        compatibilities: finalCompatibilities.length > 0 ? finalCompatibilities : undefined,
       };
 
       await createPartWithStock(token, dto);
       const oemLabel = dto.oemNumber ? ` (OEM ${dto.oemNumber})` : '';
-      showToast(`Repuesto "${dto.name}"${oemLabel} registrado y sincronizado`, 'success');
+      showToast(`Repuesto "${dto.name}"${oemLabel} registrado con ${uploadedUrls.length || 1} foto(s) y sincronizado`, 'success');
       setIsNewPartModalOpen(false);
       // Reset form
       setNewPartForm({
@@ -481,8 +621,16 @@ export default function DashboardPage() {
         condition: 'NEW',
         description: '',
       });
-      setPartImageFile(null);
-      setPartImagePreview(null);
+      setPartGallery([]);
+      setPartCompatibilities([]);
+      setCompatDraft({
+        make: 'Renault',
+        customMake: '',
+        model: '',
+        yearFrom: '2012',
+        yearTo: '2022',
+        version: '',
+      });
       setPartImageUrlInput('');
       setUseUrlMode(false);
       loadInventory(token);
@@ -672,12 +820,168 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Store Onboarding / Lock Screen for Authenticated Users WITHOUT a Store */}
+        {token && !hasStore ? (
+          <div className="max-w-4xl mx-auto py-4">
+            <div className="bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded-3xl overflow-hidden shadow-[0_12px_40px_rgba(10,31,68,0.06)]">
+              {/* Top Lock Header Banner */}
+              <div className="bg-[var(--primary)] text-white p-6 sm:p-10 relative overflow-hidden">
+                <div className="absolute -right-10 -top-10 w-64 h-64 rounded-full bg-blue-400/10 blur-3xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 font-mono text-[10px] font-bold border border-amber-300/30 mb-3">
+                      <span className="material-symbols-outlined text-sm">lock</span>
+                      <span>PANEL DE INVENTARIO BLOQUEADO • CUENTA COMPRADOR</span>
+                    </div>
+                    <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">
+                      ¿Tienes un almacén o tienda de repuestos en Pasto?
+                    </h1>
+                    <p className="font-sans text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                      Tu cuenta actual (<strong className="text-white">{user?.email}</strong>) no tiene un almacén registrado. Registra los datos de tu local en <strong>San Juan de Pasto, Nariño</strong> para desbloquear tu Panel de Inventario, publicar repuestos con fotos y aparecer en el Radar Logístico GPS.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row md:flex-col gap-2 shrink-0">
+                    <Link
+                      href="/search"
+                      className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl font-heading text-xs font-bold transition flex items-center justify-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-base">search</span>
+                      <span>Seguir como Comprador</span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 border border-red-400/30 rounded-xl font-heading text-xs font-bold transition flex items-center justify-center gap-1.5"
+                    >
+                      <span className="material-symbols-outlined text-sm">logout</span>
+                      <span>Cerrar Sesión</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Store Activation Form */}
+              <form onSubmit={handleOnboardStoreSubmit} className="p-6 sm:p-10 space-y-6">
+                {onboardError && (
+                  <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 font-sans text-xs flex items-center gap-2">
+                    <span className="material-symbols-outlined text-base text-red-600">error</span>
+                    <span>{onboardError}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                      Nombre Comercial del Almacén *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={onboardForm.name}
+                      onChange={e => setOnboardForm({ ...onboardForm, name: e.target.value })}
+                      placeholder="Ej: Autopartes Galeras Pasto"
+                      className="w-full px-3.5 py-2.5 bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:bg-white focus:border-[var(--primary)] outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                      NIT / RUT Comercial <span className="text-[var(--secondary)] font-normal">(Opcional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={onboardForm.nit}
+                      onChange={e => setOnboardForm({ ...onboardForm, nit: e.target.value })}
+                      placeholder="Ej: 900.412.889-1"
+                      className="w-full px-3.5 py-2.5 bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:bg-white focus:border-[var(--primary)] outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                      WhatsApp de Ventas y Mostrador *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={onboardForm.phone || user?.phone || ''}
+                      onChange={e =>
+                        setOnboardForm({
+                          ...onboardForm,
+                          phone: e.target.value,
+                          whatsapp: e.target.value,
+                        })
+                      }
+                      placeholder="+57 315 800 1122"
+                      className="w-full px-3.5 py-2.5 bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:bg-white focus:border-[var(--primary)] outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Store Facade Photo */}
+                <StoreImageUploader
+                  value={onboardForm.imageUrl}
+                  onChange={url => setOnboardForm({ ...onboardForm, imageUrl: url })}
+                  storeName={onboardForm.name || 'Mi Almacén en Pasto'}
+                />
+
+                {/* Store Location Map Picker in Pasto */}
+                <StoreLocationPicker
+                  value={{
+                    address: onboardForm.address,
+                    city: onboardForm.city,
+                    latitude: onboardForm.latitude,
+                    longitude: onboardForm.longitude,
+                  }}
+                  onChange={locVal =>
+                    setOnboardForm({
+                      ...onboardForm,
+                      address: locVal.address,
+                      city: locVal.city,
+                      latitude: locVal.latitude,
+                      longitude: locVal.longitude,
+                    })
+                  }
+                />
+
+                <div className="pt-4 border-t border-[var(--outline-variant)] flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 text-xs text-[var(--secondary)]">
+                    <span className="material-symbols-outlined text-emerald-600 text-lg">verified</span>
+                    <span>Activación inmediata sin costo • Tu inventario iniciará en 0 unidades listas para operar.</span>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={onboardingStore}
+                    className="w-full sm:w-auto px-6 py-3 bg-[var(--primary)] hover:bg-[var(--primary-container)] text-white rounded-xl font-heading text-xs font-bold transition shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {onboardingStore ? (
+                      <>
+                        <span className="material-symbols-outlined animate-spin text-base">autorenew</span>
+                        <span>Activando tu Almacén...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-base">lock_open</span>
+                        <span>Registrar mi Almacén y Desbloquear Inventario</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        ) : (
+        <>
         {/* Header & Actions */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8 pb-6 border-b border-[var(--outline-variant)]">
           <div>
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-[var(--surface-container)] text-[var(--on-surface-variant)] font-mono text-[10px] mb-2 border border-[var(--outline-variant)]">
               <span className="w-2 h-2 rounded-full bg-[#10b981]"></span>
-              {summary ? `ALMACÉN: ${summary.store.name.toUpperCase()}` : 'PANEL DE CONTROL B2B — REPUESTOS EL MOTOR'}
+              {summary
+                ? `ALMACÉN: ${summary.store.name.toUpperCase()}`
+                : `ALMACÉN: ${(user?.store?.name || 'MI ALMACÉN EN PASTO').toUpperCase()}`}
             </div>
             <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-[var(--primary)] mb-1">
               Gestión de Inventario y Carga Masiva (Sprint 3)
@@ -758,7 +1062,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <div className="font-heading text-3xl font-extrabold text-[var(--primary)] mb-1">
-                {summaryLoading ? '...' : summary?.totalItems ?? 14}
+                {summaryLoading ? '...' : summary?.totalItems ?? 0}
               </div>
               <div className="font-sans text-xs text-[var(--secondary)]">Repuestos registrados en catálogo</div>
             </div>
@@ -776,7 +1080,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <div className="font-heading text-3xl font-extrabold text-[var(--primary)] mb-1">
-                {summaryLoading ? '...' : summary?.totalUnits ?? 184}
+                {summaryLoading ? '...' : summary?.totalUnits ?? 0}
               </div>
               <div className="flex items-center gap-1 font-sans text-xs text-emerald-700 font-medium">
                 <span className="material-symbols-outlined text-sm">check_circle</span>
@@ -797,7 +1101,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <div className="font-heading text-3xl font-extrabold text-[var(--primary)] mb-1">
-                {summaryLoading ? '...' : summary?.lowStock ?? 5}
+                {summaryLoading ? '...' : summary?.lowStock ?? 0}
               </div>
               <div className="font-sans text-xs text-amber-700">Requiere pedido a proveedor</div>
             </div>
@@ -2133,6 +2437,8 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+        </>
+        )}
       </main>
 
       {/* ========================================================================= */}
@@ -2525,78 +2831,268 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Image Upload Section */}
-              <div className="p-3.5 rounded-2xl bg-[var(--surface-container-low)]/50 border border-[var(--outline-variant)]">
-                <div className="flex items-center justify-between mb-2">
+              {/* Vehicle Compatibility Builder (Marca, Modelo, Años, Versión) */}
+              <div className="p-4 rounded-2xl bg-[var(--surface-container-low)]/70 border border-[var(--outline-variant)] space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <label className="font-heading text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-base text-[var(--primary)]">add_a_photo</span>
-                    <span>Fotografía del Repuesto (Opcional)</span>
+                    <span className="material-symbols-outlined text-base text-[var(--primary)]">directions_car</span>
+                    <span>Compatibilidad Vehicular (Marca, Modelo y Años)</span>
+                  </label>
+                  <span className="font-mono text-[10px] text-[var(--secondary)]">
+                    Permite filtrar este repuesto por vehículo en el catálogo
+                  </span>
+                </div>
+
+                {/* Quick-add popular vehicles in Pasto */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-mono text-[10px] text-[var(--secondary)] mr-1">Populares:</span>
+                  {[
+                    { make: 'Renault', model: 'Clio', yearFrom: 2008, yearTo: 2017, version: '1.6L 16V' },
+                    { make: 'Chevrolet', model: 'Spark GT', yearFrom: 2011, yearTo: 2021, version: '1.2L' },
+                    { make: 'Renault', model: 'Logan', yearFrom: 2010, yearTo: 2023, version: '1.6L' },
+                    { make: 'Toyota', model: 'Hilux', yearFrom: 2012, yearTo: 2024, version: '2.4L / 2.8L' },
+                    { make: 'Mazda', model: 'Mazda 3', yearFrom: 2010, yearTo: 2022, version: '2.0L' },
+                    { make: 'Kia', model: 'Picanto', yearFrom: 2012, yearTo: 2023, version: '1.25L' },
+                  ].map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setPartCompatibilities(prev => {
+                          const exists = prev.some(
+                            c => c.make === preset.make && c.model === preset.model && c.yearFrom === preset.yearFrom
+                          );
+                          return exists ? prev : [...prev, preset];
+                        });
+                      }}
+                      className="px-2 py-1 rounded-lg bg-white hover:bg-blue-50 border border-[var(--outline-variant)] hover:border-[var(--primary)] font-mono text-[10px] text-[var(--primary)] transition"
+                    >
+                      + {preset.make} {preset.model} ({preset.yearFrom}-{preset.yearTo})
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Vehicle Compatibility Inputs */}
+                <div className="grid grid-cols-2 sm:grid-cols-12 gap-2 items-end">
+                  <div className="col-span-1 sm:col-span-3">
+                    <label className="block font-mono text-[10px] text-[var(--secondary)] mb-1 uppercase font-semibold">
+                      Marca Auto
+                    </label>
+                    <select
+                      value={compatDraft.make}
+                      onChange={e => setCompatDraft({ ...compatDraft, make: e.target.value })}
+                      className="w-full px-2.5 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                    >
+                      <option value="Renault">Renault</option>
+                      <option value="Chevrolet">Chevrolet</option>
+                      <option value="Toyota">Toyota</option>
+                      <option value="Mazda">Mazda</option>
+                      <option value="Kia">Kia</option>
+                      <option value="Nissan">Nissan</option>
+                      <option value="Hyundai">Hyundai</option>
+                      <option value="Ford">Ford</option>
+                      <option value="Volkswagen">Volkswagen</option>
+                      <option value="Suzuki">Suzuki</option>
+                      <option value="__OTHER__">Otra marca...</option>
+                    </select>
+                  </div>
+
+                  {compatDraft.make === '__OTHER__' && (
+                    <div className="col-span-1 sm:col-span-3">
+                      <label className="block font-mono text-[10px] text-[var(--secondary)] mb-1 uppercase font-semibold">
+                        Escribir Marca
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Subaru"
+                        value={compatDraft.customMake}
+                        onChange={e => setCompatDraft({ ...compatDraft, customMake: e.target.value })}
+                        className="w-full px-2.5 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                      />
+                    </div>
+                  )}
+
+                  <div className={compatDraft.make === '__OTHER__' ? 'col-span-2 sm:col-span-3' : 'col-span-1 sm:col-span-3'}>
+                    <label className="block font-mono text-[10px] text-[var(--secondary)] mb-1 uppercase font-semibold">
+                      Modelo *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Clio / Duster / Aveo"
+                      value={compatDraft.model}
+                      onChange={e => setCompatDraft({ ...compatDraft, model: e.target.value })}
+                      className="w-full px-2.5 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                    />
+                  </div>
+
+                  <div className="col-span-1 sm:col-span-2">
+                    <label className="block font-mono text-[10px] text-[var(--secondary)] mb-1 uppercase font-semibold">
+                      Año Desde
+                    </label>
+                    <input
+                      type="number"
+                      min="1980"
+                      max="2027"
+                      value={compatDraft.yearFrom}
+                      onChange={e => setCompatDraft({ ...compatDraft, yearFrom: e.target.value })}
+                      className="w-full px-2 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)]"
+                    />
+                  </div>
+
+                  <div className="col-span-1 sm:col-span-2">
+                    <label className="block font-mono text-[10px] text-[var(--secondary)] mb-1 uppercase font-semibold">
+                      Año Hasta
+                    </label>
+                    <input
+                      type="number"
+                      min="1980"
+                      max="2027"
+                      value={compatDraft.yearTo}
+                      onChange={e => setCompatDraft({ ...compatDraft, yearTo: e.target.value })}
+                      className="w-full px-2 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)]"
+                    />
+                  </div>
+
+                  <div className="col-span-2 sm:col-span-2">
+                    <button
+                      type="button"
+                      onClick={handleAddCompatibilityDraft}
+                      className="w-full py-2 px-3 bg-[var(--primary)] hover:bg-[var(--primary-container)] text-white rounded-xl font-heading text-xs font-bold transition flex items-center justify-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-sm">add</span>
+                      <span>Agregar</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Selected Vehicle Chips */}
+                {partCompatibilities.length > 0 && (
+                  <div className="pt-2 border-t border-[var(--outline-variant)] flex flex-wrap gap-2">
+                    {partCompatibilities.map((comp, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[var(--primary)] font-heading text-xs font-bold"
+                      >
+                        <span className="material-symbols-outlined text-xs">directions_car</span>
+                        <span>
+                          {comp.make} {comp.model} ({comp.yearFrom}
+                          {comp.yearTo && comp.yearTo !== comp.yearFrom ? `–${comp.yearTo}` : ''})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPartCompatibilities(prev => prev.filter((_, i) => i !== idx))
+                          }
+                          className="ml-1 text-red-500 hover:text-red-700 font-bold"
+                          title="Quitar vehículo"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Multi-Image Gallery Section (Up to 5 Photos) */}
+              <div className="p-4 rounded-2xl bg-[var(--surface-container-low)]/50 border border-[var(--outline-variant)] space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-heading text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base text-[var(--primary)]">collections</span>
+                    <span>Galería de Fotos del Repuesto ({partGallery.length}/5 fotos)</span>
                   </label>
                   <button
                     type="button"
-                    onClick={() => {
-                      setUseUrlMode(!useUrlMode);
-                      setPartImageFile(null);
-                      setPartImagePreview(null);
-                    }}
+                    onClick={() => setUseUrlMode(!useUrlMode)}
                     className="font-mono text-[11px] text-[var(--primary)] font-bold hover:underline"
                   >
-                    {useUrlMode ? '← Subir foto desde mi equipo' : 'O usar enlace URL →'}
+                    {useUrlMode ? '← Subir archivos desde mi equipo' : '+ Agregar foto por enlace URL →'}
                   </button>
                 </div>
 
-                {useUrlMode ? (
-                  <div className="space-y-2">
-                    <input
-                      type="url"
-                      placeholder="https://ejemplo.com/repuestos/bomba-agua.jpg"
-                      value={partImageUrlInput}
-                      onChange={e => {
-                        setPartImageUrlInput(e.target.value);
-                        setPartImagePreview(e.target.value);
-                      }}
-                      className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)]"
-                    />
-                    {partImageUrlInput && (
-                      <div className="flex items-center gap-3 p-2 bg-white rounded-xl border border-[var(--outline-variant)]">
+                {/* Thumbnail Strip if any images added */}
+                {partGallery.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                    {partGallery.map((img, idx) => (
+                      <div
+                        key={img.id}
+                        className={`relative group rounded-xl overflow-hidden border-2 bg-white aspect-square ${
+                          idx === 0 ? 'border-[var(--primary)] shadow-sm' : 'border-[var(--outline-variant)]'
+                        }`}
+                      >
                         <img
-                          src={partImageUrlInput}
-                          alt="Preview"
-                          className="w-14 h-14 object-cover rounded-lg border border-gray-200"
+                          src={img.previewUrl}
+                          alt={img.name || `Foto ${idx + 1}`}
+                          className="w-full h-full object-cover"
                           onError={e => ((e.target as any).src = '/assets/engine.svg')}
                         />
-                        <span className="font-sans text-xs text-[var(--secondary)]">Vista previa desde URL</span>
+                        {idx === 0 ? (
+                          <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-[var(--primary)] text-white font-mono text-[9px] font-bold">
+                            PORTADA
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPartGallery(prev => {
+                                const copy = [...prev];
+                                const [picked] = copy.splice(idx, 1);
+                                return [picked, ...copy];
+                              })
+                            }
+                            className="absolute bottom-1.5 left-1.5 right-1.5 py-0.5 rounded bg-black/70 text-white font-mono text-[9px] font-bold opacity-0 group-hover:opacity-100 transition"
+                          >
+                            Hacer Portada
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPartGallery(prev => prev.filter((_, i) => i !== idx))
+                          }
+                          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shadow hover:bg-red-700"
+                          title="Eliminar esta foto"
+                        >
+                          ✕
+                        </button>
                       </div>
-                    )}
+                    ))}
                   </div>
-                ) : (
-                  <div>
-                    {partImagePreview ? (
-                      <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-[var(--outline-variant)]">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={partImagePreview}
-                            alt="Preview"
-                            className="w-14 h-14 object-cover rounded-lg border border-gray-200"
-                          />
-                          <div>
-                            <p className="font-heading font-bold text-xs text-[var(--primary)]">
-                              {partImageFile?.name || 'Foto seleccionada'}
-                            </p>
-                            <p className="font-mono text-[10px] text-[var(--secondary)]">
-                              {partImageFile ? `${(partImageFile.size / 1024).toFixed(1)} KB` : ''}
-                            </p>
-                          </div>
-                        </div>
+                )}
+
+                {partGallery.length < 5 && (
+                  <>
+                    {useUrlMode ? (
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          placeholder="https://ejemplo.com/repuestos/foto-angulo-2.jpg"
+                          value={partImageUrlInput}
+                          onChange={e => setPartImageUrlInput(e.target.value)}
+                          className="flex-1 px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)]"
+                        />
                         <button
                           type="button"
                           onClick={() => {
-                            setPartImageFile(null);
-                            setPartImagePreview(null);
+                            const clean = partImageUrlInput.trim();
+                            if (!clean) return;
+                            setPartGallery(prev =>
+                              prev.length >= 5
+                                ? prev
+                                : [
+                                    ...prev,
+                                    {
+                                      id: `url-${Date.now()}-${Math.random()}`,
+                                      previewUrl: clean,
+                                      name: 'Imagen por URL',
+                                    },
+                                  ]
+                            );
+                            setPartImageUrlInput('');
                           }}
-                          className="px-2.5 py-1 text-red-600 hover:bg-red-50 rounded-lg font-mono text-xs font-bold transition"
+                          className="px-4 py-2 bg-[var(--primary)] text-white rounded-xl font-heading text-xs font-bold hover:bg-[var(--primary-container)] transition"
                         >
-                          Quitar
+                          Añadir Foto
                         </button>
                       </div>
                     ) : (
@@ -2604,27 +3100,37 @@ export default function DashboardPage() {
                         <input
                           type="file"
                           accept="image/*"
+                          multiple
                           onChange={e => {
-                            if (e.target.files && e.target.files[0]) {
-                              const file = e.target.files[0];
-                              setPartImageFile(file);
-                              setPartImagePreview(URL.createObjectURL(file));
+                            if (e.target.files && e.target.files.length > 0) {
+                              const filesArray = Array.from(e.target.files);
+                              setPartGallery(prev => {
+                                const remaining = 5 - prev.length;
+                                const nextItems = filesArray.slice(0, remaining).map(file => ({
+                                  id: `file-${Date.now()}-${Math.random()}`,
+                                  file,
+                                  previewUrl: URL.createObjectURL(file),
+                                  name: file.name,
+                                }));
+                                return [...prev, ...nextItems];
+                              });
+                              e.target.value = '';
                             }
                           }}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         />
                         <span className="material-symbols-outlined text-2xl text-[var(--secondary)] group-hover:text-[var(--primary)] mb-1">
-                          photo_camera
+                          add_photo_alternate
                         </span>
                         <p className="font-heading font-bold text-xs text-[var(--primary)]">
-                          Selecciona una foto o tómala desde el móvil
+                          Haz clic para subir una o varias fotos del repuesto (hasta 5 imágenes)
                         </p>
                         <p className="font-mono text-[10px] text-[var(--secondary)] mt-0.5">
-                          Formatos admitidos: JPG, PNG, WEBP (Hasta 5MB)
+                          La primera imagen será la portada principal • JPG, PNG, WEBP
                         </p>
                       </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
 

@@ -138,6 +138,7 @@ export interface SearchFilters {
   year?: number;
   version?: string;
   category?: string;
+  store?: string;
   condition?: PartCondition;
   minPrice?: number;
   maxPrice?: number;
@@ -161,6 +162,10 @@ export interface InventorySummary {
   store: {
     id: string;
     name: string;
+    nit?: string;
+    phone?: string;
+    email?: string;
+    imageUrl?: string;
   };
   totalItems: number;
   totalUnits: number;
@@ -184,10 +189,13 @@ export interface StoreInventoryItem {
     id: string;
     name: string;
     brand?: string;
+    categoryId?: string;
+    description?: string;
     imageUrl?: string;
     images?: string[];
-    category?: { name: string; slug?: string };
+    category?: { id?: string; name: string; slug?: string };
     partNumbers?: Array<{ number: string; type: string }>;
+    compatibility?: CompatibilityItem[];
   };
   location: {
     id: string;
@@ -233,6 +241,22 @@ export interface CreatePartWithStockDto {
   stock: number;
   condition?: PartCondition;
   versionIds?: string[];
+  compatibilities?: PartCompatibilityInput[];
+}
+
+export interface UpdatePartAndStockDto {
+  name?: string;
+  brand?: string;
+  categoryId?: string;
+  description?: string;
+  imageUrl?: string;
+  images?: string[];
+  oemNumber?: string;
+  locationId?: string;
+  price?: number;
+  stock?: number;
+  condition?: PartCondition;
+  isAvailable?: boolean;
   compatibilities?: PartCompatibilityInput[];
 }
 

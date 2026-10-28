@@ -222,7 +222,7 @@ export default async function HomePage() {
                       </div>
 
                       <Link
-                        href={`/search?q=${encodeURIComponent(wh.name)}`}
+                        href={`/search?store=${encodeURIComponent(wh.name)}`}
                         className="px-3 py-1.5 bg-surface-container-high hover:bg-primary hover:text-white text-primary text-xs font-heading font-bold rounded transition-colors"
                       >
                         Ver Stock

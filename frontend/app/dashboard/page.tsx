@@ -11,9 +11,12 @@ import {
   downloadCsvTemplate,
   createPartWithStock,
   updateInventoryStock,
+  updateInventoryPartDetails,
   deleteInventoryItem,
   fetchStoreLocations,
   createStoreLocation,
+  updateStoreProfile,
+  updateStoreLocation,
   fetchCategories,
   uploadPartImage,
   uploadStoreImage,
@@ -158,6 +161,53 @@ export default function DashboardPage() {
     whatsapp: '',
   });
   const [creatingLoc, setCreatingLoc] = useState(false);
+
+  // Edit Existing Part Modal State (Implementation #1)
+  const [editingPartItem, setEditingPartItem] = useState<StoreInventoryItem | null>(null);
+  const [editPartForm, setEditPartForm] = useState({
+    name: '',
+    oemNumber: '',
+    brand: '',
+    categoryId: '',
+    locationId: '',
+    price: '',
+    stock: '',
+    condition: 'NEW' as 'NEW' | 'USED' | 'REFURBISHED',
+    description: '',
+  });
+  const [editPartGallery, setEditPartGallery] = useState<
+    Array<{ id: string; file?: File; previewUrl: string; name?: string }>
+  >([]);
+  const [editPartImageUrlInput, setEditPartImageUrlInput] = useState<string>('');
+  const [editUseUrlMode, setEditUseUrlMode] = useState<boolean>(false);
+  const [editPartCompatibilities, setEditPartCompatibilities] = useState<PartCompatibilityInput[]>([]);
+  const [editCompatDraft, setEditCompatDraft] = useState({
+    make: 'Renault',
+    customMake: '',
+    model: '',
+    yearFrom: '2012',
+    yearTo: '2022',
+    version: '',
+  });
+  const [savingPartDetails, setSavingPartDetails] = useState(false);
+  const [editPartError, setEditPartError] = useState<string | null>(null);
+
+  // Edit Existing Sede & Store Profile Modal State (Implementation #2)
+  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [editLocForm, setEditLocForm] = useState({
+    storeName: '',
+    storeNit: '',
+    name: '',
+    address: 'Carrera 19 # 14-35, Barrio Julián Bucheli',
+    city: 'Pasto',
+    state: 'Nariño',
+    latitude: 1.2084,
+    longitude: -77.2765,
+    imageUrl: '',
+    phone: '',
+    whatsapp: '',
+  });
+  const [savingLocEdit, setSavingLocEdit] = useState(false);
 
   // Sprint 4: Leads & Demand Analytics State
   const [leadsList, setLeadsList] = useState<LeadItem[]>([]);
@@ -681,6 +731,267 @@ export default function DashboardPage() {
       showToast(err.message || 'Error al registrar la sede', 'error');
     } finally {
       setCreatingLoc(false);
+    }
+  };
+
+  // Implementation #1: Open & Submit Full Part Edit Modal
+  const openEditPartModal = (item: StoreInventoryItem) => {
+    const oemNum =
+      item.part?.partNumbers?.find(pn => pn.type === 'OEM')?.number ||
+      item.part?.partNumbers?.[0]?.number ||
+      '';
+
+    setEditPartForm({
+      name: item.part?.name || '',
+      oemNumber: oemNum === 'SIN-OEM' ? '' : oemNum,
+      brand: item.part?.brand || '',
+      categoryId: item.part?.categoryId || item.part?.category?.id || categories[0]?.id || '',
+      locationId: item.locationId || item.location?.id || locations[0]?.id || '',
+      price: String(item.price ?? 0),
+      stock: String(item.stock ?? 0),
+      condition: item.condition || 'NEW',
+      description: item.part?.description || '',
+    });
+
+    const rawImages =
+      item.part?.images && item.part.images.length > 0
+        ? item.part.images
+        : item.part?.imageUrl
+        ? [item.part.imageUrl]
+        : [];
+    setEditPartGallery(
+      rawImages.slice(0, 5).map((url, idx) => ({
+        id: `existing-${idx}-${Date.now()}`,
+        previewUrl: url,
+        name: `Foto ${idx + 1}`,
+      })),
+    );
+    setEditPartImageUrlInput('');
+    setEditUseUrlMode(false);
+
+    // Group existing CompatibilityItem[] by Make + Model into clean { make, model, yearFrom, yearTo } chips
+    const groupedMap = new Map<string, { make: string; model: string; years: number[]; version?: string }>();
+    for (const c of item.part?.compatibility || []) {
+      const makeName = c.version?.year?.model?.make?.name;
+      const modelName = c.version?.year?.model?.name;
+      const yearNum = c.version?.year?.year;
+      if (!makeName || !modelName || !yearNum) continue;
+      const key = `${makeName.toLowerCase()}|${modelName.toLowerCase()}`;
+      if (!groupedMap.has(key)) {
+        groupedMap.set(key, {
+          make: makeName,
+          model: modelName,
+          years: [yearNum],
+          version: c.version?.name,
+        });
+      } else {
+        groupedMap.get(key)!.years.push(yearNum);
+      }
+    }
+    const groupedChips: PartCompatibilityInput[] = Array.from(groupedMap.values()).map(g => ({
+      make: g.make,
+      model: g.model,
+      yearFrom: Math.min(...g.years),
+      yearTo: Math.max(...g.years),
+      version: g.version,
+    }));
+    setEditPartCompatibilities(groupedChips);
+    setEditCompatDraft({
+      make: 'Renault',
+      customMake: '',
+      model: '',
+      yearFrom: '2012',
+      yearTo: '2022',
+      version: '',
+    });
+    setEditPartError(null);
+    setEditingPartItem(item);
+  };
+
+  const handleAddEditCompatibilityDraft = () => {
+    const resolvedMake = (editCompatDraft.make === '__OTHER__' ? editCompatDraft.customMake : editCompatDraft.make).trim();
+    const resolvedModel = editCompatDraft.model.trim();
+    if (!resolvedMake || !resolvedModel) return;
+
+    const yFrom = Number(editCompatDraft.yearFrom) || 2015;
+    const yTo = Number(editCompatDraft.yearTo) || yFrom;
+    const newEntry: PartCompatibilityInput = {
+      make: resolvedMake,
+      model: resolvedModel,
+      yearFrom: Math.min(yFrom, yTo),
+      yearTo: Math.max(yFrom, yTo),
+      version: editCompatDraft.version.trim() || undefined,
+    };
+
+    setEditPartCompatibilities(prev => {
+      const exists = prev.some(
+        c =>
+          c.make.toLowerCase() === newEntry.make.toLowerCase() &&
+          c.model.toLowerCase() === newEntry.model.toLowerCase() &&
+          c.yearFrom === newEntry.yearFrom &&
+          c.yearTo === newEntry.yearTo
+      );
+      return exists ? prev : [...prev, newEntry];
+    });
+    setEditCompatDraft(prev => ({ ...prev, model: '', version: '' }));
+  };
+
+  const handleEditPartSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !editingPartItem) return;
+
+    if (!editPartForm.name.trim()) {
+      setEditPartError('El nombre de la pieza es obligatorio.');
+      return;
+    }
+
+    setSavingPartDetails(true);
+    setEditPartError(null);
+    try {
+      const uploadedUrls: string[] = [];
+      for (const item of editPartGallery.slice(0, 5)) {
+        if (item.file) {
+          try {
+            const uploadRes = await uploadPartImage(token, item.file);
+            if (uploadRes?.url) {
+              uploadedUrls.push(uploadRes.url);
+              continue;
+            }
+          } catch {
+            const fallbackRes = await uploadStoreImage(item.file);
+            if (fallbackRes?.imageUrl) {
+              uploadedUrls.push(fallbackRes.imageUrl);
+            }
+          }
+        } else if (item.previewUrl) {
+          uploadedUrls.push(item.previewUrl);
+        }
+      }
+
+      if (editPartImageUrlInput.trim() && uploadedUrls.length < 5 && !uploadedUrls.includes(editPartImageUrlInput.trim())) {
+        uploadedUrls.push(editPartImageUrlInput.trim());
+      }
+
+      const finalCompatibilities = [...editPartCompatibilities];
+      const draftMake = (editCompatDraft.make === '__OTHER__' ? editCompatDraft.customMake : editCompatDraft.make).trim();
+      const draftModel = editCompatDraft.model.trim();
+      if (draftMake && draftModel) {
+        const yFrom = Number(editCompatDraft.yearFrom) || 2015;
+        const yTo = Number(editCompatDraft.yearTo) || yFrom;
+        const alreadyIn = finalCompatibilities.some(
+          c => c.make.toLowerCase() === draftMake.toLowerCase() && c.model.toLowerCase() === draftModel.toLowerCase()
+        );
+        if (!alreadyIn) {
+          finalCompatibilities.push({
+            make: draftMake,
+            model: draftModel,
+            yearFrom: Math.min(yFrom, yTo),
+            yearTo: Math.max(yFrom, yTo),
+            version: editCompatDraft.version.trim() || undefined,
+          });
+        }
+      }
+
+      await updateInventoryPartDetails(token, editingPartItem.id, {
+        name: editPartForm.name.trim(),
+        oemNumber: editPartForm.oemNumber.trim(),
+        brand: editPartForm.brand.trim(),
+        categoryId: editPartForm.categoryId || undefined,
+        locationId: editPartForm.locationId || undefined,
+        price: Number(editPartForm.price) || 0,
+        stock: Number(editPartForm.stock) || 0,
+        condition: editPartForm.condition,
+        description: editPartForm.description.trim(),
+        imageUrl: uploadedUrls[0] || '',
+        images: uploadedUrls,
+        compatibilities: finalCompatibilities,
+      });
+
+      showToast(
+        `Ficha de "${editPartForm.name.trim()}" actualizada (${uploadedUrls.length} foto(s), ${finalCompatibilities.length} vehículo(s)) y sincronizada en Meilisearch`,
+        'success'
+      );
+      setEditingPartItem(null);
+      loadInventory(token);
+      loadSummary(token);
+    } catch (err: any) {
+      setEditPartError(err.message || 'No se pudo actualizar la ficha del repuesto');
+    } finally {
+      setSavingPartDetails(false);
+    }
+  };
+
+  // Implementation #2: Open & Submit Sede + Store Profile Edit Modal
+  const openEditLocationModal = (loc: Location) => {
+    setEditLocForm({
+      storeName: summary?.store?.name || user?.store?.name || loc.store?.name || '',
+      storeNit: summary?.store?.nit || user?.store?.nit || loc.store?.nit || '',
+      name: loc.name || '',
+      address: loc.address || 'Carrera 19 # 14-35, Barrio Julián Bucheli',
+      city: loc.city || 'Pasto',
+      state: loc.state || 'Nariño',
+      latitude: Number(loc.latitude) || 1.2084,
+      longitude: Number(loc.longitude) || -77.2765,
+      imageUrl:
+        loc.imageUrl ||
+        summary?.store?.imageUrl ||
+        loc.store?.imageUrl ||
+        'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
+      phone: loc.phone || summary?.store?.phone || user?.phone || '',
+      whatsapp: loc.whatsapp || loc.phone || user?.phone || '',
+    });
+    setEditingLocation(loc);
+  };
+
+  const handleEditLocationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !editingLocation) return;
+
+    setSavingLocEdit(true);
+    try {
+      const storeId = user?.storeId || summary?.store?.id || editingLocation.storeId;
+      await updateStoreLocation(token, editingLocation.id, {
+        name: editLocForm.name.trim() || 'Sede Principal',
+        address: editLocForm.address.trim(),
+        city: editLocForm.city.trim() || 'Pasto',
+        state: editLocForm.state.trim() || 'Nariño',
+        latitude: editLocForm.latitude,
+        longitude: editLocForm.longitude,
+        imageUrl: editLocForm.imageUrl || undefined,
+        phone: editLocForm.phone.trim() || undefined,
+        whatsapp: editLocForm.whatsapp.trim() || editLocForm.phone.trim() || undefined,
+      });
+
+      if (storeId && editLocForm.storeName.trim()) {
+        const updatedStore = await updateStoreProfile(token, storeId, {
+          name: editLocForm.storeName.trim(),
+          nit: editLocForm.storeNit.trim() || undefined,
+          phone: editLocForm.phone.trim() || undefined,
+          imageUrl: editLocForm.imageUrl || undefined,
+        });
+        if (user) {
+          const nextUser = {
+            ...user,
+            store: { ...(user.store || {}), ...updatedStore },
+          };
+          setUser(nextUser);
+          localStorage.setItem('repuestos_user', JSON.stringify(nextUser));
+          window.dispatchEvent(new Event('auth-changed'));
+        }
+      }
+
+      showToast(
+        `Sede "${editLocForm.name.trim()}" y perfil del almacén actualizados en el mapa de Pasto`,
+        'success'
+      );
+      setEditingLocation(null);
+      loadMetadata(token);
+      loadSummary(token);
+      loadInventory(token);
+    } catch (err: any) {
+      showToast(err.message || 'Error al actualizar los datos de la sede', 'error');
+    } finally {
+      setSavingLocEdit(false);
     }
   };
 
@@ -1311,13 +1622,21 @@ export default function DashboardPage() {
                                 <div className="font-heading font-bold text-[var(--primary)] text-sm">
                                   {item.part?.name}
                                 </div>
-                                <div className="flex items-center gap-2 mt-0.5">
+                                <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                                   <span className="font-mono text-[10px] bg-[var(--surface-container)] text-[var(--primary)] font-bold px-1.5 py-0.5 rounded border border-[var(--outline-variant)]">
                                     OEM: {oemPartNumber}
                                   </span>
                                   <span className="font-mono text-[10px] text-[var(--secondary)]">
                                     {item.condition}
                                   </span>
+                                  <span className="font-mono text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">
+                                    {item.part?.images?.length || (item.part?.imageUrl ? 1 : 0)} foto(s)
+                                  </span>
+                                  {item.part?.compatibility && item.part.compatibility.length > 0 && (
+                                    <span className="font-mono text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200">
+                                      ✓ Vehículo compatible
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -1429,9 +1748,18 @@ export default function DashboardPage() {
                               <div className="flex items-center justify-end gap-1">
                                 <button
                                   type="button"
+                                  onClick={() => openEditPartModal(item)}
+                                  className="px-2.5 py-1.5 bg-[var(--primary)]/10 hover:bg-[var(--primary)] text-[var(--primary)] hover:text-white border border-[var(--primary)]/30 rounded-lg font-heading text-[11px] font-bold transition flex items-center gap-1"
+                                  title="Editar ficha técnica, galería de fotos y compatibilidad vehicular"
+                                >
+                                  <span className="material-symbols-outlined text-sm">edit_note</span>
+                                  <span className="hidden xl:inline">Editar Ficha</span>
+                                </button>
+                                <button
+                                  type="button"
                                   onClick={() => startEdit(item)}
                                   className="p-1.5 border border-[var(--outline-variant)] text-[var(--primary)] rounded-lg hover:bg-white hover:border-[var(--primary)] transition"
-                                  title="Editar stock o precio"
+                                  title="Edición rápida de stock o precio"
                                 >
                                   <span className="material-symbols-outlined text-sm">edit</span>
                                 </button>
@@ -1563,6 +1891,16 @@ export default function DashboardPage() {
                         <span>WhatsApp: {loc.whatsapp}</span>
                       </div>
                     )}
+                    <div className="pt-2 mt-1 border-t border-[var(--outline-variant)]/60 flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openEditLocationModal(loc)}
+                        className="w-full py-2 px-3 bg-[var(--surface-container-low)] hover:bg-[var(--primary)] text-[var(--primary)] hover:text-white border border-[var(--outline-variant)] rounded-xl font-heading text-xs font-bold transition flex items-center justify-center gap-1.5"
+                      >
+                        <span className="material-symbols-outlined text-sm">edit_location_alt</span>
+                        <span>Editar Sede / Foto y Pin GPS</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -3268,6 +3606,643 @@ export default function DashboardPage() {
                   className="px-5 py-2 bg-[var(--primary)] hover:bg-[var(--primary-container)] text-white rounded-xl font-heading text-xs font-bold transition shadow-sm"
                 >
                   {creatingLoc ? 'Guardando...' : 'Crear Sede'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: EDITAR FICHA TÉCNICA, GALERÍA MULTI-IMAGEN Y VEHÍCULOS           */}
+      {/* ========================================================================= */}
+      {editingPartItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl border border-[var(--outline-variant)] shadow-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-6 sm:p-8">
+            <div className="flex justify-between items-start mb-6 pb-4 border-b border-[var(--outline-variant)]">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-blue-50 text-[var(--primary)] rounded-xl border border-blue-200">
+                  <span className="material-symbols-outlined text-2xl">edit_note</span>
+                </div>
+                <div>
+                  <h3 className="font-heading text-lg sm:text-xl font-extrabold text-[var(--primary)]">
+                    Editar Ficha Técnica, Galería y Vehículos
+                  </h3>
+                  <p className="font-sans text-xs text-[var(--secondary)]">
+                    Actualiza hasta 5 fotos, compatibilidad vehicular (Marca/Modelo/Años) y existencias en tiempo real.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingPartItem(null)}
+                className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleEditPartSubmit} className="space-y-4">
+              {editPartError && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 font-sans text-xs">
+                  {editPartError}
+                </div>
+              )}
+
+              {/* Part Name */}
+              <div>
+                <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                  Nombre de la Pieza *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editPartForm.name}
+                  onChange={e => setEditPartForm({ ...editPartForm, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                />
+              </div>
+
+              {/* OEM Number & Brand */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                    Número OEM Principal <span className="text-[var(--secondary)] font-normal text-[11px]">(Opcional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: 7700434177"
+                    value={editPartForm.oemNumber}
+                    onChange={e => setEditPartForm({ ...editPartForm, oemNumber: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)] uppercase"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                    Marca del Fabricante
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Renault / Gabriel / Bosch"
+                    value={editPartForm.brand}
+                    onChange={e => setEditPartForm({ ...editPartForm, brand: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                  />
+                </div>
+              </div>
+
+              {/* Category & Condition */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                    Categoría del Sistema *
+                  </label>
+                  <select
+                    value={editPartForm.categoryId}
+                    onChange={e => setEditPartForm({ ...editPartForm, categoryId: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                  >
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                    Condición de la Pieza
+                  </label>
+                  <select
+                    value={editPartForm.condition}
+                    onChange={e => setEditPartForm({ ...editPartForm, condition: e.target.value as any })}
+                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                  >
+                    <option value="NEW">Nuevo (Original / Aftermarket)</option>
+                    <option value="REFURBISHED">Remanufacturado</option>
+                    <option value="USED">Usado Verificado</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Price & Stock */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                    Precio de Venta COP *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="500"
+                    value={editPartForm.price}
+                    onChange={e => setEditPartForm({ ...editPartForm, price: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                    Stock Físico (Unidades) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={editPartForm.stock}
+                    onChange={e => setEditPartForm({ ...editPartForm, stock: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                    Sede Física
+                  </label>
+                  <select
+                    value={editPartForm.locationId}
+                    onChange={e => setEditPartForm({ ...editPartForm, locationId: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                  >
+                    {locations.map(loc => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.name} ({loc.city})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Vehicle Compatibility Builder */}
+              <div className="p-4 rounded-2xl bg-[var(--surface-container-low)]/70 border border-[var(--outline-variant)] space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <label className="font-heading text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base text-[var(--primary)]">directions_car</span>
+                    <span>Compatibilidad Vehicular (Marca, Modelo y Años)</span>
+                  </label>
+                  <span className="font-mono text-[10px] text-[var(--secondary)]">
+                    Sincronizado con el filtro de vehículo del buscador
+                  </span>
+                </div>
+
+                {/* Quick-add popular vehicles */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-mono text-[10px] text-[var(--secondary)] mr-1">Añadir rápido:</span>
+                  {[
+                    { make: 'Renault', model: 'Clio', yearFrom: 2001, yearTo: 2016, version: '1.6L 16V' },
+                    { make: 'Chevrolet', model: 'Spark GT', yearFrom: 2011, yearTo: 2021, version: '1.2L' },
+                    { make: 'Renault', model: 'Logan', yearFrom: 2010, yearTo: 2023, version: '1.6L' },
+                    { make: 'Toyota', model: 'Hilux', yearFrom: 2012, yearTo: 2024, version: '2.4L / 2.8L' },
+                    { make: 'Mazda', model: 'Mazda 3', yearFrom: 2010, yearTo: 2022, version: '2.0L' },
+                    { make: 'Kia', model: 'Picanto', yearFrom: 2012, yearTo: 2023, version: '1.25L' },
+                  ].map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setEditPartCompatibilities(prev => {
+                          const exists = prev.some(
+                            c => c.make === preset.make && c.model === preset.model
+                          );
+                          return exists ? prev : [...prev, preset];
+                        });
+                      }}
+                      className="px-2 py-1 rounded-lg bg-white hover:bg-blue-50 border border-[var(--outline-variant)] hover:border-[var(--primary)] font-mono text-[10px] text-[var(--primary)] transition"
+                    >
+                      + {preset.make} {preset.model} ({preset.yearFrom}-{preset.yearTo})
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Vehicle Compatibility Inputs */}
+                <div className="grid grid-cols-2 sm:grid-cols-12 gap-2 items-end">
+                  <div className="col-span-1 sm:col-span-3">
+                    <label className="block font-mono text-[10px] text-[var(--secondary)] mb-1 uppercase font-semibold">
+                      Marca Auto
+                    </label>
+                    <select
+                      value={editCompatDraft.make}
+                      onChange={e => setEditCompatDraft({ ...editCompatDraft, make: e.target.value })}
+                      className="w-full px-2.5 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                    >
+                      <option value="Renault">Renault</option>
+                      <option value="Chevrolet">Chevrolet</option>
+                      <option value="Toyota">Toyota</option>
+                      <option value="Mazda">Mazda</option>
+                      <option value="Kia">Kia</option>
+                      <option value="Nissan">Nissan</option>
+                      <option value="Hyundai">Hyundai</option>
+                      <option value="Ford">Ford</option>
+                      <option value="Volkswagen">Volkswagen</option>
+                      <option value="Suzuki">Suzuki</option>
+                      <option value="__OTHER__">Otra marca...</option>
+                    </select>
+                  </div>
+
+                  {editCompatDraft.make === '__OTHER__' && (
+                    <div className="col-span-1 sm:col-span-3">
+                      <label className="block font-mono text-[10px] text-[var(--secondary)] mb-1 uppercase font-semibold">
+                        Escribir Marca
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Subaru"
+                        value={editCompatDraft.customMake}
+                        onChange={e => setEditCompatDraft({ ...editCompatDraft, customMake: e.target.value })}
+                        className="w-full px-2.5 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                      />
+                    </div>
+                  )}
+
+                  <div className={editCompatDraft.make === '__OTHER__' ? 'col-span-2 sm:col-span-3' : 'col-span-1 sm:col-span-3'}>
+                    <label className="block font-mono text-[10px] text-[var(--secondary)] mb-1 uppercase font-semibold">
+                      Modelo
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Clio / Duster"
+                      value={editCompatDraft.model}
+                      onChange={e => setEditCompatDraft({ ...editCompatDraft, model: e.target.value })}
+                      className="w-full px-2.5 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                    />
+                  </div>
+
+                  <div className="col-span-1 sm:col-span-2">
+                    <label className="block font-mono text-[10px] text-[var(--secondary)] mb-1 uppercase font-semibold">
+                      Desde
+                    </label>
+                    <input
+                      type="number"
+                      min="1980"
+                      max="2027"
+                      value={editCompatDraft.yearFrom}
+                      onChange={e => setEditCompatDraft({ ...editCompatDraft, yearFrom: e.target.value })}
+                      className="w-full px-2 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)]"
+                    />
+                  </div>
+
+                  <div className="col-span-1 sm:col-span-2">
+                    <label className="block font-mono text-[10px] text-[var(--secondary)] mb-1 uppercase font-semibold">
+                      Hasta
+                    </label>
+                    <input
+                      type="number"
+                      min="1980"
+                      max="2027"
+                      value={editCompatDraft.yearTo}
+                      onChange={e => setEditCompatDraft({ ...editCompatDraft, yearTo: e.target.value })}
+                      className="w-full px-2 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)]"
+                    />
+                  </div>
+
+                  <div className="col-span-2 sm:col-span-2">
+                    <button
+                      type="button"
+                      onClick={handleAddEditCompatibilityDraft}
+                      className="w-full py-2 px-3 bg-[var(--primary)] hover:bg-[var(--primary-container)] text-white rounded-xl font-heading text-xs font-bold transition flex items-center justify-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-sm">add</span>
+                      <span>Agregar</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Selected Vehicle Chips */}
+                {editPartCompatibilities.length > 0 && (
+                  <div className="pt-2 border-t border-[var(--outline-variant)] flex flex-wrap gap-2">
+                    {editPartCompatibilities.map((comp, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[var(--primary)] font-heading text-xs font-bold"
+                      >
+                        <span className="material-symbols-outlined text-xs">directions_car</span>
+                        <span>
+                          {comp.make} {comp.model} ({comp.yearFrom}
+                          {comp.yearTo && comp.yearTo !== comp.yearFrom ? `–${comp.yearTo}` : ''})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditPartCompatibilities(prev => prev.filter((_, i) => i !== idx))
+                          }
+                          className="ml-1 text-red-500 hover:text-red-700 font-bold"
+                          title="Quitar vehículo"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Multi-Image Gallery Section (Up to 5 Photos) */}
+              <div className="p-4 rounded-2xl bg-[var(--surface-container-low)]/50 border border-[var(--outline-variant)] space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-heading text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base text-[var(--primary)]">collections</span>
+                    <span>Galería de Fotos ({editPartGallery.length}/5 fotos)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setEditUseUrlMode(!editUseUrlMode)}
+                    className="font-mono text-[11px] text-[var(--primary)] font-bold hover:underline"
+                  >
+                    {editUseUrlMode ? '← Subir archivos desde mi equipo' : '+ Agregar foto por enlace URL →'}
+                  </button>
+                </div>
+
+                {editPartGallery.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                    {editPartGallery.map((img, idx) => (
+                      <div
+                        key={img.id}
+                        className={`relative group rounded-xl overflow-hidden border-2 bg-white aspect-square ${
+                          idx === 0 ? 'border-[var(--primary)] shadow-sm' : 'border-[var(--outline-variant)]'
+                        }`}
+                      >
+                        <img
+                          src={img.previewUrl}
+                          alt={img.name || `Foto ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={e => ((e.target as any).src = '/assets/engine.svg')}
+                        />
+                        {idx === 0 ? (
+                          <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-[var(--primary)] text-white font-mono text-[9px] font-bold">
+                            PORTADA
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditPartGallery(prev => {
+                                const copy = [...prev];
+                                const [picked] = copy.splice(idx, 1);
+                                return [picked, ...copy];
+                              })
+                            }
+                            className="absolute bottom-1.5 left-1.5 right-1.5 py-0.5 rounded bg-black/70 text-white font-mono text-[9px] font-bold opacity-0 group-hover:opacity-100 transition"
+                          >
+                            Hacer Portada
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditPartGallery(prev => prev.filter((_, i) => i !== idx))
+                          }
+                          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shadow hover:bg-red-700"
+                          title="Eliminar esta foto"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {editPartGallery.length < 5 && (
+                  <>
+                    {editUseUrlMode ? (
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          placeholder="https://ejemplo.com/repuestos/foto-angulo-2.jpg"
+                          value={editPartImageUrlInput}
+                          onChange={e => setEditPartImageUrlInput(e.target.value)}
+                          className="flex-1 px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const clean = editPartImageUrlInput.trim();
+                            if (!clean) return;
+                            setEditPartGallery(prev =>
+                              prev.length >= 5
+                                ? prev
+                                : [
+                                    ...prev,
+                                    {
+                                      id: `url-${Date.now()}-${Math.random()}`,
+                                      previewUrl: clean,
+                                      name: 'Imagen por URL',
+                                    },
+                                  ]
+                            );
+                            setEditPartImageUrlInput('');
+                          }}
+                          className="px-4 py-2 bg-[var(--primary)] text-white rounded-xl font-heading text-xs font-bold hover:bg-[var(--primary-container)] transition"
+                        >
+                          Añadir Foto
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="border border-dashed border-[var(--outline-variant)] hover:border-[var(--primary)] rounded-xl p-4 text-center cursor-pointer relative bg-white transition group">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={e => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              const filesArray = Array.from(e.target.files);
+                              setEditPartGallery(prev => {
+                                const remaining = 5 - prev.length;
+                                const nextItems = filesArray.slice(0, remaining).map(file => ({
+                                  id: `file-${Date.now()}-${Math.random()}`,
+                                  file,
+                                  previewUrl: URL.createObjectURL(file),
+                                  name: file.name,
+                                }));
+                                return [...prev, ...nextItems];
+                              });
+                              e.target.value = '';
+                            }
+                          }}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <span className="material-symbols-outlined text-2xl text-[var(--secondary)] group-hover:text-[var(--primary)] mb-1">
+                          add_photo_alternate
+                        </span>
+                        <p className="font-heading font-bold text-xs text-[var(--primary)]">
+                          Haz clic para subir más fotos del repuesto (hasta 5 imágenes)
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                  Descripción / Notas Técnicas
+                </label>
+                <textarea
+                  rows={2}
+                  value={editPartForm.description}
+                  onChange={e => setEditPartForm({ ...editPartForm, description: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4 border-t border-[var(--outline-variant)]">
+                <button
+                  type="button"
+                  onClick={() => setEditingPartItem(null)}
+                  className="px-4 py-2 border border-[var(--outline-variant)] rounded-xl font-heading text-xs font-bold hover:bg-gray-100 transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingPartDetails}
+                  className="px-5 py-2 bg-[var(--primary)] hover:bg-[var(--primary-container)] text-white rounded-xl font-heading text-xs font-bold transition shadow-sm disabled:opacity-50 flex items-center gap-2"
+                >
+                  {savingPartDetails && <span className="material-symbols-outlined animate-spin text-sm">autorenew</span>}
+                  <span>Guardar Cambios y Sincronizar</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 5: EDITAR SEDE Y PERFIL DEL ALMACÉN EN PASTO                        */}
+      {/* ========================================================================= */}
+      {editingLocation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-[var(--outline-variant)] shadow-2xl max-w-2xl w-full p-6 sm:p-8 my-8 max-h-[92vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-6 pb-4 border-b border-[var(--outline-variant)]">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200">
+                  <span className="material-symbols-outlined text-2xl">edit_location_alt</span>
+                </div>
+                <div>
+                  <h3 className="font-heading text-lg font-extrabold text-[var(--primary)]">
+                    Editar Perfil del Almacén y Ubicación GPS en Pasto
+                  </h3>
+                  <p className="font-sans text-xs text-[var(--secondary)] mt-0.5">
+                    Actualiza el nombre comercial, foto de fachada, WhatsApp y pin GPS de tu sede.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingLocation(null)}
+                className="p-1 text-gray-400 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleEditLocationSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                    Nombre Comercial del Almacén *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editLocForm.storeName}
+                    onChange={e => setEditLocForm({ ...editLocForm, storeName: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                    NIT / RUT Comercial <span className="text-[var(--secondary)] font-normal">(Opcional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editLocForm.storeNit}
+                    onChange={e => setEditLocForm({ ...editLocForm, storeNit: e.target.value })}
+                    placeholder="Ej: 900.412.889-1"
+                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                    Nombre de la Sede *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editLocForm.name}
+                    onChange={e => setEditLocForm({ ...editLocForm, name: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                    Teléfono de Mostrador
+                  </label>
+                  <input
+                    type="text"
+                    value={editLocForm.phone}
+                    onChange={e => setEditLocForm({ ...editLocForm, phone: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                    WhatsApp Despachos
+                  </label>
+                  <input
+                    type="text"
+                    value={editLocForm.whatsapp}
+                    onChange={e => setEditLocForm({ ...editLocForm, whatsapp: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)]"
+                  />
+                </div>
+              </div>
+
+              <StoreImageUploader
+                value={editLocForm.imageUrl}
+                onChange={url => setEditLocForm({ ...editLocForm, imageUrl: url })}
+                storeName={editLocForm.storeName || editLocForm.name}
+              />
+
+              <StoreLocationPicker
+                value={{
+                  address: editLocForm.address,
+                  city: editLocForm.city,
+                  latitude: editLocForm.latitude,
+                  longitude: editLocForm.longitude,
+                }}
+                onChange={locVal =>
+                  setEditLocForm({
+                    ...editLocForm,
+                    address: locVal.address,
+                    city: locVal.city,
+                    latitude: locVal.latitude,
+                    longitude: locVal.longitude,
+                  })
+                }
+              />
+
+              <div className="flex gap-3 justify-end pt-4 border-t border-[var(--outline-variant)]">
+                <button
+                  type="button"
+                  onClick={() => setEditingLocation(null)}
+                  className="px-4 py-2 border border-[var(--outline-variant)] rounded-xl font-heading text-xs font-bold hover:bg-gray-100 transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingLocEdit}
+                  className="px-5 py-2 bg-[var(--primary)] hover:bg-[var(--primary-container)] text-white rounded-xl font-heading text-xs font-bold transition shadow-sm flex items-center gap-2 disabled:opacity-50"
+                >
+                  {savingLocEdit && <span className="material-symbols-outlined animate-spin text-sm">autorenew</span>}
+                  <span>Guardar Cambios de Sede y Almacén</span>
                 </button>
               </div>
             </form>

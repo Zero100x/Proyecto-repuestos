@@ -635,7 +635,7 @@ export default function StoresDirectoryPage() {
                     <div className="border-t border-gray-100 pt-3 flex items-center justify-between flex-wrap gap-3">
                       <div className="flex items-center gap-2.5 flex-wrap">
                         <Link
-                          href={`/search?q=${encodeURIComponent(store.name)}`}
+                          href={`/search?store=${encodeURIComponent(store.name)}`}
                           onClick={e => e.stopPropagation()}
                           className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-gray-800 transition-colors shadow-xs"
                         >

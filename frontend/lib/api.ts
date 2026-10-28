@@ -8,6 +8,7 @@ import {
   InventorySummary,
   BulkUploadReport,
   CreatePartWithStockDto,
+  UpdatePartAndStockDto,
   LeadItem,
   LeadStats,
   LeadStatus,
@@ -46,6 +47,7 @@ export async function fetchParts(filters: SearchFilters = {}): Promise<{ data: P
     if (filters.year && Number.isFinite(filters.year)) params.append('year', String(filters.year));
     if (filters.version) params.append('version', filters.version);
     if (filters.category) params.append('category', filters.category);
+    if (filters.store) params.append('store', filters.store);
     if (filters.condition) params.append('condition', filters.condition);
     if (filters.minPrice !== undefined && Number.isFinite(filters.minPrice)) params.append('minPrice', String(filters.minPrice));
     if (filters.maxPrice !== undefined && Number.isFinite(filters.maxPrice)) params.append('maxPrice', String(filters.maxPrice));
@@ -101,6 +103,10 @@ export async function fetchParts(filters: SearchFilters = {}): Promise<{ data: P
     filtered = filtered.filter(
       p => p.category?.slug === filters.category || p.categoryId === filters.category
     );
+  }
+
+  if (filters.store) {
+    filtered = filtered.filter(p => p.storeNames?.includes(filters.store!));
   }
 
   if (filters.condition) {
@@ -495,6 +501,32 @@ export async function updateInventoryStock(
   if (!res.ok) {
     const errorJson = await res.json().catch(() => ({}));
     throw new Error(errorJson.message || `Error ${res.status}: Fallo al actualizar stock`);
+  }
+  return res.json();
+}
+
+export async function updateInventoryPartDetails(
+  token: string,
+  inventoryId: string,
+  dto: UpdatePartAndStockDto,
+  storeId?: string,
+): Promise<{ message: string; partId: string }> {
+  const url = storeId
+    ? `${API_BASE}/inventory/${inventoryId}/details?storeId=${storeId}`
+    : `${API_BASE}/inventory/${inventoryId}/details`;
+
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(dto),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.message || `Error ${res.status}: Fallo al actualizar ficha del repuesto`);
   }
   return res.json();
 }

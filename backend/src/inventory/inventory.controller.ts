@@ -23,7 +23,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { InventoryService, AuthUser } from './inventory.service';
-import { CreatePartWithStockDto, UpdateStockDto } from './dto/inventory.dto';
+import { CreatePartWithStockDto, UpdateStockDto, UpdatePartAndStockDto } from './dto/inventory.dto';
 
 @ApiTags('Inventory Management (B2B)')
 @ApiBearerAuth()
@@ -150,6 +150,18 @@ export class InventoryController {
     @Query('storeId') storeId?: string,
   ) {
     return this.inventoryService.createPartWithStock(user, dto, storeId);
+  }
+
+  @Put(':id/details')
+  @ApiOperation({ summary: 'Actualizar ficha técnica completa, fotos, compatibilidad y stock de un repuesto' })
+  @ApiQuery({ name: 'storeId', required: false })
+  updatePartDetails(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdatePartAndStockDto,
+    @Query('storeId') storeId?: string,
+  ) {
+    return this.inventoryService.updateInventoryDetails(user, id, dto, storeId);
   }
 
   @Put(':id')

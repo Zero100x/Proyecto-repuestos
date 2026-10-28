@@ -9,7 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { parseCsv, slugify } from './csv.util';
 import {
-  CreatePartWithStockDto, UpdateStockDto, BulkUploadReport, BulkUploadRowError,
+  CreatePartWithStockDto, UpdateStockDto, UpdatePartAndStockDto, BulkUploadReport, BulkUploadRowError,
 } from './dto/inventory.dto';
 
 export interface AuthUser {
@@ -122,9 +122,24 @@ export class InventoryService {
         include: {
           part: {
             select: {
-              id: true, name: true, brand: true, imageUrl: true, images: true,
-              category: { select: { name: true } },
+              id: true, name: true, brand: true, categoryId: true, description: true, imageUrl: true, images: true,
+              category: { select: { id: true, name: true } },
               partNumbers: { select: { number: true, type: true } },
+              compatibility: {
+                include: {
+                  version: {
+                    include: {
+                      year: {
+                        include: {
+                          model: {
+                            include: { make: true },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
             },
           },
           location: { select: { id: true, name: true, city: true } },
@@ -146,7 +161,10 @@ export class InventoryService {
       this.prisma.inventory.count({ where: { ...base, stock: { gt: 0, lt: LOW_STOCK_THRESHOLD } } }),
       this.prisma.inventory.aggregate({ where: base, _sum: { stock: true } }),
       this.prisma.location.count({ where: { storeId: sid, isActive: true } }),
-      this.prisma.store.findUnique({ where: { id: sid }, select: { id: true, name: true } }),
+      this.prisma.store.findUnique({
+        where: { id: sid },
+        select: { id: true, name: true, nit: true, phone: true, email: true, imageUrl: true },
+      }),
     ]);
 
     return {
@@ -181,6 +199,143 @@ export class InventoryService {
     });
     await this.safeSync([updated.partId]);
     return updated;
+  }
+
+  async updateInventoryDetails(
+    user: AuthUser,
+    inventoryId: string,
+    dto: UpdatePartAndStockDto,
+    storeId?: string,
+  ) {
+    const sid = this.resolveStoreId(user, storeId);
+    const inv = await this.prisma.inventory.findUnique({
+      where: { id: inventoryId },
+      include: { location: { select: { storeId: true } } },
+    });
+    if (!inv) throw new NotFoundException('Registro de inventario no encontrado');
+    if (inv.location.storeId !== sid) {
+      throw new ForbiddenException('No puedes editar inventario de otro almacén');
+    }
+
+    if (dto.locationId && dto.locationId !== inv.locationId) {
+      await this.assertLocationInStore(dto.locationId, sid);
+    }
+
+    const cleanImages = (dto.images ?? [])
+      .map((u) => u?.trim())
+      .filter((u): u is string => Boolean(u))
+      .slice(0, 5);
+    const primaryImageUrl =
+      dto.imageUrl !== undefined
+        ? dto.imageUrl?.trim() || cleanImages[0] || null
+        : cleanImages.length > 0
+        ? cleanImages[0]
+        : undefined;
+
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Actualizar datos de Part
+      await tx.part.update({
+        where: { id: inv.partId },
+        data: {
+          ...(dto.name?.trim() ? { name: dto.name.trim() } : {}),
+          ...(dto.brand !== undefined ? { brand: dto.brand.trim() || null } : {}),
+          ...(dto.categoryId ? { categoryId: dto.categoryId } : {}),
+          ...(dto.description !== undefined ? { description: dto.description.trim() || null } : {}),
+          ...(primaryImageUrl !== undefined ? { imageUrl: primaryImageUrl } : {}),
+          ...(dto.images !== undefined ? { images: cleanImages } : {}),
+        },
+      });
+
+      // 2. Actualizar o crear Número OEM si se envió
+      if (dto.oemNumber !== undefined) {
+        const cleanOem = dto.oemNumber.trim();
+        await tx.partNumber.deleteMany({
+          where: { partId: inv.partId, type: 'OEM' },
+        });
+        if (cleanOem) {
+          await tx.partNumber.create({
+            data: { partId: inv.partId, number: cleanOem, type: 'OEM' },
+          });
+        }
+      }
+
+      // 3. Si se envió arreglo de compatibilidades vehiculares, reemplazarlas
+      if (dto.compatibilities !== undefined) {
+        await tx.partCompatibility.deleteMany({
+          where: { partId: inv.partId },
+        });
+
+        const versionIdsToLink: string[] = [];
+        for (const comp of dto.compatibilities) {
+          const makeName = comp.make?.trim();
+          const modelName = comp.model?.trim();
+          if (!makeName || !modelName) continue;
+
+          let makeRecord = await tx.vehicleMake.findFirst({
+            where: { name: { equals: makeName, mode: 'insensitive' } },
+          });
+          if (!makeRecord) {
+            makeRecord = await tx.vehicleMake.create({ data: { name: makeName } });
+          }
+
+          let modelRecord = await tx.vehicleModel.findFirst({
+            where: {
+              makeId: makeRecord.id,
+              name: { equals: modelName, mode: 'insensitive' },
+            },
+          });
+          if (!modelRecord) {
+            modelRecord = await tx.vehicleModel.create({
+              data: { makeId: makeRecord.id, name: modelName },
+            });
+          }
+
+          const rawStart = Number(comp.yearFrom) || new Date().getFullYear();
+          const rawEnd = Number(comp.yearTo) || rawStart;
+          const startYear = Math.max(1970, Math.min(2030, Math.min(rawStart, rawEnd)));
+          const endYear = Math.max(startYear, Math.min(2030, Math.min(startYear + 30, Math.max(rawStart, rawEnd))));
+          const versionName = comp.version?.trim() || 'Estándar / Todas';
+
+          for (let yr = startYear; yr <= endYear; yr++) {
+            const yearRecord = await tx.vehicleYear.upsert({
+              where: { modelId_year: { modelId: modelRecord.id, year: yr } },
+              update: {},
+              create: { modelId: modelRecord.id, year: yr },
+            });
+
+            const versionRecord = await tx.vehicleVersion.upsert({
+              where: { yearId_name: { yearId: yearRecord.id, name: versionName } },
+              update: {},
+              create: { yearId: yearRecord.id, name: versionName },
+            });
+
+            versionIdsToLink.push(versionRecord.id);
+          }
+        }
+
+        if (versionIdsToLink.length > 0) {
+          const uniqueVersionIds = [...new Set(versionIdsToLink)];
+          await tx.partCompatibility.createMany({
+            data: uniqueVersionIds.map((versionId) => ({ partId: inv.partId, versionId })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      // 4. Actualizar registro de inventario (precio, stock, condición, sede)
+      await tx.inventory.update({
+        where: { id: inventoryId },
+        data: {
+          ...(dto.price !== undefined ? { price: dto.price } : {}),
+          ...(dto.stock !== undefined ? { stock: dto.stock, isAvailable: dto.stock > 0 } : {}),
+          ...(dto.condition ? { condition: dto.condition } : {}),
+          ...(dto.locationId ? { locationId: dto.locationId } : {}),
+        },
+      });
+    });
+
+    await this.safeSync([inv.partId]);
+    return { message: 'Ficha de repuesto e inventario actualizados', partId: inv.partId };
   }
 
   async removeInventory(user: AuthUser, inventoryId: string, storeId?: string) {

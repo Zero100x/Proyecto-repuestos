@@ -18,6 +18,7 @@ function SearchContent() {
   const yearParam = searchParams.get('year') ? Number(searchParams.get('year')) : undefined;
   const versionParam = searchParams.get('version') || '';
   const categoryParam = searchParams.get('category') || '';
+  const storeParam = searchParams.get('store') || '';
   const conditionParam = (searchParams.get('condition') as PartCondition) || undefined;
   const minPriceParam = searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined;
   const maxPriceParam = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined;
@@ -76,6 +77,7 @@ function SearchContent() {
       year: yearParam,
       version: versionParam,
       category: categoryParam,
+      store: storeParam,
       condition: conditionParam,
       minPrice: minPriceParam,
       maxPrice: maxPriceParam,
@@ -92,6 +94,7 @@ function SearchContent() {
     yearParam,
     versionParam,
     categoryParam,
+    storeParam,
     conditionParam,
     minPriceParam,
     maxPriceParam,
@@ -401,10 +404,14 @@ function SearchContent() {
               <div>
                 <div className="inline-flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full font-mono text-[10px] uppercase font-bold text-[var(--primary-fixed)] mb-1 border border-white/10">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
-                  RED CENTRALIZADA DE ALMACENES
+                  {storeParam ? `CATÁLOGO DE ALMACÉN: ${storeParam.toUpperCase()}` : 'RED CENTRALIZADA DE ALMACENES'}
                 </div>
                 <h1 className="font-heading text-lg sm:text-2xl font-bold tracking-tight">
-                  {queryParam ? `Resultados para "${queryParam}"` : 'Catálogo de Repuestos y Autopartes'}
+                  {queryParam
+                    ? `Resultados para "${queryParam}"`
+                    : storeParam
+                    ? `Inventario de ${storeParam}`
+                    : 'Catálogo de Repuestos y Autopartes'}
                 </h1>
                 <p className="font-sans text-xs text-gray-300 mt-0.5">
                   {loading ? 'Consultando almacenes...' : `${totalHits} repuestos disponibles con retiro presencial o despacho`}
@@ -419,9 +426,18 @@ function SearchContent() {
           </div>
 
           {/* Active Filters Row */}
-          {(queryParam || makeParam || categoryParam || conditionParam) && (
+          {(queryParam || makeParam || categoryParam || storeParam || conditionParam) && (
             <div className="flex flex-wrap gap-2 items-center">
               <span className="font-mono text-xs text-[var(--secondary)] mr-1">Filtros activos:</span>
+              {storeParam && (
+                <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-300 px-3 py-1 rounded-full font-mono text-xs font-bold text-emerald-900">
+                  <span className="material-symbols-outlined text-[15px] text-emerald-600">storefront</span>
+                  Almacén: {storeParam}
+                  <button onClick={() => clearFilter('store')} className="hover:text-red-500 ml-0.5">
+                    <span className="material-symbols-outlined text-[14px]">close</span>
+                  </button>
+                </span>
+              )}
               {queryParam && (
                 <span className="inline-flex items-center gap-1 bg-[var(--surface-container-high)] border border-[var(--outline-variant)] px-3 py-1 rounded-full font-mono text-xs text-[var(--on-surface)]">
                   Búsqueda: {queryParam}

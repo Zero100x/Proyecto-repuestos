@@ -20,6 +20,7 @@ export class SearchController {
   @ApiQuery({ name: 'version', required: false, description: 'Versión/trim del vehículo' })
   @ApiQuery({ name: 'category', required: false, description: 'Slug de categoría' })
   @ApiQuery({ name: 'condition', required: false, description: 'Condición: NEW, USED, REFURBISHED' })
+  @ApiQuery({ name: 'store', required: false, description: 'Nombre del almacén para filtrar su catálogo' })
   @ApiQuery({ name: 'minPrice', required: false, type: Number })
   @ApiQuery({ name: 'maxPrice', required: false, type: Number })
   @ApiQuery({ name: 'sortBy', required: false, description: 'Campo de ordenamiento: price, name, updatedAt' })
@@ -34,6 +35,7 @@ export class SearchController {
     @Query('version') version?: string,
     @Query('category') category?: string,
     @Query('condition') condition?: string,
+    @Query('store') store?: string,
     @Query('minPrice') minPrice?: number,
     @Query('maxPrice') maxPrice?: number,
     @Query('sortBy') sortBy?: string,
@@ -43,7 +45,7 @@ export class SearchController {
   ) {
     const result = await this.meilisearch.searchParts({
       query, make, model, year, version,
-      category, condition, minPrice, maxPrice,
+      category, condition, store, minPrice, maxPrice,
       sortBy, sortOrder, page, limit,
     });
 

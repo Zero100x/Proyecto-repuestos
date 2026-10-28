@@ -113,6 +113,73 @@ export class UpdateStockDto {
   stock?: number;
 }
 
+export class UpdatePartAndStockDto {
+  @ApiPropertyOptional({ example: 'Pastillas de freno delanteras cerámicas' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({ description: 'ID de la categoría' })
+  @IsUUID()
+  @IsOptional()
+  categoryId?: string;
+
+  @ApiPropertyOptional({ example: 'Brembo' })
+  @IsString()
+  @IsOptional()
+  brand?: string;
+
+  @ApiPropertyOptional({ example: 'Pastillas de alto rendimiento' })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({ example: '04465-02220' })
+  @IsString()
+  @IsOptional()
+  oemNumber?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  images?: string[];
+
+  @ApiPropertyOptional({ type: [PartCompatibilityItemDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PartCompatibilityItemDto)
+  @IsOptional()
+  compatibilities?: PartCompatibilityItemDto[];
+
+  @ApiPropertyOptional({ example: 90000 })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  price?: number;
+
+  @ApiPropertyOptional({ example: 8 })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  stock?: number;
+
+  @ApiPropertyOptional({ enum: PartCondition })
+  @IsEnum(PartCondition)
+  @IsOptional()
+  condition?: PartCondition;
+
+  @ApiPropertyOptional()
+  @IsUUID()
+  @IsOptional()
+  locationId?: string;
+}
+
 export interface BulkUploadRowError {
   row: number;
   message: string;

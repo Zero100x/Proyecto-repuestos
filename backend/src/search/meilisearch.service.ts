@@ -158,6 +158,7 @@ export class MeilisearchService implements OnModuleInit {
     version?: string;
     category?: string;
     condition?: string;
+    store?: string;
     minPrice?: number;
     maxPrice?: number;
     sortBy?: string;
@@ -168,7 +169,7 @@ export class MeilisearchService implements OnModuleInit {
     const query = params.query || '';
     const {
       make, model, year, version,
-      category, condition,
+      category, condition, store,
       minPrice, maxPrice,
       sortBy, sortOrder = 'asc',
     } = params;
@@ -185,6 +186,7 @@ export class MeilisearchService implements OnModuleInit {
     if (version && typeof version === 'string' && version.trim()) filters.push(`versions = "${version.trim()}"`);
     if (category && typeof category === 'string' && category.trim()) filters.push(`categorySlug = "${category.trim()}"`);
     if (condition && typeof condition === 'string' && condition.trim()) filters.push(`conditions = "${condition.trim()}"`);
+    if (store && typeof store === 'string' && store.trim()) filters.push(`storeNames = "${store.trim()}"`);
     if (minPrice !== undefined && minPrice !== null && Number.isFinite(Number(minPrice))) filters.push(`minPrice >= ${Number(minPrice)}`);
     if (maxPrice !== undefined && maxPrice !== null && Number.isFinite(Number(maxPrice))) filters.push(`maxPrice <= ${Number(maxPrice)}`);
 

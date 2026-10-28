@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AutoPart Pro - Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;family=Inter:wght@400;500&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#00081e",
+                        "surface-container-highest": "#e4e1e5",
+                        "on-tertiary-container": "#e35f00",
+                        "on-error-container": "#93000a",
+                        "outline": "#75777f",
+                        "primary-fixed": "#d9e2ff",
+                        "tertiary": "#160400",
+                        "surface-container": "#f0edf1",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#3c1400",
+                        "inverse-surface": "#303033",
+                        "primary-container": "#0a1f44",
+                        "surface": "#fbf8fc",
+                        "on-background": "#1b1b1e",
+                        "on-primary-container": "#7687b2",
+                        "inverse-on-surface": "#f3f0f4",
+                        "surface-container-low": "#f6f2f7",
+                        "tertiary-fixed-dim": "#ffb693",
+                        "on-primary-fixed": "#041a3f",
+                        "surface-container-high": "#eae7eb",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffdbcc",
+                        "on-tertiary": "#ffffff",
+                        "background": "#fbf8fc",
+                        "surface-dim": "#dcd9dd",
+                        "surface-variant": "#e4e1e5",
+                        "secondary": "#535f72",
+                        "on-secondary-fixed-variant": "#3c475a",
+                        "primary-fixed-dim": "#b4c6f4",
+                        "error": "#ba1a1a",
+                        "surface-bright": "#fbf8fc",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#596578",
+                        "secondary-fixed-dim": "#bbc7dd",
+                        "on-surface": "#1b1b1e",
+                        "inverse-primary": "#b4c6f4",
+                        "on-tertiary-fixed-variant": "#7a3000",
+                        "on-primary-fixed-variant": "#34466d",
+                        "surface-tint": "#4c5e86",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#c5c6cf",
+                        "on-surface-variant": "#44464e",
+                        "on-secondary-fixed": "#101c2c",
+                        "secondary-fixed": "#d7e3fa",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#d7e3fa",
+                        "on-tertiary-fixed": "#351000"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "64px",
+                        "base-unit": "8px",
+                        "container-max-width": "1280px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["JetBrains Mono"],
+                        "button": ["Hanken Grotesk"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "title-md": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "button": ["14px", { "lineHeight": "20px", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "title-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .hero-pattern {
+            background-color: #fbf8fc;
+            background-image: radial-gradient(#e4e1e5 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased pt-[72px]">
+<!-- TopNavBar -->
+<nav class="bg-surface dark:bg-primary-container fixed top-0 w-full z-50 border-b border-outline-variant dark:border-outline">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 max-w-container-max-width mx-auto">
+<div class="flex items-center gap-gutter">
+<a class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-bold text-primary dark:text-primary-fixed" href="#">AutoPart Pro</a>
+<div class="hidden md:flex gap-gutter ml-8">
+<a class="text-primary dark:text-primary-fixed-dim border-b-2 border-primary dark:border-primary-fixed-dim pb-1 font-label-sm text-label-sm" href="#">Marketplace</a>
+<a class="text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 font-label-sm text-label-sm" href="#">My Garage</a>
+<a class="text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200 font-label-sm text-label-sm" href="#">Orders</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden md:flex items-center gap-2 bg-primary text-on-primary font-button text-button px-4 py-2 rounded-DEFAULT opacity-100 hover:opacity-80 transition-all active:scale-95">
+                    List a Part
+                </button>
+<button class="hidden md:block text-secondary hover:text-primary font-button text-button px-4 py-2 transition-colors duration-200">
+                    Notifications
+                </button>
+<button class="text-secondary hover:text-primary transition-colors duration-200">
+<span class="material-symbols-outlined">shopping_cart</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden border border-outline-variant">
+<img alt="User profile avatar with status indicator" class="w-full h-full object-cover" data-alt="A clean, modern user avatar portrait of an industrial mechanic wearing a clean uniform in a brightly lit professional setting. High-key lighting, corporate modern aesthetic, solid white background with a subtle drop shadow." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIln9JFls21WJfSSuhBqSqjIgmuCiirUtQbuOCpd4BbelUXuUciMHOjmUZgAcaEq0mZu9qzKhbH4x4-xU9aUGETnN92kTWuVE5U2chniimFrG2sGiQBG5WLKkfqrw6HjWZ-9mXILXWk1BqKOJTeT0Sg2Ds7nESOPKkQR6hbyaTnBlsPBSnihwMRn3JG6tbuoF62vxbIZ_4GHNynYpRE_lfVISZ2IZtf22zWCVNynoa2AkS5mJsrP0p"/>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="w-full flex flex-col items-center">
+<!-- Hero Section -->
+<section class="w-full hero-pattern border-b border-outline-variant py-16 md:py-24 px-margin-mobile md:px-margin-desktop">
+<div class="max-w-container-max-width mx-auto flex flex-col items-center text-center">
+<h1 class="font-display-lg text-display-lg text-primary mb-4 max-w-3xl">Precision Parts for Professional Grade Systems.</h1>
+<p class="font-body-lg text-body-lg text-secondary mb-12 max-w-2xl">Search millions of OEM and aftermarket components with guaranteed compatibility.</p>
+<!-- Central Search Module (Bento/Glassmorphism inspired) -->
+<div class="w-full max-w-4xl bg-surface-container-lowest border border-outline-variant shadow-[0_4px_20px_rgba(10,31,68,0.08)] rounded-xl p-6 md:p-8">
+<form class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+<div class="flex flex-col gap-2 text-left">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase">Marca</label>
+<select class="w-full border border-outline-variant bg-surface text-on-surface rounded-DEFAULT px-4 py-3 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<option>Select Brand</option>
+<option>Toyota</option>
+<option>Ford</option>
+<option>Volkswagen</option>
+</select>
+</div>
+<div class="flex flex-col gap-2 text-left">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase">Modelo</label>
+<select class="w-full border border-outline-variant bg-surface text-on-surface rounded-DEFAULT px-4 py-3 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<option>Select Model</option>
+</select>
+</div>
+<div class="flex flex-col gap-2 text-left">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase">Año</label>
+<select class="w-full border border-outline-variant bg-surface text-on-surface rounded-DEFAULT px-4 py-3 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<option>Select Year</option>
+</select>
+</div>
+<div class="flex flex-col gap-2 text-left">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase">Versión</label>
+<select class="w-full border border-outline-variant bg-surface text-on-surface rounded-DEFAULT px-4 py-3 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<option>Select Version</option>
+</select>
+</div>
+<div class="md:col-span-4 mt-2">
+<button class="w-full bg-primary text-on-primary font-button text-button py-4 rounded-lg flex justify-center items-center gap-2 hover:opacity-90 transition-opacity" type="button">
+<span class="material-symbols-outlined">search</span>
+                                Buscar Repuestos
+                            </button>
+</div>
+</form>
+</div>
+</div>
+</section>
+<!-- Popular Categories -->
+<section class="w-full max-w-container-max-width mx-auto px-margin-mobile md:px-margin-desktop py-16">
+<h2 class="font-title-md text-title-md text-primary mb-8 border-b border-outline-variant pb-2">Categorías Populares</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Category Card 1 -->
+<div class="group bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-[0_4px_20px_rgba(10,31,68,0.08)] transition-all cursor-pointer">
+<div class="h-48 bg-surface-container flex items-center justify-center p-4">
+<img class="object-contain h-full w-full opacity-90 group-hover:scale-105 transition-transform duration-300" data-alt="A pristine, highly detailed 3D render of a modern automotive engine block resting on a clean white laboratory table. Corporate modern aesthetic, crisp lighting, metallic textures gleaming against a pure white background. Minimalist industrial design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCblWWa8hGpCYoMzYPfJciMCn9ozIE8WyMevFLNDkWIWri4hNTB7NUOVDGN35HFq--TgqYPB1-tF0INbVwgeaYYkpvhhtMR6MraNSf0waj4NPE8C66GIF1NoKWfqtW8ovWR3tU6O_9J4uiIvtUn8e1kHaERqeu3OOMqJgRbYY5o7DRr6F6WjGD8SwToyv6fpcDAnPX-La2d0mSXHRFEXMwY3H3MwcS6BLY05Fc0t7bVA0kdJRolM5C4"/>
+</div>
+<div class="p-6 border-t border-outline-variant flex justify-between items-center">
+<div>
+<h3 class="font-title-md text-title-md text-primary">Motor</h3>
+<p class="font-label-sm text-label-sm text-secondary mt-1">Componentes internos y bloques</p>
+</div>
+<span class="material-symbols-outlined text-secondary">arrow_forward</span>
+</div>
+</div>
+<!-- Category Card 2 -->
+<div class="group bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-[0_4px_20px_rgba(10,31,68,0.08)] transition-all cursor-pointer">
+<div class="h-48 bg-surface-container flex items-center justify-center p-4">
+<img class="object-contain h-full w-full opacity-90 group-hover:scale-105 transition-transform duration-300" data-alt="A high-resolution product shot of a premium ceramic brake caliper and drilled rotor assembly. Clean white studio background, dramatic studio lighting highlighting the metallic gray finish and precision engineering. Corporate modern style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1n78KYMjDi50iCUbTedtgdVFqCuzyLwBtMmLkwKfr8oNHUU1kTZybJJRRFHujysqABJeBcW0e_8GrcDB0iujxO-D94-BE39q1lPoRt0qMpYUGsR6f8bA-oAO3FTiWLkVcMKrNSmonP0s20J2dMJcQTzcMf-B8nAzfRICkzHEwesaHBicy-IxFCvZJuDtcokDHu6EWlfxQciTsMSmj_cwdMlgCnrwctl0wwaRofI7qfo2vVXqRc1HK"/>
+</div>
+<div class="p-6 border-t border-outline-variant flex justify-between items-center">
+<div>
+<h3 class="font-title-md text-title-md text-primary">Frenos</h3>
+<p class="font-label-sm text-label-sm text-secondary mt-1">Discos, pastillas y calipers</p>
+</div>
+<span class="material-symbols-outlined text-secondary">arrow_forward</span>
+</div>
+</div>
+<!-- Category Card 3 -->
+<div class="group bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-[0_4px_20px_rgba(10,31,68,0.08)] transition-all cursor-pointer">
+<div class="h-48 bg-surface-container flex items-center justify-center p-4">
+<img class="object-contain h-full w-full opacity-90 group-hover:scale-105 transition-transform duration-300" data-alt="A sleek, modern LED automotive headlight assembly photographed in a clean, white minimalist setting. The light emits a cool, technical glow. Corporate modern aesthetic, emphasizing technological advancement and precision manufacturing." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoCqlJqptbHcXi5VnUxNz_M7kLs_SfPsU2KGQ-bAtltELfDBbstQoEIyGGyP58hhlWKGH_sGobbM2Ys74xupZM4noF7NzpUookkbzrMimaC7CutjXHBCPVg3zd8PCYM2b81TOCa8jyYXVwyVU6J0AoEJR4tYXscQaj3O9x0dgtc8hRaEqw8HWqL8vkYSgSbVJ9paiQWAVg8vKFZbnLkAUrJQwCUyNC44a5yJKK-uqkmQJT_ZFSjV9n"/>
+</div>
+<div class="p-6 border-t border-outline-variant flex justify-between items-center">
+<div>
+<h3 class="font-title-md text-title-md text-primary">Iluminación</h3>
+<p class="font-label-sm text-label-sm text-secondary mt-1">Ópticas LED y halógenas</p>
+</div>
+<span class="material-symbols-outlined text-secondary">arrow_forward</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Featured Warehouses -->
+<section class="w-full bg-surface-container-low border-y border-outline-variant py-16">
+<div class="max-w-container-max-width mx-auto px-margin-mobile md:px-margin-desktop">
+<div class="flex justify-between items-end mb-8 border-b border-outline-variant pb-2">
+<h2 class="font-title-md text-title-md text-primary">Almacenes Destacados Cercanos</h2>
+<a class="font-label-sm text-label-sm text-primary hover:underline flex items-center gap-1" href="#">Ver mapa <span class="material-symbols-outlined text-[16px]">map</span></a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Warehouse 1 -->
+<div class="flex bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+<div class="w-1/3 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A clean, minimalist map interface showing a specific warehouse location in a major city. The map style is corporate modern, using light gray tones, white roads, and a single deep blue marker pin. High contrast, professional." data-location="Los Angeles" src="https://lh3.googleusercontent.com/aida-public/AB6AXuByuOh85IWRTudBslpBArwjQFTQBwFixOazw5Z95RioZeNrtEaLIDqKdILrIYXvOBHD1L6elcYNw5jUT8cyN7aRnsStB3q2HbvkhbeHL-WXmwIfyGohBrFjvXUt1ylnQE7n2sB36EOS7RgkikEYw1OSVY_o5r16QgTl4JTRkTwYYe4n_ofiFYmh1fQe-HXYCMmMXmbEKOmBrRH1v0BbB4LnUmTmKLaUr1lop_oh1o_YAN7e4TU7rD3q"/>
+</div>
+<div class="w-2/3 p-6 flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="bg-surface-variant text-on-surface-variant font-label-sm text-label-sm px-2 py-1 rounded-sm uppercase tracking-wider">Centro Principal</span>
+<span class="flex items-center text-secondary text-sm"><span class="material-symbols-outlined text-[14px] mr-1">check_circle</span> Verificado</span>
+</div>
+<h3 class="font-title-md text-title-md text-primary mb-1">AutoPart Depot Central</h3>
+<p class="font-body-md text-body-md text-secondary">Av. de los Industriales 4500, Zona Norte.</p>
+</div>
+<div class="mt-4 flex gap-4">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-secondary uppercase">Inventario</span>
+<span class="font-body-md text-body-md font-semibold text-primary">Alto</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-secondary uppercase">Distancia</span>
+<span class="font-body-md text-body-md font-semibold text-primary">4.2 km</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Warehouse 2 -->
+<div class="flex bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+<div class="w-1/3 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A clean, minimalist map interface showing a secondary distribution center location. The map style is corporate modern, using light gray tones, white roads, and a single deep blue marker pin. High contrast, professional." data-location="Chicago" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6vCzgYkHqt8UxecpC_fpz1bhMpA8TYHRxkUDa4sZjvSmkAQnva0rrGmnrhqBPiXq8GvalOGC2a67lY10QsdgsCls-seyKy-rgkqoQky6j3y6N5_s7IXfvMCc1SL2BvHS7s5w3iL5fwOpo186R5ry1zXwD7HA0x5NMQgI5IhvsoJtVvh-UxbGGuLY52cKVJ8aOhkbNkDmfKrLkvWPmAOnfapBGc1AErVq_KfDKlUYtGeR_HyEYj8EQ"/>
+</div>
+<div class="w-2/3 p-6 flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="bg-surface-variant text-on-surface-variant font-label-sm text-label-sm px-2 py-1 rounded-sm uppercase tracking-wider">Distribuidor</span>
+</div>
+<h3 class="font-title-md text-title-md text-primary mb-1">Repuestos Express Sur</h3>
+<p class="font-body-md text-body-md text-secondary">Ruta Provincial 21, Km 12.5.</p>
+</div>
+<div class="mt-4 flex gap-4">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-secondary uppercase">Inventario</span>
+<span class="font-body-md text-body-md font-semibold text-primary">Medio</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-secondary uppercase">Distancia</span>
+<span class="font-body-md text-body-md font-semibold text-primary">12.8 km</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-primary dark:bg-surface-container-lowest w-full py-12 border-t border-outline dark:border-outline-variant">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter px-margin-mobile md:px-margin-desktop max-w-container-max-width mx-auto">
+<div class="col-span-1 md:col-span-1 flex flex-col gap-4">
+<span class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-black text-on-primary dark:text-on-surface">AutoPart Pro</span>
+<p class="text-on-primary-container dark:text-on-surface-variant font-body-md text-body-md mt-4">
+                    © 2024 AutoPart Pro. Professional Grade Inventory Systems.
+                </p>
+</div>
+<div class="col-span-1 md:col-span-3 grid grid-cols-2 md:grid-cols-5 gap-8">
+<a class="text-on-primary-container dark:text-on-surface-variant hover:text-on-tertiary-fixed-dim transition-colors hover:underline decoration-on-tertiary-fixed-dim font-body-md text-body-md" href="#">About Us</a>
+<a class="text-on-primary-container dark:text-on-surface-variant hover:text-on-tertiary-fixed-dim transition-colors hover:underline decoration-on-tertiary-fixed-dim font-body-md text-body-md" href="#">Compliance</a>
+<a class="text-on-primary-container dark:text-on-surface-variant hover:text-on-tertiary-fixed-dim transition-colors hover:underline decoration-on-tertiary-fixed-dim font-body-md text-body-md" href="#">Technical Docs</a>
+<a class="text-on-primary-container dark:text-on-surface-variant hover:text-on-tertiary-fixed-dim transition-colors hover:underline decoration-on-tertiary-fixed-dim font-body-md text-body-md" href="#">Support</a>
+<a class="text-on-primary-container dark:text-on-surface-variant hover:text-on-tertiary-fixed-dim transition-colors hover:underline decoration-on-tertiary-fixed-dim font-body-md text-body-md" href="#">Privacy Policy</a>
+</div>
+</div>
+</footer>
+</body></html>

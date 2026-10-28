@@ -6,29 +6,31 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { AuthUser } from '../inventory/inventory.service';
 import { CatalogService } from './catalog.service';
 import {
   CreatePartCategoryDto, CreatePartDto, UpdatePartDto,
   AddPartNumberDto, AddCompatibilityDto, AddInventoryDto,
-  BulkCompatibilityDto,
+  BulkCompatibilityDto, CreateQuestionDto, AnswerQuestionDto,
 } from './dto/catalog.dto';
 
 @ApiTags('Catalog')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('catalog')
 export class CatalogController {
   constructor(private catalogService: CatalogService) {}
 
-  // ============ CATEGORÍAS ============
+  // ============ CATEGORÍAS (PÚBLICAS) ============
 
   @Get('categories')
-  @ApiOperation({ summary: 'Listar categorías de repuestos' })
+  @ApiOperation({ summary: 'Listar categorías de repuestos (Público)' })
   findAllCategories() {
     return this.catalogService.findAllCategories();
   }
 
   @Post('categories')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PLATFORM_ADMIN', 'STORE_ADMIN')
   @ApiOperation({ summary: 'Crear categoría' })
   createCategory(@Body() dto: CreatePartCategoryDto) {
@@ -38,7 +40,7 @@ export class CatalogController {
   // ============ REPUESTOS (PDCIRA-7) ============
 
   @Get('parts')
-  @ApiOperation({ summary: 'Listar repuestos del catálogo (PDCIRA-7)' })
+  @ApiOperation({ summary: 'Listar repuestos del catálogo (Público)' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'categoryId', required: false })
@@ -51,12 +53,14 @@ export class CatalogController {
   }
 
   @Get('parts/:id')
-  @ApiOperation({ summary: 'Obtener detalle de un repuesto (PDCIRA-10)' })
+  @ApiOperation({ summary: 'Obtener detalle de un repuesto (Público)' })
   findOnePart(@Param('id', ParseUUIDPipe) id: string) {
     return this.catalogService.findOnePart(id);
   }
 
   @Post('parts')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PLATFORM_ADMIN', 'STORE_ADMIN')
   @ApiOperation({ summary: 'Crear repuesto (PDCIRA-7)' })
   createPart(@Body() dto: CreatePartDto) {
@@ -64,15 +68,25 @@ export class CatalogController {
   }
 
   @Put('parts/:id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PLATFORM_ADMIN', 'STORE_ADMIN')
   @ApiOperation({ summary: 'Actualizar repuesto' })
   updatePart(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdatePartDto) {
     return this.catalogService.updatePart(id, dto);
   }
 
+  @Post('sync')
+  @ApiOperation({ summary: 'Sincronizar todo el catálogo con Meilisearch' })
+  syncSearch() {
+    return this.catalogService.syncAllPartsToSearch();
+  }
+
   // ============ NÚMEROS DE PARTE ============
 
   @Post('parts/:id/part-numbers')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PLATFORM_ADMIN', 'STORE_ADMIN')
   @ApiOperation({ summary: 'Agregar número de parte' })
   addPartNumber(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AddPartNumberDto) {
@@ -80,6 +94,8 @@ export class CatalogController {
   }
 
   @Delete('parts/:partId/part-numbers/:partNumberId')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PLATFORM_ADMIN', 'STORE_ADMIN')
   @ApiOperation({ summary: 'Eliminar número de parte' })
   removePartNumber(
@@ -92,6 +108,8 @@ export class CatalogController {
   // ============ COMPATIBILIDAD ============
 
   @Post('parts/:id/compatibility')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PLATFORM_ADMIN', 'STORE_ADMIN')
   @ApiOperation({ summary: 'Agregar compatibilidad con vehículo (PDCIRA-7)' })
   addCompatibility(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AddCompatibilityDto) {
@@ -99,6 +117,8 @@ export class CatalogController {
   }
 
   @Post('parts/:id/compatibility/bulk')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PLATFORM_ADMIN', 'STORE_ADMIN')
   @ApiOperation({ summary: 'Agregar compatibilidad masiva' })
   addBulkCompatibility(@Param('id', ParseUUIDPipe) id: string, @Body() dto: BulkCompatibilityDto) {
@@ -106,6 +126,8 @@ export class CatalogController {
   }
 
   @Delete('parts/:partId/compatibility/:compatibilityId')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PLATFORM_ADMIN', 'STORE_ADMIN')
   @ApiOperation({ summary: 'Eliminar compatibilidad' })
   removeCompatibility(
@@ -118,6 +140,8 @@ export class CatalogController {
   // ============ INVENTARIO ============
 
   @Post('parts/:id/inventory')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PLATFORM_ADMIN', 'STORE_ADMIN')
   @ApiOperation({ summary: 'Registrar existencias en una sede' })
   addInventory(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AddInventoryDto) {
@@ -125,6 +149,8 @@ export class CatalogController {
   }
 
   @Put('inventory/:id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PLATFORM_ADMIN', 'STORE_ADMIN')
   @ApiOperation({ summary: 'Actualizar existencias (precio/stock)' })
   updateInventory(
@@ -137,9 +163,41 @@ export class CatalogController {
   // ============ SYNC ============
 
   @Post('sync-search')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PLATFORM_ADMIN')
   @ApiOperation({ summary: 'Sincronizar todos los repuestos con Meilisearch' })
   syncAllParts() {
     return this.catalogService.syncAllPartsToSearch();
+  }
+
+  // ============ PREGUNTAS TÉCNICAS (PDCIRA-17) ============
+
+  @Get('parts/:id/questions')
+  @ApiOperation({ summary: 'Consultar preguntas técnicas de un repuesto (Público)' })
+  getPartQuestions(@Param('id', ParseUUIDPipe) id: string) {
+    return this.catalogService.getPartQuestions(id);
+  }
+
+  @Post('parts/:id/questions')
+  @ApiOperation({ summary: 'Hacer una pregunta técnica sobre un repuesto' })
+  createPartQuestion(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateQuestionDto,
+  ) {
+    return this.catalogService.createQuestion(id, dto);
+  }
+
+  @Post('questions/:id/answer')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('STORE_ADMIN', 'PLATFORM_ADMIN')
+  @ApiOperation({ summary: 'Responder pregunta técnica como almacén o asesor' })
+  answerPartQuestion(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AnswerQuestionDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.catalogService.answerQuestion(id, dto, user?.email);
   }
 }

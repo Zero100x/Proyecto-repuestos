@@ -3,25 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { fetchPartById, fetchParts, formatPriceCOP } from '../../../lib/api';
-import { Part, InventoryItem } from '../../../lib/types';
-import { useCompare } from '../../../lib/compareContext';
+import Navbar from '../../../components/Navbar';
+import Footer from '../../../components/Footer';
+import CompareTray from '../../../components/CompareTray';
 import WhatsAppLeadModal from '../../../components/WhatsAppLeadModal';
-import {
-  CarIcon,
-  ShieldCheckIcon,
-  WhatsAppIcon,
-  PhoneIcon,
-  MapPinIcon,
-  CompareIcon,
-  ArrowLeftIcon,
-  CheckCircleIcon,
-  TagIcon,
-  BuildingIcon,
-  SparklesIcon,
-} from '../../../components/Icons';
+import ProductTechnicalQA from '../../../components/ProductTechnicalQA';
+import ReservationModal from '../../../components/ReservationModal';
+import ReservationVoucherModal from '../../../components/ReservationVoucherModal';
+import { fetchPartById, fetchParts, formatPriceCOP } from '../../../lib/api';
+import { Part, InventoryItem, ReservationItem } from '../../../lib/types';
+import { useCompare } from '../../../lib/compareContext';
 
-function PartDetailContent() {
+export default function ProductDetailPage() {
   const params = useParams();
   const partId = params?.id as string;
 
@@ -29,8 +22,18 @@ function PartDetailContent() {
   const [relatedParts, setRelatedParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Selected inventory item for WhatsApp Modal
   const [selectedInvForModal, setSelectedInvForModal] = useState<InventoryItem | undefined>(undefined);
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Sprint 5: Click & Collect Reservation states
+  const [reservationModalOpen, setReservationModalOpen] = useState(false);
+  const [voucherModalOpen, setVoucherModalOpen] = useState(false);
+  const [activeReservation, setActiveReservation] = useState<ReservationItem | null>(null);
+  const [selectedInvForReservation, setSelectedInvForReservation] = useState<InventoryItem | undefined>(undefined);
+
+  // Gallery active thumbnail
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const { addToCompare, removeFromCompare, isCompared } = useCompare();
 
@@ -41,7 +44,7 @@ function PartDetailContent() {
       setPart(data);
       setLoading(false);
       if (data?.category?.slug) {
-        fetchParts({ category: data.category.slug, limit: 3 }).then(res => {
+        fetchParts({ category: data.category.slug, limit: 4 }).then(res => {
           setRelatedParts(res.data.filter(p => p.id !== data.id));
         });
       }
@@ -50,751 +53,396 @@ function PartDetailContent() {
 
   if (loading) {
     return (
-      <div className="container detail-container">
-        <div className="skeleton" style={{ height: 40, width: 250, marginBottom: '2rem' }} />
-        <div className="detail-grid">
-          <div className="skeleton" style={{ height: 450 }} />
-          <div className="skeleton" style={{ height: 450 }} />
-        </div>
-      </div>
+      <>
+        <Navbar />
+        <main className="max-w-[1240px] mx-auto px-4 md:px-8 py-12">
+          <div className="h-6 w-48 bg-[var(--surface-container-high)] rounded mb-8 animate-pulse" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-7 h-96 bg-[var(--surface-container-high)] rounded-2xl animate-pulse" />
+            <div className="lg:col-span-5 h-96 bg-[var(--surface-container-high)] rounded-2xl animate-pulse" />
+          </div>
+        </main>
+        <Footer />
+      </>
     );
   }
 
   if (!part) {
     return (
-      <div className="container detail-container text-center">
-        <h2>Repuesto no encontrado</h2>
-        <Link href="/search" className="btn btn-primary" style={{ marginTop: '1.5rem' }}>
-          Volver al Catálogo
-        </Link>
-      </div>
+      <>
+        <Navbar />
+        <main className="max-w-[1240px] mx-auto px-4 md:px-8 py-20 text-center">
+          <span className="material-symbols-outlined text-5xl text-[var(--secondary)] mb-4">
+            inventory_2
+          </span>
+          <h1 className="font-heading text-2xl font-bold text-[var(--primary)] mb-2">
+            Repuesto no encontrado
+          </h1>
+          <p className="font-sans text-sm text-[var(--secondary)] mb-6">
+            El componente solicitado no se encuentra disponible en la base de datos centralizada.
+          </p>
+          <Link href="/search" className="btn btn-primary px-6 py-2.5 text-xs">
+            Volver al Marketplace
+          </Link>
+        </main>
+        <Footer />
+      </>
     );
   }
 
   const compared = isCompared(part.id);
+  const oemNumber = part.partNumbers?.[0]?.number || 'OEM-REF-VERIFIED';
   const inventoryList = part.inventory || [];
-  const minPrice = part.minPrice || (inventoryList.length ? Math.min(...inventoryList.map(i => i.price)) : 0);
+  const bestPrice =
+    part.minPrice && part.minPrice > 0
+      ? part.minPrice
+      : inventoryList.length > 0
+      ? Math.min(...inventoryList.map(i => i.price))
+      : 0;
 
-  const openWhatsAppModal = (inv?: InventoryItem) => {
-    setSelectedInvForModal(inv || inventoryList[0]);
+  const handleOpenLead = (inv?: InventoryItem) => {
+    setSelectedInvForModal(inv);
     setModalOpen(true);
   };
 
+  const handleOpenReservation = (inv?: InventoryItem) => {
+    setSelectedInvForReservation(inv);
+    setReservationModalOpen(true);
+  };
+
+  const handleReservationSuccess = (res: ReservationItem) => {
+    setReservationModalOpen(false);
+    setActiveReservation(res);
+    setVoucherModalOpen(true);
+  };
+
+  const images = part.imageUrl
+    ? [part.imageUrl, part.imageUrl]
+    : [
+        'https://lh3.googleusercontent.com/aida-public/AB6AXuCtsicmR6RzUGPu9JMuOBUJpnvR-TCle5j7u0JZtSu4_k_hsuVuMYO-iVeGr0lqWApM4KmLhVuCcqE3g7U4HCb_-IfCHe5zL2N2q6C46dYbOAdzdo83kcqSeeEsdycFL8EZ5qWIqycDEovWh8Ad-l7KIvgDBUjkZi-6UBJ2mT6-wNz8G4CjyA0oaePh816PFQtVsd35c3nGr6mI8ut_VMEPc_LIbgzhnIyySUdhkfX8DGonpqeQeofy',
+      ];
+
   return (
-    <div className="detail-container container">
-      {/* Breadcrumb */}
-      <nav className="breadcrumb-nav">
-        <Link href="/" className="crumb-link">Inicio</Link>
-        <span className="crumb-sep">/</span>
-        <Link href="/search" className="crumb-link">Catálogo</Link>
-        {part.category && (
-          <>
-            <span className="crumb-sep">/</span>
-            <Link href={`/search?category=${part.category.slug}`} className="crumb-link">
-              {part.category.name}
-            </Link>
-          </>
-        )}
-        <span className="crumb-sep">/</span>
-        <span className="crumb-current">{part.name}</span>
-      </nav>
+    <div className="bg-surface text-on-surface min-h-screen flex flex-col antialiased">
+      <Navbar />
 
-      {/* Main Product Hero */}
-      <div className="detail-grid">
-        {/* Left: Gallery & Visuals */}
-        <div className="gallery-card card">
-          <div className="main-image-box">
-            {part.imageUrl ? (
-              <img src={part.imageUrl} alt={part.name} className="product-img" />
-            ) : (
-              <div className="img-fallback">
-                <TagIcon size={64} />
-              </div>
-            )}
-            <div className="image-badges">
-              <span className="badge badge-success">Garantía Asegurada</span>
-              <span className="badge badge-primary">Pieza Verificada</span>
-            </div>
-          </div>
-
-          {/* Quick Specifications */}
-          <div className="specs-list">
-            <div className="spec-row">
-              <span className="spec-label">Marca de la Pieza:</span>
-              <span className="spec-value">{part.brand || 'Original OEM'}</span>
-            </div>
-            {part.category && (
-              <div className="spec-row">
-                <span className="spec-label">Categoría:</span>
-                <span className="spec-value">{part.category.name}</span>
-              </div>
-            )}
-            {part.weight && (
-              <div className="spec-row">
-                <span className="spec-label">Peso estimado:</span>
-                <span className="spec-value">{part.weight} kg</span>
-              </div>
-            )}
-            <div className="spec-row">
-              <span className="spec-label">Modelo de consulta:</span>
-              <span className="spec-value text-accent">Lead Directo WhatsApp</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Info & Pricing Summary */}
-        <div className="info-card card glass">
-          <div className="meta-top">
-            <span className="badge badge-info">{part.category?.name || 'Repuesto'}</span>
-            <span className="brand-chip">{part.brand}</span>
-          </div>
-
-          <h1 className="detail-title">{part.name}</h1>
-
-          {/* OEM numbers list */}
-          {part.partNumbers && part.partNumbers.length > 0 && (
-            <div className="oem-section">
-              <span className="oem-title">Números de Referencia / Códigos de Parte:</span>
-              <div className="oem-tags">
-                {part.partNumbers.map(pn => (
-                  <span key={pn.id || pn.number} className="oem-tag">
-                    <strong>{pn.type}:</strong> {pn.number}
-                  </span>
-                ))}
-              </div>
-            </div>
+      <main className="pt-[90px] pb-24 px-margin-mobile md:px-margin-desktop max-w-container-max-width mx-auto flex-1 w-full">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 mb-6 font-mono text-xs text-[var(--secondary)]">
+          <Link href="/search" className="hover:text-[var(--primary)]">
+            Marketplace
+          </Link>
+          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          {part.category && (
+            <>
+              <Link href={`/search?category=${part.category.slug}`} className="hover:text-[var(--primary)]">
+                {part.category.name}
+              </Link>
+              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+            </>
           )}
-
-          {/* Price Box */}
-          <div className="price-overview-box">
-            <div className="price-text-group">
-              <span className="price-lead-label">Mejor precio disponible en almacén:</span>
-              <span className="price-main">{formatPriceCOP(minPrice)}</span>
-              <span className="tax-note">Precios cotizados en pesos colombianos (COP)</span>
-            </div>
-
-            <div className="hero-cta-buttons">
-              <button
-                type="button"
-                className="btn btn-wa-large"
-                onClick={() => openWhatsAppModal()}
-              >
-                <WhatsAppIcon size={22} />
-                <span>Cotizar por WhatsApp</span>
-              </button>
-
-              <button
-                type="button"
-                className={`btn btn-secondary ${compared ? 'active-compared' : ''}`}
-                onClick={() => (compared ? removeFromCompare(part.id) : addToCompare(part))}
-              >
-                <CompareIcon size={18} />
-                <span>{compared ? 'En Comparativa' : 'Agregar a Comparador'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="desc-box">
-            <h3 className="desc-heading">Descripción del Repuesto</h3>
-            <p className="desc-text">{part.description || 'Repuesto garantizado para ensamble automotriz de alta exigencia.'}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* SPRINT 1-2 CORE: MÓDULO DE SEDES, STOCK Y DISPONIBILIDAD */}
-      <section className="section-locations-module">
-        <div className="module-header">
-          <div>
-            <span className="module-eyebrow">Disponibilidad en Tiempo Real</span>
-            <h2 className="module-title">Sedes y Almacenes con Stock Disponible</h2>
-            <p className="module-subtitle">
-              Compara precios entre diferentes sedes y contacta directamente al almacén de tu conveniencia.
-            </p>
-          </div>
+          <span className="text-[var(--primary)] font-bold truncate max-w-xs">{part.name}</span>
         </div>
 
-        {inventoryList.length > 0 ? (
-          <div className="locations-grid">
-            {inventoryList.map(inv => {
-              const loc = inv.location;
-              const store = loc?.store;
-              return (
-                <div key={inv.id} className="location-item-card card">
-                  <div className="loc-card-header">
-                    <div className="loc-store-info">
-                      <span className="loc-store-name">{store?.name || 'Almacén Aliado'}</span>
-                      <h4 className="loc-name">{loc?.name}</h4>
-                    </div>
-                    <span className="badge badge-success">
-                      {inv.condition === 'NEW' ? 'Nuevo' : inv.condition === 'USED' ? 'Usado' : 'Remanufacturado'}
-                    </span>
-                  </div>
+        {/* 2-Column Product Canvas */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* Left Column: Gallery & Details (7 cols) */}
+          <div className="lg:col-span-7 flex flex-col gap-6">
+            {/* Main Stage Image */}
+            <div className="w-full bg-white rounded-2xl border border-[var(--outline-variant)] overflow-hidden relative group p-6 flex items-center justify-center min-h-[380px] shadow-sm">
+              <img
+                src={images[activeImageIndex] || images[0]}
+                alt={part.name}
+                className="max-h-[340px] w-auto object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
+              />
 
-                  <div className="loc-card-details">
-                    <div className="detail-line">
-                      <MapPinIcon size={16} className="loc-icon" />
-                      <span>{loc?.address}, {loc?.city}</span>
-                    </div>
-                    <div className="detail-line">
-                      <BuildingIcon size={16} className="loc-icon" />
-                      <span>Stock disponible: <strong>{inv.stock} unidades</strong></span>
-                    </div>
-                    {loc?.phone && (
-                      <div className="detail-line">
-                        <PhoneIcon size={16} className="loc-icon" />
-                        <span>Teléfono: {loc.phone}</span>
-                      </div>
-                    )}
-                  </div>
+              {/* Quality & Stock Badges */}
+              <div className="absolute top-4 left-4 flex flex-col gap-2">
+                <span className="bg-[var(--surface-container-lowest)] text-[var(--primary)] font-mono text-[10px] font-bold px-2.5 py-1 rounded border border-[var(--outline-variant)] shadow-sm">
+                  REPUESTO OEM CALIFICADO
+                </span>
+                <span className="bg-[#ecfdf5] text-[#059669] font-mono text-[10px] font-bold px-2.5 py-1 rounded border border-[#a7f3d0] shadow-sm flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
+                  EN STOCK ({inventoryList.length > 0 ? `${inventoryList.length} sedes` : 'Inmediato'})
+                </span>
+              </div>
+            </div>
 
-                  <div className="loc-card-pricing">
-                    <div className="loc-price-box">
-                      <span className="loc-price-lbl">Precio en esta sede:</span>
-                      <span className="loc-price-val">{formatPriceCOP(inv.price)}</span>
-                    </div>
-
-                    <div className="loc-action-buttons">
-                      <button
-                        type="button"
-                        className="btn btn-wa-quick"
-                        onClick={() => openWhatsAppModal(inv)}
-                      >
-                        <WhatsAppIcon size={18} />
-                        <span>WhatsApp Sede</span>
-                      </button>
-
-                      {loc?.phone && (
-                        <a
-                          href={`tel:${loc.phone.replace(/[^0-9+]/g, '')}`}
-                          className="btn btn-secondary btn-sm"
-                          title="Llamar directamente"
-                        >
-                          <PhoneIcon size={16} />
-                        </a>
-                      )}
-
-                      {loc?.address && (
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                            `${loc.address}, ${loc.city}, Colombia`
-                          )}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn btn-secondary btn-sm"
-                          title="Cómo llegar en Google Maps"
-                        >
-                          <MapPinIcon size={16} />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="card glass text-center" style={{ padding: '2.5rem' }}>
-            <p>Stock disponible bajo pedido en almacén central.</p>
-            <button
-              type="button"
-              className="btn btn-wa-large"
-              style={{ marginTop: '1rem' }}
-              onClick={() => openWhatsAppModal()}
-            >
-              <WhatsAppIcon size={18} />
-              <span>Consultar Disponibilidad por WhatsApp</span>
-            </button>
-          </div>
-        )}
-      </section>
-
-      {/* COMPATIBILITY ACCORDION / VEHICLES */}
-      <section className="compatibility-section card">
-        <h3 className="compat-heading">
-          <CarIcon size={22} className="compat-icon" />
-          <span>Vehículos Compatibles (Modelo ACES/PIES)</span>
-        </h3>
-        <p className="compat-desc">
-          Esta pieza ha sido verificada para los siguientes modelos y especificaciones de motor:
-        </p>
-
-        <div className="makes-list-box">
-          {part.makes && part.makes.length > 0 ? (
-            <div className="compat-chips">
-              {part.makes.map((make, idx) => (
-                <div key={make} className="compat-chip-block">
-                  <span className="compat-make-title">{make}</span>
-                  <span className="compat-models-sub">
-                    {part.models?.[idx] || 'Modelos compatibles'} ({part.years?.join(', ') || 'Varios años'})
-                  </span>
-                </div>
+            {/* Thumbnails */}
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImageIndex(idx)}
+                  className={`flex-shrink-0 w-20 h-20 rounded-xl border-2 overflow-hidden bg-white p-1 transition-all ${
+                    activeImageIndex === idx
+                      ? 'border-[var(--primary)] shadow-sm'
+                      : 'border-[var(--outline-variant)] opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt="thumbnail" className="w-full h-full object-contain" />
+                </button>
               ))}
             </div>
-          ) : (
-            <div className="compat-universal-note">
-              <CheckCircleIcon size={18} />
-              <span>Compatible con los modelos más comunes. Verifica con tu número de chasis (VIN) por WhatsApp.</span>
-            </div>
-          )}
-        </div>
-      </section>
 
-      {/* RELATED PARTS */}
-      {relatedParts.length > 0 && (
-        <section className="related-section">
-          <h3 className="section-title" style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>
-            Repuestos Complementarios Recomendados
-          </h3>
-          <div className="related-grid">
-            {relatedParts.map(p => (
-              <div key={p.id} className="related-card-wrapper">
-                <Link href={`/parts/${p.id}`} className="related-link card">
-                  {p.imageUrl && <img src={p.imageUrl} alt={p.name} className="rel-thumb" />}
-                  <div className="rel-info">
-                    <h4>{p.name}</h4>
-                    <span className="rel-price">{formatPriceCOP(p.minPrice || 0)}</span>
+            {/* Warehouse Pickup & Location Card */}
+            <div className="mt-4 bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-2xl p-6">
+              <h3 className="font-heading text-sm font-bold text-[var(--primary)] uppercase tracking-wider mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[var(--on-tertiary-container)] text-lg">
+                  store
+                </span>
+                Sedes Físicas y Horarios de Retiro
+              </h3>
+              
+              <div className="space-y-3 font-sans text-xs">
+                {inventoryList.length > 0 ? (
+                  inventoryList.map((item, idx) => (
+                    <div
+                      key={item.id || idx}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-white rounded-xl border border-[var(--outline-variant)] gap-3"
+                    >
+                      <div>
+                        <div className="font-heading font-bold text-[var(--primary)] text-sm">
+                          {item.location?.name || 'Sede Distribuidora'}
+                        </div>
+                        <div className="text-[var(--secondary)] text-xs mt-0.5 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-sm">location_on</span>
+                          {item.location?.address || 'Dirección de la sede'}, {item.location?.city || 'Bogotá'}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <div className="font-mono text-[10px] text-[var(--secondary)] uppercase">Precio Sede</div>
+                          <div className="font-heading font-bold text-[var(--primary)] text-sm">
+                            {formatPriceCOP(item.price)}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenReservation(item)}
+                            className="py-1.5 px-3 bg-[var(--on-tertiary-container)] hover:bg-[#c25100] text-white rounded-lg font-heading text-xs font-bold flex items-center gap-1 transition shadow-sm"
+                          >
+                            <span className="material-symbols-outlined text-sm">shopping_bag</span>
+                            <span>Reservar</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleOpenLead(item)}
+                            className="btn btn-secondary text-xs px-2.5 py-1.5 font-bold flex items-center gap-1"
+                            title="Cotizar por WhatsApp"
+                          >
+                            <span className="material-symbols-outlined text-sm">chat</span>
+                            <span>Cotizar</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-[var(--secondary)]">
+                    Disponible para despacho directo coordinado con el centro de distribución principal.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Specs & Actions (5 cols) */}
+          <div className="lg:col-span-5 flex flex-col gap-6">
+            {/* Header info */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-mono text-xs uppercase tracking-wider text-[var(--secondary)] bg-[var(--surface-container)] px-2.5 py-0.5 rounded">
+                  {part.brand || 'Original Equipment Manufacturer'}
+                </span>
+                <span className="font-mono text-xs text-[var(--secondary)]">
+                  SKU: {oemNumber}
+                </span>
+              </div>
+
+              <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-[var(--primary)] leading-tight mb-3">
+                {part.name}
+              </h1>
+
+              <div className="flex items-baseline gap-3 pb-4 border-b border-[var(--outline-variant)]">
+                <span className="font-heading text-3xl font-extrabold text-[var(--primary)]">
+                  {formatPriceCOP(bestPrice)}
+                </span>
+                {part.maxPrice && part.maxPrice > bestPrice && (
+                  <span className="font-mono text-xs text-[var(--secondary)]">
+                    hasta {formatPriceCOP(part.maxPrice)}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Primary Action Buttons */}
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => handleOpenReservation()}
+                className="w-full py-4 bg-[var(--on-tertiary-container)] text-white font-heading text-sm font-bold rounded-xl hover:bg-[#c25100] transition-colors shadow-[0_4px_20px_rgba(227,95,0,0.25)] flex justify-center items-center gap-2 active:scale-[0.99]"
+              >
+                <span className="material-symbols-outlined text-xl">shopping_bag</span>
+                <span>Reservar Repuesto en Sede (Click & Collect)</span>
+              </button>
+
+              <button
+                onClick={() => handleOpenLead()}
+                className="w-full py-3.5 bg-white border border-[var(--primary)] text-[var(--primary)] font-heading text-xs font-bold rounded-xl hover:bg-[var(--primary)] hover:text-white transition-all flex justify-center items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-lg">chat</span>
+                <span>Consultar por WhatsApp con Asesor Técnico</span>
+              </button>
+
+              <button
+                onClick={() => (compared ? removeFromCompare(part.id) : addToCompare(part))}
+                className={`w-full py-2.5 rounded-xl border font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-colors ${
+                  compared
+                    ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
+                    : 'bg-[var(--surface-container-low)] text-[var(--secondary)] border-[var(--outline-variant)] hover:text-[var(--primary)]'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base">balance</span>
+                <span>{compared ? 'Pieza agregada a bandeja de comparación' : 'Comparar con otros repuestos'}</span>
+              </button>
+            </div>
+
+            {/* Technical Specs Table (Precision Automotive Hub) */}
+            <div className="mt-2">
+              <h3 className="font-heading text-xs font-bold text-[var(--primary)] uppercase tracking-wider mb-3">
+                Especificaciones Técnicas
+              </h3>
+              <div className="border border-[var(--outline-variant)] rounded-xl overflow-hidden bg-white shadow-sm">
+                <table className="w-full text-left font-mono text-xs">
+                  <tbody className="divide-y divide-[var(--outline-variant)]">
+                    <tr className="bg-[var(--surface-container-low)]">
+                      <td className="py-2.5 px-4 text-[var(--secondary)] font-medium w-1/3 border-r border-[var(--outline-variant)]">
+                        Número OEM
+                      </td>
+                      <td className="py-2.5 px-4 text-[var(--primary)] font-bold">{oemNumber}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2.5 px-4 text-[var(--secondary)] font-medium w-1/3 border-r border-[var(--outline-variant)]">
+                        Marca Fabricante
+                      </td>
+                      <td className="py-2.5 px-4 text-[var(--primary)]">{part.brand || 'Estándar OEM'}</td>
+                    </tr>
+                    <tr className="bg-[var(--surface-container-low)]">
+                      <td className="py-2.5 px-4 text-[var(--secondary)] font-medium w-1/3 border-r border-[var(--outline-variant)]">
+                        Categoría
+                      </td>
+                      <td className="py-2.5 px-4 text-[var(--primary)]">{part.category?.name || 'General'}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2.5 px-4 text-[var(--secondary)] font-medium w-1/3 border-r border-[var(--outline-variant)]">
+                        Garantía de Fábrica
+                      </td>
+                      <td className="py-2.5 px-4 text-[var(--primary)]">12 Meses o 20.000 KM</td>
+                    </tr>
+                    <tr className="bg-[var(--surface-container-low)]">
+                      <td className="py-2.5 px-4 text-[var(--secondary)] font-medium w-1/3 border-r border-[var(--outline-variant)]">
+                        Disponibilidad
+                      </td>
+                      <td className="py-2.5 px-4 text-[#059669] font-bold">Entrega Inmediata / En Mostrador</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Description */}
+            {part.description && (
+              <div className="bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded-xl p-5">
+                <h3 className="font-heading text-xs font-bold text-[var(--primary)] uppercase tracking-wider mb-2">
+                  Descripción Técnica
+                </h3>
+                <p className="font-sans text-xs text-[var(--secondary)] leading-relaxed">
+                  {part.description}
+                </p>
+              </div>
+            )}
+
+          </div>
+        </div>
+
+        {/* Technical Compatibility Q&A (PDCIRA-17) */}
+        <ProductTechnicalQA partId={part.id} partName={part.name} />
+
+        {/* Related Parts Row */}
+        {relatedParts.length > 0 && (
+          <div className="mt-20 border-t border-[var(--outline-variant)] pt-12">
+            <h2 className="font-heading text-xl font-bold text-[var(--primary)] mb-6">
+              Repuestos Relacionados o Compatibles
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {relatedParts.map(p => (
+                <Link
+                  key={p.id}
+                  href={`/parts/${p.id}`}
+                  className="bg-white border border-[var(--outline-variant)] rounded-xl p-4 hover:shadow-md transition-shadow flex flex-col justify-between"
+                >
+                  <div className="h-32 bg-[var(--surface-container)] rounded-lg p-2 mb-3 flex items-center justify-center">
+                    <img
+                      src={p.imageUrl || images[0]}
+                      alt={p.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  <div>
+                    <span className="font-mono text-[10px] text-[var(--secondary)] uppercase font-semibold">
+                      {p.brand || 'OEM'}
+                    </span>
+                    <h4 className="font-heading text-xs font-bold text-[var(--primary)] line-clamp-2 mt-1">
+                      {p.name}
+                    </h4>
+                  </div>
+                  <div className="mt-3 pt-2 border-t border-[var(--outline-variant)] font-heading text-sm font-extrabold text-[var(--primary)]">
+                    {formatPriceCOP(p.minPrice || 0)}
                   </div>
                 </Link>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </section>
-      )}
+        )}
+      </main>
 
-      {/* WhatsApp Modal */}
+      {/* WhatsApp Lead Generation Modal */}
       {modalOpen && (
         <WhatsAppLeadModal
           part={part}
+          selectedInventory={selectedInvForModal}
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
-          selectedInventory={selectedInvForModal}
         />
       )}
 
-      <style jsx>{`
-        .detail-container {
-          padding-top: 2rem;
-          padding-bottom: 5rem;
-        }
-        .breadcrumb-nav {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.85rem;
-          color: var(--text-muted);
-          margin-bottom: 1.75rem;
-          flex-wrap: wrap;
-        }
-        .crumb-link {
-          color: var(--text-secondary);
-        }
-        .crumb-link:hover {
-          color: var(--accent-secondary);
-        }
-        .crumb-sep {
-          color: var(--border-color);
-        }
-        .crumb-current {
-          color: var(--text-primary);
-          font-weight: 600;
-        }
-        .detail-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 2rem;
-          margin-bottom: 3.5rem;
-        }
-        @media (min-width: 960px) {
-          .detail-grid {
-            grid-template-columns: 1fr 1.25fr;
-          }
-        }
-        .gallery-card {
-          padding: 1.5rem;
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-        }
-        .main-image-box {
-          position: relative;
-          width: 100%;
-          height: 380px;
-          border-radius: var(--radius-lg);
-          overflow: hidden;
-          background: #0d1222;
-        }
-        .product-img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .img-fallback {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--text-muted);
-        }
-        .image-badges {
-          position: absolute;
-          top: 1rem;
-          left: 1rem;
-          display: flex;
-          gap: 0.5rem;
-        }
-        .specs-list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-          background: rgba(0, 0, 0, 0.2);
-          padding: 1.25rem;
-          border-radius: var(--radius-md);
-        }
-        .spec-row {
-          display: flex;
-          justify-content: space-between;
-          font-size: 0.85rem;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-          padding-bottom: 0.5rem;
-        }
-        .spec-label {
-          color: var(--text-muted);
-        }
-        .spec-value {
-          color: var(--text-primary);
-          font-weight: 600;
-        }
-        .text-accent {
-          color: var(--accent-secondary) !important;
-        }
-        .info-card {
-          padding: 2rem;
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-        }
-        .meta-top {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        }
-        .brand-chip {
-          font-weight: 700;
-          color: var(--accent-primary-light);
-          font-size: 0.9rem;
-        }
-        .detail-title {
-          font-size: 2rem;
-          font-weight: 800;
-          line-height: 1.2;
-        }
-        .oem-section {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-        .oem-title {
-          font-size: 0.8rem;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-        .oem-tags {
-          display: flex;
-          gap: 0.5rem;
-          flex-wrap: wrap;
-        }
-        .oem-tag {
-          background: rgba(99, 102, 241, 0.1);
-          border: 1px solid rgba(99, 102, 241, 0.25);
-          padding: 0.35rem 0.65rem;
-          border-radius: var(--radius-sm);
-          font-size: 0.85rem;
-          color: var(--text-primary);
-        }
-        .price-overview-box {
-          background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.08));
-          border: 1px solid var(--border-color-hover);
-          padding: 1.5rem;
-          border-radius: var(--radius-lg);
-          display: flex;
-          flex-direction: column;
-          gap: 1.25rem;
-        }
-        .price-text-group {
-          display: flex;
-          flex-direction: column;
-        }
-        .price-lead-label {
-          font-size: 0.8rem;
-          color: var(--text-muted);
-        }
-        .price-main {
-          font-size: 2.5rem;
-          font-weight: 900;
-          color: #38bdf8;
-          line-height: 1.1;
-        }
-        .tax-note {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-        }
-        .hero-cta-buttons {
-          display: flex;
-          gap: 0.75rem;
-          flex-wrap: wrap;
-        }
-        .btn-wa-large {
-          flex: 1;
-          min-width: 220px;
-          background: #25d366;
-          color: #04250e;
-          font-size: 1rem;
-          font-weight: 800;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.65rem;
-          padding: 0.95rem 1.5rem;
-          border-radius: var(--radius-md);
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .btn-wa-large:hover {
-          background: #1ebe57;
-          box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
-          transform: translateY(-2px);
-        }
-        .active-compared {
-          background: var(--accent-primary) !important;
-          color: white !important;
-        }
-        .desc-box {
-          border-top: 1px solid var(--border-color);
-          padding-top: 1.25rem;
-        }
-        .desc-heading {
-          font-size: 1.1rem;
-          margin-bottom: 0.5rem;
-        }
-        .desc-text {
-          font-size: 0.95rem;
-          color: var(--text-secondary);
-          line-height: 1.6;
-        }
-        .section-locations-module {
-          margin-bottom: 3.5rem;
-        }
-        .module-header {
-          margin-bottom: 1.75rem;
-        }
-        .module-eyebrow {
-          font-size: 0.8rem;
-          font-weight: 700;
-          color: var(--accent-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          display: block;
-        }
-        .module-title {
-          font-size: 1.75rem;
-          font-weight: 800;
-        }
-        .module-subtitle {
-          color: var(--text-secondary);
-          font-size: 0.95rem;
-        }
-        .locations-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 1.25rem;
-        }
-        @media (min-width: 768px) {
-          .locations-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        @media (min-width: 1200px) {
-          .locations-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-        }
-        .location-item-card {
-          padding: 1.5rem;
-          display: flex;
-          flex-direction: column;
-          gap: 1.25rem;
-        }
-        .loc-card-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          border-bottom: 1px solid var(--border-color);
-          padding-bottom: 0.85rem;
-        }
-        .loc-store-name {
-          font-size: 0.75rem;
-          font-weight: 700;
-          color: var(--accent-primary-light);
-          text-transform: uppercase;
-        }
-        .loc-name {
-          font-size: 1.1rem;
-          font-weight: 700;
-          color: var(--text-primary);
-        }
-        .loc-card-details {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          font-size: 0.85rem;
-          color: var(--text-secondary);
-        }
-        .detail-line {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        .loc-icon {
-          color: var(--accent-secondary);
-        }
-        .loc-card-pricing {
-          border-top: 1px solid var(--border-color);
-          padding-top: 1rem;
-          margin-top: auto;
-          display: flex;
-          flex-direction: column;
-          gap: 0.85rem;
-        }
-        .loc-price-box {
-          display: flex;
-          justify-content: space-between;
-          align-items: baseline;
-        }
-        .loc-price-lbl {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-        }
-        .loc-price-val {
-          font-size: 1.35rem;
-          font-weight: 800;
-          color: #38bdf8;
-        }
-        .loc-action-buttons {
-          display: flex;
-          gap: 0.5rem;
-        }
-        .btn-wa-quick {
-          flex: 1;
-          background: #25d366;
-          color: #03210d;
-          font-weight: 700;
-          font-size: 0.85rem;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.4rem;
-          padding: 0.6rem 1rem;
-          border-radius: var(--radius-md);
-          border: none;
-          cursor: pointer;
-        }
-        .btn-wa-quick:hover {
-          background: #1ebe57;
-        }
-        .compatibility-section {
-          padding: 2rem;
-          margin-bottom: 3.5rem;
-        }
-        .compat-heading {
-          display: flex;
-          align-items: center;
-          gap: 0.65rem;
-          font-size: 1.25rem;
-          margin-bottom: 0.5rem;
-        }
-        .compat-icon {
-          color: var(--accent-secondary);
-        }
-        .compat-desc {
-          font-size: 0.85rem;
-          color: var(--text-secondary);
-          margin-bottom: 1.5rem;
-        }
-        .compat-chips {
-          display: flex;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-        .compat-chip-block {
-          background: rgba(99, 102, 241, 0.08);
-          border: 1px solid rgba(99, 102, 241, 0.2);
-          border-radius: var(--radius-md);
-          padding: 0.75rem 1.25rem;
-          display: flex;
-          flex-direction: column;
-        }
-        .compat-make-title {
-          font-weight: 700;
-          color: var(--text-primary);
-        }
-        .compat-models-sub {
-          font-size: 0.8rem;
-          color: var(--text-muted);
-        }
-        .compat-universal-note {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          color: var(--accent-success);
-          font-size: 0.9rem;
-        }
-        .related-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-          gap: 1.5rem;
-        }
-        .related-link {
-          display: flex;
-          gap: 1rem;
-          align-items: center;
-          text-decoration: none;
-          padding: 1rem;
-        }
-        .rel-thumb {
-          width: 70px;
-          height: 70px;
-          border-radius: var(--radius-md);
-          object-fit: cover;
-        }
-        .rel-info h4 {
-          font-size: 0.95rem;
-          color: var(--text-primary);
-          margin-bottom: 0.25rem;
-        }
-        .rel-price {
-          font-size: 1.05rem;
-          font-weight: 800;
-          color: var(--accent-secondary);
-        }
-      `}</style>
-    </div>
-  );
-}
+      {/* Sprint 5: Click & Collect Reservation Modal */}
+      {reservationModalOpen && (
+        <ReservationModal
+          part={part}
+          isOpen={reservationModalOpen}
+          onClose={() => setReservationModalOpen(false)}
+          onSuccess={handleReservationSuccess}
+          initialInventory={selectedInvForReservation}
+        />
+      )}
 
-export default function PartDetailPage() {
-  return (
-    <React.Suspense
-      fallback={
-        <div className="container detail-container" style={{ padding: '4rem 1rem' }}>
-          <div className="skeleton" style={{ height: 400 }} />
-        </div>
-      }
-    >
-      <PartDetailContent />
-    </React.Suspense>
+      {/* Sprint 5: Digital Voucher Modal */}
+      {voucherModalOpen && activeReservation && (
+        <ReservationVoucherModal
+          reservation={activeReservation}
+          isOpen={voucherModalOpen}
+          onClose={() => setVoucherModalOpen(false)}
+        />
+      )}
+
+      <Footer />
+      <CompareTray />
+    </div>
   );
 }

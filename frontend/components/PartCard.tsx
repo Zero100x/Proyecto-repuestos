@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Part } from '../lib/types';
-import { formatPriceCOP } from '../lib/api';
+import { formatPriceCOP, calculateHaversineDistance } from '../lib/api';
 import { useCompare } from '../lib/compareContext';
 import WhatsAppLeadModal from './WhatsAppLeadModal';
 import {
@@ -12,28 +12,28 @@ import {
   CheckCircleIcon,
   MapPinIcon,
   TagIcon,
-  ShieldCheckIcon,
 } from './Icons';
 
 interface PartCardProps {
   part: Part;
-  verifiedVehicle?: string; // Optional vehicle name to show fitment badge
+  verifiedVehicle?: string;
+  userCoords?: { latitude: number; longitude: number } | null;
 }
 
-export default function PartCard({ part, verifiedVehicle }: PartCardProps) {
+export default function PartCard({ part, verifiedVehicle, userCoords }: PartCardProps) {
   const { addToCompare, removeFromCompare, isCompared } = useCompare();
   const [showLeadModal, setShowLeadModal] = useState(false);
 
   const compared = isCompared(part.id);
 
-  const conditionLabels: Record<string, { label: string; class: string }> = {
-    NEW: { label: 'Nuevo', class: 'badge-success' },
-    USED: { label: 'Usado', class: 'badge-warning' },
-    REFURBISHED: { label: 'Remanufacturado', class: 'badge-info' },
+  const conditionLabels: Record<string, { label: string; bg: string; color: string }> = {
+    NEW: { label: 'Nuevo (OEM)', bg: 'var(--surface-container-high)', color: 'var(--primary)' },
+    USED: { label: 'Usado Certificado', bg: 'var(--surface-container)', color: 'var(--secondary)' },
+    REFURBISHED: { label: 'Remanufacturado', bg: 'var(--secondary-container)', color: 'var(--on-secondary-container)' },
   };
 
   const primaryCondition = part.conditions?.[0] || 'NEW';
-  const conditionInfo = conditionLabels[primaryCondition] || { label: 'Garantizado', class: 'badge-primary' };
+  const conditionInfo = conditionLabels[primaryCondition] || { label: 'Garantizado', bg: 'var(--surface-container)', color: 'var(--primary)' };
 
   const oemNumber = part.partNumbers?.[0]?.number;
   const bestPrice = part.minPrice || 0;
@@ -51,93 +51,126 @@ export default function PartCard({ part, verifiedVehicle }: PartCardProps) {
 
   return (
     <>
-      <div className="card part-card">
-        {/* Card Header Media */}
-        <div className="media-wrapper">
-          <Link href={`/parts/${part.id}`} className="image-link">
-            {part.imageUrl ? (
-              <img src={part.imageUrl} alt={part.name} className="part-image" />
-            ) : (
-              <div className="image-placeholder">
-                <TagIcon size={40} className="placeholder-icon" />
-              </div>
-            )}
-          </Link>
-
-          {/* Badges Overlay */}
-          <div className="badge-row">
-            <span className={`badge ${conditionInfo.class}`}>{conditionInfo.label}</span>
-            {verifiedVehicle && (
-              <span className="badge badge-primary fitment-badge">
-                <CheckCircleIcon size={12} />
-                <span>Compatible</span>
-              </span>
-            )}
-          </div>
-
-          {/* Compare Button on Top Right */}
-          <button
-            type="button"
-            className={`btn-compare-pill ${compared ? 'active' : ''}`}
-            onClick={handleCompareToggle}
-            title={compared ? 'Quitar del comparador' : 'Agregar a comparación'}
-          >
-            <CompareIcon size={14} />
-            <span>{compared ? 'Comparando' : 'Comparar'}</span>
-          </button>
+      <div className="product-card group">
+        {/* Fitment badge overlay */}
+        <div className="badge-overlay-left">
+          {verifiedVehicle ? (
+            <span className="fitment-badge">
+              <span className="material-symbols-outlined text-[14px]">check_circle</span>
+              <span>Compatible</span>
+            </span>
+          ) : (
+            <span className="oem-quality-badge">
+              <span className="material-symbols-outlined text-[14px]">verified</span>
+              <span>OEM Spec</span>
+            </span>
+          )}
         </div>
 
-        {/* Content Body */}
+        {/* Compare Button on Top Right */}
+        <button
+          type="button"
+          className={`compare-btn ${compared ? 'active' : ''}`}
+          onClick={handleCompareToggle}
+          title={compared ? 'Quitar del comparador' : 'Agregar a comparación'}
+        >
+          <CompareIcon size={13} />
+          <span>{compared ? 'En lista' : 'Comparar'}</span>
+        </button>
+
+        {/* Media */}
+        <Link href={`/parts/${part.id}`} className="image-container">
+          {part.imageUrl ? (
+            <img src={part.imageUrl} alt={part.name} className="product-img" />
+          ) : (
+            <div className="placeholder-box">
+              <TagIcon size={36} />
+            </div>
+          )}
+        </Link>
+
+        {/* Body */}
         <div className="card-body">
-          <div className="category-meta">
-            <span className="brand-tag">{part.brand || 'Original'}</span>
-            {part.category && <span className="cat-bullet">•</span>}
-            {part.category && <span className="cat-name">{part.category.name}</span>}
+          <div className="meta-row">
+            <span
+              className="condition-pill"
+              style={{ background: conditionInfo.bg, color: conditionInfo.color }}
+            >
+              {conditionInfo.label}
+            </span>
+            {part.brand && <span className="brand-label">{part.brand}</span>}
           </div>
 
-          <Link href={`/parts/${part.id}`} className="title-link">
-            <h3 className="part-title">{part.name}</h3>
+          <Link href={`/parts/${part.id}`}>
+            <h3 className="title-text">{part.name}</h3>
           </Link>
 
           {oemNumber && (
-            <div className="oem-ref">
-              <span className="oem-label">Ref OEM:</span>
+            <div className="oem-spec">
+              <span className="oem-tag">REF OEM:</span>
               <code className="oem-code">{oemNumber}</code>
             </div>
           )}
 
-          {/* Availability Info */}
-          <div className="stock-info">
-            <MapPinIcon size={14} className="icon-pin" />
-            <span>
-              Disponible en <strong>{locationCount} {locationCount === 1 ? 'sede' : 'sedes'}</strong>
-              {part.cities && part.cities.length > 0 && ` (${part.cities.join(', ')})`}
-            </span>
-          </div>
+          {/* Location & GPS Proximity */}
+          {(() => {
+            let nearestDist: number | null = null;
+            let nearestName: string | null = null;
 
-          {/* Pricing & Call to Action */}
-          <div className="price-cta-block">
-            <div className="price-box">
-              <span className="price-label">Mejor precio</span>
-              <span className="price-amount">{formatPriceCOP(bestPrice)}</span>
-              {part.maxPrice && part.maxPrice > bestPrice && (
-                <span className="price-range">hasta {formatPriceCOP(part.maxPrice)}</span>
-              )}
+            if (userCoords && part.inventory?.length) {
+              for (const inv of part.inventory) {
+                if (inv.location?.latitude && inv.location?.longitude) {
+                  const d = calculateHaversineDistance(
+                    userCoords.latitude,
+                    userCoords.longitude,
+                    inv.location.latitude,
+                    inv.location.longitude,
+                  );
+                  if (nearestDist === null || d < nearestDist) {
+                    nearestDist = d;
+                    nearestName = inv.location.name;
+                  }
+                }
+              }
+            }
+
+            return (
+              <div className="location-info">
+                <MapPinIcon size={13} />
+                {nearestDist !== null ? (
+                  <span className="text-emerald-700 font-bold text-[11px]">
+                    📍 A {nearestDist} km en {nearestName}
+                  </span>
+                ) : (
+                  <span>
+                    Disponible en <strong>{locationCount} {locationCount === 1 ? 'almacén' : 'almacenes'}</strong>
+                    {part.cities && part.cities.length > 0 && ` (${part.cities.join(', ')})`}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Pricing & CTA */}
+          <div className="footer-row">
+            <div className="price-stack">
+              <span className="price-caption">Precio desde</span>
+              <span className="price-value">{formatPriceCOP(bestPrice)}</span>
             </div>
 
-            <div className="cta-actions">
+            <div className="cta-group">
               <button
                 type="button"
-                className="btn btn-wa-quick"
+                className="btn-wa"
                 onClick={() => setShowLeadModal(true)}
-                title="Cotizar directo por WhatsApp"
+                title="Cotizar de inmediato por WhatsApp"
               >
-                <WhatsAppIcon size={18} />
+                <WhatsAppIcon size={16} />
                 <span>WhatsApp</span>
               </button>
 
-              <Link href={`/parts/${part.id}`} className="btn btn-secondary btn-sm btn-details">
-                Ver Sede
+              <Link href={`/parts/${part.id}`} className="btn-detail">
+                Ficha
               </Link>
             </div>
           </div>
@@ -153,212 +186,247 @@ export default function PartCard({ part, verifiedVehicle }: PartCardProps) {
       )}
 
       <style jsx>{`
-        .part-card {
-          padding: 0;
-          overflow: hidden;
+        .product-card {
+          position: relative;
           display: flex;
           flex-direction: column;
           height: 100%;
-          background: var(--bg-card);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-lg);
-          transition: all 0.25s ease;
-        }
-        .part-card:hover {
-          border-color: var(--accent-primary-light);
-          transform: translateY(-4px);
-          box-shadow: var(--shadow-lg), var(--shadow-glow);
-        }
-        .media-wrapper {
-          position: relative;
-          width: 100%;
-          height: 180px;
-          background: #0f1526;
+          background: var(--surface-container-lowest);
+          border: 1px solid var(--outline-variant);
+          border-radius: var(--radius-xl);
           overflow: hidden;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .image-link {
-          display: block;
-          width: 100%;
-          height: 100%;
+        .product-card:hover {
+          border-color: var(--primary);
+          box-shadow: 0 8px 30px rgba(10, 31, 68, 0.08);
+          transform: translateY(-3px);
         }
-        .part-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.4s ease;
+        .badge-overlay-left {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          z-index: 10;
         }
-        .part-card:hover .part-image {
-          transform: scale(1.05);
+        .fitment-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(4px);
+          border: 1px solid rgba(16, 185, 129, 0.35);
+          color: #059669;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 4px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
-        .image-placeholder {
-          width: 100%;
-          height: 100%;
+        .oem-quality-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(4px);
+          border: 1px solid var(--outline-variant);
+          color: var(--primary);
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 4px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .compare-btn {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          z-index: 10;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          background: var(--surface-container-lowest);
+          border: 1px solid var(--outline-variant);
+          color: var(--secondary);
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10px;
+          font-weight: 600;
+          padding: 3px 8px;
+          border-radius: 9999px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+        .compare-btn:hover, .compare-btn.active {
+          background: var(--primary);
+          color: #ffffff;
+          border-color: var(--primary);
+        }
+        .image-container {
           display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--text-muted);
+          height: 190px;
+          background: var(--surface-container-lowest);
+          border-bottom: 1px solid var(--outline-variant);
+          padding: 1.25rem;
+          overflow: hidden;
         }
-        .badge-row {
-          position: absolute;
-          top: 0.75rem;
-          left: 0.75rem;
+        .product-img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          transition: transform 0.4s ease;
+        }
+        .product-card:hover .product-img {
+          transform: scale(1.05);
+        }
+        .placeholder-box {
           display: flex;
-          gap: 0.4rem;
-          flex-wrap: wrap;
-        }
-        .fitment-badge {
-          background: rgba(16, 185, 129, 0.9);
-          color: white;
-          display: inline-flex;
           align-items: center;
-          gap: 0.25rem;
-        }
-        .btn-compare-pill {
-          position: absolute;
-          top: 0.75rem;
-          right: 0.75rem;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.35rem;
-          padding: 0.3rem 0.65rem;
-          font-size: 0.75rem;
-          font-weight: 600;
-          background: rgba(10, 14, 26, 0.85);
-          backdrop-filter: blur(8px);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-full);
-          color: var(--text-secondary);
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .btn-compare-pill:hover,
-        .btn-compare-pill.active {
-          background: var(--accent-primary);
-          border-color: var(--accent-primary);
-          color: white;
+          justify-content: center;
+          width: 100%;
+          height: 100%;
+          color: var(--outline);
         }
         .card-body {
-          padding: 1.25rem;
           display: flex;
           flex-direction: column;
           flex: 1;
+          padding: 1rem 1.25rem 1.25rem;
+          gap: 0.6rem;
         }
-        .category-meta {
+        .meta-row {
           display: flex;
           align-items: center;
-          gap: 0.4rem;
-          font-size: 0.8rem;
-          color: var(--text-muted);
-          margin-bottom: 0.35rem;
+          justify-content: space-between;
         }
-        .brand-tag {
-          color: var(--accent-primary-light);
-          font-weight: 600;
-        }
-        .title-link {
-          text-decoration: none;
-          color: inherit;
-        }
-        .part-title {
-          font-size: 1.05rem;
+        .condition-pill {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10px;
           font-weight: 700;
-          color: var(--text-primary);
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          padding: 2px 6px;
+          border-radius: 4px;
+        }
+        .brand-label {
+          font-family: 'Inter', sans-serif;
+          font-size: 11px;
+          font-weight: 600;
+          color: var(--secondary);
+        }
+        .title-text {
+          font-family: 'Hanken Grotesk', sans-serif;
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--primary);
           line-height: 1.35;
-          margin-bottom: 0.5rem;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          transition: color 0.15s;
+          margin: 0;
+          transition: color 0.2s;
         }
-        .part-title:hover {
-          color: var(--accent-secondary);
+        .title-text:hover {
+          color: var(--on-tertiary-container);
         }
-        .oem-ref {
+        .oem-spec {
           display: flex;
           align-items: center;
-          gap: 0.4rem;
-          margin-bottom: 0.75rem;
-          font-size: 0.8rem;
+          gap: 6px;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px;
         }
-        .oem-label {
-          color: var(--text-muted);
+        .oem-tag {
+          color: var(--secondary);
+          font-size: 10px;
         }
         .oem-code {
-          background: rgba(99, 102, 241, 0.1);
-          color: var(--text-primary);
-          padding: 0.15rem 0.4rem;
-          border-radius: 4px;
-          font-size: 0.775rem;
-          border: 1px solid rgba(99, 102, 241, 0.2);
+          background: var(--surface-container);
+          padding: 2px 6px;
+          border-radius: 3px;
+          color: var(--primary);
+          font-weight: 600;
         }
-        .stock-info {
+        .location-info {
           display: flex;
           align-items: center;
-          gap: 0.4rem;
-          font-size: 0.8rem;
-          color: var(--text-secondary);
+          gap: 6px;
+          font-family: 'Inter', sans-serif;
+          font-size: 12px;
+          color: var(--secondary);
+          margin-top: 2px;
+        }
+        .footer-row {
           margin-top: auto;
-          margin-bottom: 1rem;
-        }
-        .icon-pin {
-          color: var(--accent-secondary);
-        }
-        .price-cta-block {
-          border-top: 1px solid var(--border-color);
           padding-top: 0.85rem;
+          border-top: 1px solid var(--outline-variant);
           display: flex;
           align-items: flex-end;
           justify-content: space-between;
           gap: 0.5rem;
         }
-        .price-box {
+        .price-stack {
           display: flex;
           flex-direction: column;
         }
-        .price-label {
-          font-size: 0.7rem;
-          color: var(--text-muted);
+        .price-caption {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10px;
+          color: var(--secondary);
           text-transform: uppercase;
-          letter-spacing: 0.05em;
         }
-        .price-amount {
-          font-size: 1.25rem;
+        .price-value {
+          font-family: 'Hanken Grotesk', sans-serif;
+          font-size: 18px;
           font-weight: 800;
-          color: #38bdf8;
+          color: var(--primary);
           line-height: 1.1;
         }
-        .price-range {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-        }
-        .cta-actions {
+        .cta-group {
           display: flex;
           align-items: center;
-          gap: 0.4rem;
+          gap: 6px;
         }
-        .btn-wa-quick {
-          background: #25d366;
-          color: #052410;
-          font-weight: 700;
-          font-size: 0.8rem;
-          padding: 0.5rem 0.75rem;
-          border-radius: var(--radius-md);
-          border: none;
+        .btn-wa {
           display: inline-flex;
           align-items: center;
-          gap: 0.35rem;
+          gap: 4px;
+          background: #25d366;
+          color: white;
+          border: none;
+          padding: 6px 10px;
+          border-radius: 6px;
+          font-family: 'Hanken Grotesk', sans-serif;
+          font-size: 12px;
+          font-weight: 700;
           cursor: pointer;
+          transition: background 0.2s, transform 0.1s;
+        }
+        .btn-wa:hover {
+          background: #1da851;
+        }
+        .btn-wa:active {
+          transform: scale(0.97);
+        }
+        .btn-detail {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 6px 10px;
+          background: var(--surface-container-high);
+          color: var(--primary);
+          border: 1px solid var(--outline-variant);
+          border-radius: 6px;
+          font-family: 'Hanken Grotesk', sans-serif;
+          font-size: 12px;
+          font-weight: 600;
+          text-decoration: none;
           transition: all 0.2s;
         }
-        .btn-wa-quick:hover {
-          background: #1ebe57;
-          box-shadow: 0 4px 10px rgba(37, 211, 102, 0.4);
-          transform: translateY(-1px);
-        }
-        .btn-details {
-          padding: 0.5rem 0.75rem;
-          font-size: 0.8rem;
+        .btn-detail:hover {
+          background: var(--primary);
+          color: white;
+          border-color: var(--primary);
         }
       `}</style>
     </>

@@ -1,759 +1,285 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import VehicleCascadeSelector from '../components/VehicleCascadeSelector';
-import PartCard from '../components/PartCard';
-import { fetchParts, fetchCategories } from '../lib/api';
-import { Part, PartCategory } from '../lib/types';
-import {
-  SearchIcon,
-  CarIcon,
-  TagIcon,
-  ShieldCheckIcon,
-  WhatsAppIcon,
-  BuildingIcon,
-  MapPinIcon,
-  CheckCircleIcon,
-  ArrowRightIcon,
-  SparklesIcon,
-} from '../components/Icons';
+import CompareTray from '../components/CompareTray';
+
+export const metadata = {
+  title: 'AutoPart Pro — Buscador de Repuestos Automotrices',
+  description: 'Encuentra millones de componentes OEM y de posventa con compatibilidad garantizada.',
+};
 
 export default function HomePage() {
-  const router = useRouter();
-  const [searchTab, setSearchTab] = useState<'vehicle' | 'text'>('vehicle');
-  const [textQuery, setTextQuery] = useState('');
-  const [featuredParts, setFeaturedParts] = useState<Part[]>([]);
-  const [categories, setCategories] = useState<PartCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const categories = [
+    {
+      title: 'Motor',
+      desc: 'Componentes internos, bloques y turboalimentadores',
+      href: '/search?category=motor',
+      image: '/assets/engine.svg',
+      fallbackImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCblWWa8hGpCYoMzYPfJciMCn9ozIE8WyMevFLNDkWIWri4hNTB7NUOVDGN35HFq--TgqYPB1-tF0INbVwgeaYYkpvhhtMR6MraNSf0waj4NPE8C66GIF1NoKWfqtW8ovWR3tU6O_9J4uiIvtUn8e1kHaERqeu3OOMqJgRbYY5o7DRr6F6WjGD8SwToyv6fpcDAnPX-La2d0mSXHRFEXMwY3H3MwcS6BLY05Fc0t7bVA0kdJRolM5C4',
+    },
+    {
+      title: 'Frenos',
+      desc: 'Discos ventilados, pastillas cerámicas y calipers',
+      href: '/search?category=frenos',
+      image: '/assets/brakes.svg',
+      fallbackImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1n78KYMjDi50iCUbTedtgdVFqCuzyLwBtMmLkwKfr8oNHUU1kTZybJJRRFHujysqABJeBcW0e_8GrcDB0iujxO-D94-BE39q1lPoRt0qMpYUGsR6f8bA-oAO3FTiWLkVcMKrNSmonP0s20J2dMJcQTzcMf-B8nAzfRICkzHEwesaHBicy-IxFCvZJuDtcokDHu6EWlfxQciTsMSmj_cwdMlgCnrwctl0wwaRofI7qfo2vVXqRc1HK',
+    },
+    {
+      title: 'Iluminación',
+      desc: 'Ópticas LED matrix, exploradoras y halógenas',
+      href: '/search?category=iluminacion',
+      image: '/assets/lighting.svg',
+      fallbackImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBoCqlJqptbHcXi5VnUxNz_M7kLs_SfPsU2KGQ-bAtltELfDBbstQoEIyGGyP58hhlWKGH_sGobbM2Ys74xupZM4noF7NzpUookkbzrMimaC7CutjXHBCPVg3zd8PCYM2b81TOCa8jyYXVwyVU6J0AoEJR4tYXscQaj3O9x0dgtc8hRaEqw8HWqL8vkYSgSbVJ9paiQWAVg8vKFZbnLkAUrJQwCUyNC44a5yJKK-uqkmQJT_ZFSjV9n',
+    },
+  ];
 
-  useEffect(() => {
-    Promise.all([
-      fetchParts({ limit: 6 }),
-      fetchCategories(),
-    ]).then(([partsRes, catsRes]) => {
-      setFeaturedParts(partsRes.data);
-      setCategories(catsRes);
-      setLoading(false);
-    });
-  }, []);
-
-  const handleTextSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!textQuery.trim()) return;
-    router.push(`/search?q=${encodeURIComponent(textQuery.trim())}`);
-  };
-
-  const popularMakes = [
-    { name: 'Toyota', models: 'Corolla, Hilux, RAV4, Prado' },
-    { name: 'Chevrolet', models: 'Onix, Spark GT, Tracker, D-Max' },
-    { name: 'Renault', models: 'Duster, Sandero, Logan, Kwid' },
-    { name: 'Mazda', models: 'Mazda 2, Mazda 3, CX-30, CX-5' },
-    { name: 'Nissan', models: 'Versa, Frontier, Qashqai, Kicks' },
-    { name: 'Kia', models: 'Picanto, Rio, Sportage, Cerato' },
+  const warehouses = [
+    {
+      name: 'AutoPart Depot Central',
+      address: 'Av. de los Industriales 4500, Zona Norte.',
+      stock: 'Alto (+15.000 uds)',
+      distance: '4.2 km',
+      badge: 'Centro Principal',
+      verified: true,
+      image: '/assets/warehouse.svg',
+    },
+    {
+      name: 'Repuestos Express Sur',
+      address: 'Ruta Provincial 21, Km 12.5.',
+      stock: 'Medio (+6.200 uds)',
+      distance: '12.8 km',
+      badge: 'Distribuidor',
+      verified: false,
+      image: '/assets/warehouse.svg',
+    },
   ];
 
   return (
-    <div className="home-container">
-      {/* HERO SECTION */}
-      <section className="hero-section">
-        <div className="container hero-content">
-          <div className="hero-badge animate-fade-in">
-            <SparklesIcon size={16} />
-            <span>Plataforma Centralizada de Inventario Automotriz en Colombia</span>
-          </div>
+    <div className="bg-surface text-on-surface antialiased pt-[68px] min-h-screen flex flex-col">
+      <Navbar />
 
-          <h1 className="hero-title animate-fade-in">
-            Encuentra el <span className="gradient-text">repuesto exacto</span> para tu vehículo
-          </h1>
-          <p className="hero-subtitle">
-            Compara precios, disponibilidad y stock en tiempo real entre almacenes y bodegas aliadas.
-            Contacta directo por WhatsApp sin pagos intermediarios ni comisiones.
-          </p>
-
-          {/* DUAL SEARCH BOX */}
-          <div className="search-card glass animate-slide-up">
-            <div className="search-tabs">
-              <button
-                type="button"
-                className={`tab-btn ${searchTab === 'vehicle' ? 'active' : ''}`}
-                onClick={() => setSearchTab('vehicle')}
-              >
-                <CarIcon size={18} />
-                <span>Búsqueda por Vehículo</span>
-              </button>
-              <button
-                type="button"
-                className={`tab-btn ${searchTab === 'text' ? 'active' : ''}`}
-                onClick={() => setSearchTab('text')}
-              >
-                <TagIcon size={18} />
-                <span>Búsqueda por Código OEM o Nombre</span>
-              </button>
+      <main className="w-full flex flex-col items-center flex-1">
+        {/* Hero Section */}
+        <section className="w-full hero-pattern border-b border-outline-variant py-14 md:py-20 px-margin-mobile md:px-margin-desktop">
+          <div className="max-w-container-max-width mx-auto flex flex-col items-center text-center">
+            
+            {/* Tag / Tech pill */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-mono text-xs mb-4 border border-outline-variant shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>SISTEMA DE GESTIÓN &amp; CONSULTA DE INVENTARIOS</span>
             </div>
 
-            <div className="tab-body">
-              {searchTab === 'vehicle' ? (
-                <div>
-                  <p className="tab-hint">
-                    Selecciona tu auto en 4 sencillos pasos para asegurar compatibilidad 100% garantizada:
-                  </p>
-                  <VehicleCascadeSelector />
+            <h1 className="font-display-lg text-3xl sm:text-4xl md:text-display-lg text-primary mb-4 max-w-3xl tracking-tight leading-tight">
+              Precision Parts for Professional Grade Systems.
+            </h1>
+            <p className="font-body-lg text-base sm:text-body-lg text-secondary mb-10 max-w-2xl leading-relaxed">
+              Search millions of OEM and aftermarket components with guaranteed compatibility.
+            </p>
+
+            {/* Central Search Module (Bento / Card Module) */}
+            <div className="w-full max-w-4xl bg-surface-container-lowest border border-outline-variant shadow-[0_4px_20px_rgba(10,31,68,0.08)] rounded-xl p-6 md:p-8 text-left">
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-outline-variant">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-on-tertiary-container">directions_car</span>
+                  <span className="font-heading text-sm sm:text-base font-bold text-primary">
+                    Búsqueda Técnica por Vehículo
+                  </span>
                 </div>
-              ) : (
-                <form onSubmit={handleTextSearch} className="text-search-form">
-                  <div className="search-input-group">
-                    <SearchIcon size={22} className="input-search-icon" />
-                    <input
-                      type="text"
-                      className="form-input text-search-input"
-                      placeholder="Escribe el nombre del repuesto o código OEM (ej. pastillas de freno, 04465-02220, amortiguador...)"
-                      value={textQuery}
-                      onChange={e => setTextQuery(e.target.value)}
-                    />
-                    <button type="submit" className="btn btn-primary btn-search-submit">
-                      <span>Buscar Ahora</span>
-                      <ArrowRightIcon size={18} />
-                    </button>
-                  </div>
-                  <div className="quick-tags">
-                    <span className="tags-label">Sugerencias rápidas:</span>
-                    <button type="button" onClick={() => setTextQuery('pastillas de freno')} className="tag-btn">
-                      Pastillas de freno
-                    </button>
-                    <button type="button" onClick={() => setTextQuery('filtro de aire')} className="tag-btn">
-                      Filtro de aire
-                    </button>
-                    <button type="button" onClick={() => setTextQuery('bujias')} className="tag-btn">
-                      Bujías Iridio
-                    </button>
-                    <button type="button" onClick={() => setTextQuery('embrague')} className="tag-btn">
-                      Kit embrague
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-          </div>
-
-          {/* TRUST STATS */}
-          <div className="trust-stats">
-            <div className="stat-item">
-              <ShieldCheckIcon size={20} className="stat-icon" />
-              <div>
-                <span className="stat-number">+15.000</span>
-                <span className="stat-label">Repuestos Catalogados</span>
-              </div>
-            </div>
-            <div className="stat-item">
-              <BuildingIcon size={20} className="stat-icon" />
-              <div>
-                <span className="stat-number">Almacenes Físicos</span>
-                <span className="stat-label">Bogotá y Medellín</span>
-              </div>
-            </div>
-            <div className="stat-item">
-              <WhatsAppIcon size={20} className="stat-icon text-wa" />
-              <div>
-                <span className="stat-number">WhatsApp Directo</span>
-                <span className="stat-label">Sin comisiones ocultas</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CATEGORIES SECTION */}
-      <section className="section-padding">
-        <div className="container">
-          <div className="section-header">
-            <div>
-              <span className="section-eyebrow">Catálogo Maestro</span>
-              <h2 className="section-title">Explora por Categoría</h2>
-            </div>
-            <Link href="/search" className="btn btn-ghost btn-sm link-all">
-              <span>Ver todas</span>
-              <ArrowRightIcon size={16} />
-            </Link>
-          </div>
-
-          <div className="categories-grid">
-            {categories.map(cat => (
-              <Link
-                key={cat.id}
-                href={`/search?category=${cat.slug}`}
-                className="category-card card"
-              >
-                <div className="cat-icon-box">
-                  <TagIcon size={26} />
-                </div>
-                <h3 className="cat-title">{cat.name}</h3>
-                <p className="cat-desc">{cat.description}</p>
-                <span className="cat-action">
-                  <span>Ver piezas</span>
-                  <ArrowRightIcon size={14} />
+                <span className="font-mono text-xs text-secondary bg-surface-container px-2.5 py-1 rounded">
+                  FILTRO EN CASCADA
                 </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+              </div>
 
-      {/* FEATURED PARTS GRID */}
-      <section className="section-padding section-featured">
-        <div className="container">
-          <div className="section-header">
-            <div>
-              <span className="section-eyebrow">Inventario Verificado</span>
-              <h2 className="section-title">Repuestos Más Cotizados</h2>
-              <p className="section-subtitle">
-                Piezas originales y aftermarket de alta rotación con stock listo para entrega inmediata.
-              </p>
+              {/* Cascade Form Integration */}
+              <VehicleCascadeSelector />
             </div>
-            <Link href="/search" className="btn btn-primary btn-sm">
-              <span>Explorar todo el catálogo</span>
-              <ArrowRightIcon size={16} />
+
+            {/* Metrics Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-10 w-full max-w-4xl">
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 text-center">
+                <div className="font-heading text-2xl font-bold text-primary">+50.000</div>
+                <div className="font-mono text-xs text-secondary mt-1">REPUESTOS ACTIVOS</div>
+              </div>
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 text-center">
+                <div className="font-heading text-2xl font-bold text-primary">100%</div>
+                <div className="font-mono text-xs text-secondary mt-1">COMPATIBILIDAD OEM</div>
+              </div>
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 text-center">
+                <div className="font-heading text-2xl font-bold text-primary">+35</div>
+                <div className="font-mono text-xs text-secondary mt-1">ALMACENES ALIADOS</div>
+              </div>
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 text-center">
+                <div className="font-heading text-2xl font-bold text-on-tertiary-container">&lt; 15 min</div>
+                <div className="font-mono text-xs text-secondary mt-1">RESPUESTA WHATSAPP</div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        {/* Popular Categories */}
+        <section className="w-full max-w-container-max-width mx-auto px-margin-mobile md:px-margin-desktop py-16">
+          <div className="flex justify-between items-end mb-8 border-b border-outline-variant pb-2">
+            <div>
+              <h2 className="font-title-md text-title-md text-primary">Categorías Populares</h2>
+              <p className="font-sans text-xs text-secondary mt-1">Componentes clasificados por subsistema automotriz</p>
+            </div>
+            <Link
+              href="/search"
+              className="font-label-sm text-label-sm text-primary hover:underline flex items-center gap-1 font-bold"
+            >
+              <span>Ver todas</span>
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
             </Link>
           </div>
 
-          {loading ? (
-            <div className="loading-grid">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="skeleton" style={{ height: 320 }} />
-              ))}
-            </div>
-          ) : (
-            <div className="parts-grid">
-              {featuredParts.map(part => (
-                <PartCard key={part.id} part={part} />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* POPULAR VEHICLE MAKES */}
-      <section className="section-padding">
-        <div className="container">
-          <div className="section-header">
-            <div>
-              <span className="section-eyebrow">Marcas Populares</span>
-              <h2 className="section-title">Busca por la Marca de tu Carro</h2>
-            </div>
-          </div>
-
-          <div className="makes-grid">
-            {popularMakes.map(make => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+            {categories.map((cat, idx) => (
               <Link
-                key={make.name}
-                href={`/search?make=${make.name}`}
-                className="make-card card"
+                key={idx}
+                href={cat.href}
+                className="group bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-[0_4px_20px_rgba(10,31,68,0.08)] transition-all cursor-pointer flex flex-col"
               >
-                <div className="make-icon-circle">
-                  <CarIcon size={22} />
+                <div className="h-48 bg-surface-container flex items-center justify-center p-4 overflow-hidden relative">
+                  <img
+                    src={cat.image}
+                    alt={cat.title}
+                    className="object-contain h-full w-full opacity-90 group-hover:scale-105 transition-transform duration-300"
+                  />
                 </div>
-                <div className="make-content">
-                  <h3 className="make-name">{make.name}</h3>
-                  <span className="make-models">{make.models}</span>
+                <div className="p-6 border-t border-outline-variant flex justify-between items-center mt-auto">
+                  <div>
+                    <h3 className="font-title-md text-title-md text-primary group-hover:text-on-tertiary-container transition-colors">
+                      {cat.title}
+                    </h3>
+                    <p className="font-label-sm text-label-sm text-secondary mt-1">
+                      {cat.desc}
+                    </p>
+                  </div>
+                  <span className="material-symbols-outlined text-secondary group-hover:translate-x-1 group-hover:text-primary transition-all">
+                    arrow_forward
+                  </span>
                 </div>
-                <ArrowRightIcon size={18} className="make-arrow" />
               </Link>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* HOW IT WORKS */}
-      <section className="section-padding section-how-it-works">
-        <div className="container">
-          <div className="section-header text-center">
-            <span className="section-eyebrow">Proceso Transparente</span>
-            <h2 className="section-title">¿Cómo Funciona RepuestosYA?</h2>
-            <p className="section-subtitle centered">
-              Un modelo de lead generation pensado para que ahorres tiempo y dinero encontrando la pieza correcta.
-            </p>
-          </div>
-
-          <div className="steps-grid">
-            <div className="step-card card">
-              <div className="step-num-badge">1</div>
-              <h3 className="step-title">Consulta Centralizada</h3>
-              <p className="step-desc">
-                Ingresa los datos de tu carro o el código OEM. Nuestro motor Meilisearch filtra en milisegundos las piezas 100% compatibles.
-              </p>
-            </div>
-
-            <div className="step-card card">
-              <div className="step-num-badge">2</div>
-              <h3 className="step-title">Compara Precios y Sedes</h3>
-              <p className="step-desc">
-                Revisa qué almacenes tienen la pieza en stock, compara los precios de cada sede y evalúa opciones Nuevas o Usadas.
-              </p>
-            </div>
-
-            <div className="step-card card">
-              <div className="step-num-badge">3</div>
-              <h3 className="step-title">Contacto Directo por WhatsApp</h3>
-              <p className="step-desc">
-                Toca el botón WhatsApp para chatear con el almacén con el mensaje pre-armado. Acuerdas la entrega o pasas a recoger sin pagar de más.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* STORES CTA */}
-      <section className="container section-padding">
-        <div className="partner-banner glass">
-          <div className="partner-banner-content">
-            <span className="badge badge-primary">Para Almacenes y Distribuidores</span>
-            <h2 className="partner-title">¿Vendes repuestos automotrices?</h2>
-            <p className="partner-text">
-              Publica tu catálogo maestro y stock multisede. Recibe clientes compradores calificados directo a tu línea de WhatsApp sin pagar comisiones por venta.
-            </p>
-            <div className="partner-actions">
-              <Link href="/login" className="btn btn-primary btn-lg">
-                <span>Registrar Mi Almacén</span>
-                <ArrowRightIcon size={18} />
-              </Link>
-              <Link href="/stores" className="btn btn-secondary btn-lg">
-                Conoce las sedes aliadas
+        {/* Featured Warehouses */}
+        <section className="w-full bg-surface-container-low border-y border-outline-variant py-16">
+          <div className="max-w-container-max-width mx-auto px-margin-mobile md:px-margin-desktop">
+            <div className="flex justify-between items-end mb-8 border-b border-outline-variant pb-2">
+              <div>
+                <h2 className="font-title-md text-title-md text-primary">Almacenes Destacados Cercanos</h2>
+                <p className="font-sans text-xs text-secondary mt-1">Red de distribuidores con inventario físico verificado</p>
+              </div>
+              <Link
+                href="/stores"
+                className="font-label-sm text-label-sm text-primary hover:underline flex items-center gap-1 font-bold"
+              >
+                <span>Ver mapa</span>
+                <span className="material-symbols-outlined text-[16px]">map</span>
               </Link>
             </div>
-          </div>
-        </div>
-      </section>
 
-      <style jsx>{`
-        .home-container {
-          min-height: 100vh;
-        }
-        .hero-section {
-          padding: 3.5rem 0 3rem;
-          background: radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.15), transparent 70%);
-          position: relative;
-        }
-        .hero-content {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-        }
-        .hero-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          background: rgba(99, 102, 241, 0.12);
-          border: 1px solid rgba(99, 102, 241, 0.3);
-          border-radius: var(--radius-full);
-          padding: 0.4rem 1rem;
-          color: var(--accent-primary-light);
-          font-size: 0.85rem;
-          font-weight: 600;
-          margin-bottom: 1.5rem;
-        }
-        .hero-title {
-          font-size: 2.5rem;
-          font-weight: 900;
-          line-height: 1.15;
-          max-width: 820px;
-          margin-bottom: 1.25rem;
-          letter-spacing: -0.03em;
-        }
-        @media (min-width: 768px) {
-          .hero-title {
-            font-size: 3.5rem;
-          }
-        }
-        .gradient-text {
-          background: var(--gradient-primary);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        .hero-subtitle {
-          font-size: 1.1rem;
-          color: var(--text-secondary);
-          max-width: 680px;
-          line-height: 1.6;
-          margin-bottom: 2.5rem;
-        }
-        .search-card {
-          width: 100%;
-          max-width: 960px;
-          border-radius: var(--radius-xl);
-          border: 1px solid var(--border-color-hover);
-          overflow: hidden;
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(99, 102, 241, 0.15);
-          text-align: left;
-        }
-        .search-tabs {
-          display: flex;
-          background: rgba(15, 21, 38, 0.9);
-          border-bottom: 1px solid var(--border-color);
-        }
-        .tab-btn {
-          flex: 1;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.65rem;
-          padding: 1.1rem 1rem;
-          font-family: inherit;
-          font-size: 0.95rem;
-          font-weight: 600;
-          color: var(--text-muted);
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          border-bottom: 3px solid transparent;
-          transition: all 0.2s;
-        }
-        .tab-btn:hover {
-          color: var(--text-primary);
-          background: rgba(255, 255, 255, 0.02);
-        }
-        .tab-btn.active {
-          color: white;
-          background: rgba(99, 102, 241, 0.1);
-          border-bottom-color: var(--accent-primary);
-        }
-        .tab-body {
-          padding: 1.75rem;
-          background: #11172a;
-        }
-        .tab-hint {
-          font-size: 0.85rem;
-          color: var(--text-muted);
-          margin-bottom: 1.25rem;
-        }
-        .text-search-form {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-        .search-input-group {
-          position: relative;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          flex-wrap: wrap;
-        }
-        .input-search-icon {
-          position: absolute;
-          left: 1rem;
-          color: var(--text-muted);
-          pointer-events: none;
-        }
-        .text-search-input {
-          flex: 1;
-          min-width: 260px;
-          padding: 1rem 1rem 1rem 3rem;
-          font-size: 1.05rem;
-          border-radius: var(--radius-md);
-        }
-        .btn-search-submit {
-          padding: 1rem 1.75rem;
-          font-size: 1rem;
-        }
-        .quick-tags {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          flex-wrap: wrap;
-        }
-        .tags-label {
-          font-size: 0.8rem;
-          color: var(--text-muted);
-        }
-        .tag-btn {
-          background: rgba(99, 102, 241, 0.1);
-          border: 1px solid rgba(99, 102, 241, 0.2);
-          border-radius: var(--radius-sm);
-          color: var(--text-secondary);
-          padding: 0.25rem 0.6rem;
-          font-size: 0.8rem;
-          cursor: pointer;
-          font-family: inherit;
-          transition: all 0.2s;
-        }
-        .tag-btn:hover {
-          background: rgba(99, 102, 241, 0.25);
-          color: white;
-        }
-        .trust-stats {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 2.5rem;
-          margin-top: 3rem;
-          flex-wrap: wrap;
-        }
-        .stat-item {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          text-align: left;
-        }
-        .stat-icon {
-          color: var(--accent-secondary);
-        }
-        .text-wa {
-          color: #25d366 !important;
-        }
-        .stat-number {
-          display: block;
-          font-weight: 700;
-          font-size: 0.95rem;
-          color: var(--text-primary);
-        }
-        .stat-label {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-        }
-        .section-padding {
-          padding: 4.5rem 0;
-        }
-        .section-featured {
-          background: rgba(17, 24, 39, 0.4);
-        }
-        .section-header {
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-between;
-          margin-bottom: 2.5rem;
-          gap: 1.5rem;
-          flex-wrap: wrap;
-        }
-        .section-header.text-center {
-          text-align: center;
-          flex-direction: column;
-          align-items: center;
-        }
-        .section-eyebrow {
-          display: block;
-          font-size: 0.8rem;
-          font-weight: 700;
-          color: var(--accent-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          margin-bottom: 0.35rem;
-        }
-        .section-title {
-          font-size: 2rem;
-          font-weight: 800;
-          letter-spacing: -0.02em;
-        }
-        .section-subtitle {
-          font-size: 0.95rem;
-          color: var(--text-secondary);
-          max-width: 580px;
-          margin-top: 0.35rem;
-        }
-        .section-subtitle.centered {
-          margin: 0.5rem auto 0;
-        }
-        .categories-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 1.25rem;
-        }
-        @media (min-width: 640px) {
-          .categories-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        @media (min-width: 1024px) {
-          .categories-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-        }
-        .category-card {
-          padding: 1.75rem;
-          display: flex;
-          flex-direction: column;
-          text-decoration: none;
-        }
-        .cat-icon-box {
-          width: 50px;
-          height: 50px;
-          border-radius: var(--radius-md);
-          background: rgba(99, 102, 241, 0.12);
-          border: 1px solid rgba(99, 102, 241, 0.25);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--accent-primary-light);
-          margin-bottom: 1.25rem;
-        }
-        .category-card:hover .cat-icon-box {
-          background: var(--gradient-primary);
-          color: white;
-        }
-        .cat-title {
-          font-size: 1.25rem;
-          color: var(--text-primary);
-          margin-bottom: 0.5rem;
-        }
-        .cat-desc {
-          font-size: 0.85rem;
-          color: var(--text-muted);
-          line-height: 1.5;
-          margin-bottom: 1.25rem;
-          flex: 1;
-        }
-        .cat-action {
-          display: flex;
-          align-items: center;
-          gap: 0.35rem;
-          font-size: 0.85rem;
-          font-weight: 600;
-          color: var(--accent-secondary);
-        }
-        .parts-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 1.5rem;
-        }
-        @media (min-width: 640px) {
-          .parts-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        @media (min-width: 1024px) {
-          .parts-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-        }
-        .loading-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 1.5rem;
-        }
-        .makes-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 1rem;
-        }
-        @media (min-width: 640px) {
-          .makes-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        @media (min-width: 1024px) {
-          .makes-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-        }
-        .make-card {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          padding: 1.25rem;
-          text-decoration: none;
-        }
-        .make-icon-circle {
-          width: 44px;
-          height: 44px;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid var(--border-color);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--accent-primary-light);
-        }
-        .make-content {
-          flex: 1;
-        }
-        .make-name {
-          font-size: 1.1rem;
-          color: var(--text-primary);
-          margin-bottom: 0.2rem;
-        }
-        .make-models {
-          font-size: 0.775rem;
-          color: var(--text-muted);
-          display: block;
-        }
-        .make-arrow {
-          color: var(--text-muted);
-          transition: transform 0.2s;
-        }
-        .make-card:hover .make-arrow {
-          transform: translateX(4px);
-          color: var(--accent-secondary);
-        }
-        .section-how-it-works {
-          background: rgba(10, 14, 26, 0.6);
-        }
-        .steps-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 1.5rem;
-          margin-top: 3rem;
-        }
-        @media (min-width: 768px) {
-          .steps-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-        }
-        .step-card {
-          padding: 2rem;
-          position: relative;
-        }
-        .step-num-badge {
-          width: 44px;
-          height: 44px;
-          border-radius: var(--radius-md);
-          background: var(--gradient-primary);
-          color: white;
-          font-size: 1.25rem;
-          font-weight: 800;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 1.25rem;
-        }
-        .step-title {
-          font-size: 1.25rem;
-          color: var(--text-primary);
-          margin-bottom: 0.75rem;
-        }
-        .step-desc {
-          font-size: 0.9rem;
-          color: var(--text-secondary);
-          line-height: 1.6;
-        }
-        .partner-banner {
-          border-radius: var(--radius-xl);
-          padding: 3.5rem 2rem;
-          text-align: center;
-          border: 1px solid var(--accent-primary);
-          background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.08));
-        }
-        .partner-banner-content {
-          max-width: 680px;
-          margin: 0 auto;
-        }
-        .partner-title {
-          font-size: 2.25rem;
-          margin: 1rem 0;
-          color: var(--text-primary);
-        }
-        .partner-text {
-          font-size: 1.05rem;
-          color: var(--text-secondary);
-          line-height: 1.6;
-          margin-bottom: 2rem;
-        }
-        .partner-actions {
-          display: flex;
-          gap: 1rem;
-          justify-content: center;
-          flex-wrap: wrap;
-        }
-      `}</style>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+              {warehouses.map((wh, idx) => (
+                <div
+                  key={idx}
+                  className="flex flex-col sm:flex-row bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="sm:w-1/3 bg-surface-container h-44 sm:h-auto flex items-center justify-center p-4">
+                    <img
+                      src={wh.image}
+                      alt={wh.name}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div className="sm:w-2/3 p-6 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-surface-variant text-on-surface-variant font-label-sm text-label-sm px-2 py-1 rounded-sm uppercase tracking-wider font-semibold">
+                          {wh.badge}
+                        </span>
+                        {wh.verified && (
+                          <span className="flex items-center text-secondary text-xs font-mono">
+                            <span className="material-symbols-outlined text-[14px] mr-1 text-emerald-600">
+                              check_circle
+                            </span>
+                            Verificado
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-title-md text-title-md text-primary mb-1">
+                        {wh.name}
+                      </h3>
+                      <p className="font-body-md text-body-md text-secondary text-sm">
+                        {wh.address}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 flex gap-6 pt-4 border-t border-outline-variant items-center justify-between">
+                      <div className="flex gap-4">
+                        <div className="flex flex-col">
+                          <span className="font-label-sm text-label-sm text-secondary uppercase">Inventario</span>
+                          <span className="font-body-md text-sm font-semibold text-primary">{wh.stock}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-label-sm text-label-sm text-secondary uppercase">Distancia</span>
+                          <span className="font-body-md text-sm font-semibold text-primary">{wh.distance}</span>
+                        </div>
+                      </div>
+
+                      <Link
+                        href={`/search?store=${encodeURIComponent(wh.name)}`}
+                        className="px-3 py-1.5 bg-surface-container-high hover:bg-primary hover:text-white text-primary text-xs font-heading font-bold rounded transition-colors"
+                      >
+                        Ver Stock
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* B2B Supplier Call to Action */}
+        <section className="w-full max-w-container-max-width mx-auto px-margin-mobile md:px-margin-desktop py-16 text-center">
+          <div className="bg-primary text-on-primary rounded-2xl p-8 md:p-12 shadow-lg relative overflow-hidden">
+            <div className="max-w-2xl mx-auto flex flex-col items-center">
+              <span className="font-mono text-xs uppercase tracking-widest text-tertiary-fixed bg-tertiary-container px-3 py-1 rounded-full mb-4">
+                PORTAL PARA ALMACENES Y DISTRIBUIDORES
+              </span>
+              <h2 className="font-display-lg text-2xl sm:text-3xl font-extrabold text-white mb-4">
+                Publica tu catálogo y recibe cotizaciones de compra directas
+              </h2>
+              <p className="font-body-md text-sm sm:text-base text-gray-300 mb-8 leading-relaxed">
+                Conecta tu stock con talleres y compradores particulares sin intermediarios. Recibe solicitudes inmediatas a través de WhatsApp.
+              </p>
+              <div className="flex flex-wrap gap-4 justify-center">
+                <Link
+                  href="/login"
+                  className="px-6 py-3 bg-on-tertiary-container text-white font-button text-sm rounded-lg hover:bg-orange-600 transition-colors shadow-md"
+                >
+                  Registrar mi Almacén
+                </Link>
+                <Link
+                  href="/dashboard"
+                  className="px-6 py-3 border border-white/30 text-white font-button text-sm rounded-lg hover:bg-white/10 transition-colors"
+                >
+                  Acceso al Dashboard
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
+      <CompareTray />
     </div>
   );
 }

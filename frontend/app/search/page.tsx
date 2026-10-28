@@ -2,19 +2,13 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 import PartCard from '../../components/PartCard';
+import CompareTray from '../../components/CompareTray';
 import VehicleCascadeSelector from '../../components/VehicleCascadeSelector';
-import { fetchParts, fetchCategories, formatPriceCOP } from '../../lib/api';
+import { fetchParts, fetchCategories, formatPriceCOP, calculateHaversineDistance } from '../../lib/api';
 import { Part, PartCategory, PartCondition } from '../../lib/types';
-import {
-  SearchIcon,
-  FilterIcon,
-  CloseIcon,
-  CarIcon,
-  TagIcon,
-  ChevronDownIcon,
-  SparklesIcon,
-} from '../../components/Icons';
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -30,8 +24,6 @@ function SearchContent() {
   const conditionParam = (searchParams.get('condition') as PartCondition) || undefined;
   const minPriceParam = searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined;
   const maxPriceParam = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined;
-  const sortByParam = (searchParams.get('sortBy') as 'minPrice' | 'name') || 'minPrice';
-  const sortOrderParam = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
 
   // State
   const [searchInput, setSearchInput] = useState(queryParam);
@@ -42,8 +34,37 @@ function SearchContent() {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [vehicleDrawerOpen, setVehicleDrawerOpen] = useState(false);
 
+  // Sprint 4: Geolocation & Distance Filtering
+  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [distanceFilter, setDistanceFilter] = useState<number | null>(null);
+  const [gpsCityName, setGpsCityName] = useState<string | null>(null);
+
+  const requestGps = () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      setUserCoords({ latitude: 4.7110, longitude: -74.0721 }); // Bogotá Centro
+      setGpsCityName('Bogotá (Demo)');
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setUserCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        setGpsCityName('Tu Ubicación');
+        setGpsLoading(false);
+      },
+      err => {
+        console.warn('Geolocation fallback:', err.message);
+        setUserCoords({ latitude: 4.7110, longitude: -74.0721 });
+        setGpsCityName('Bogotá Centro');
+        setGpsLoading(false);
+      },
+      { timeout: 8000 }
+    );
+  };
+
   // Price range slider state
-  const [priceRange, setPriceRange] = useState<number>(maxPriceParam || 600000);
+  const [priceRange, setPriceRange] = useState<number>(maxPriceParam || 800000);
 
   useEffect(() => {
     fetchCategories().then(setCategories);
@@ -61,11 +82,10 @@ function SearchContent() {
       condition: conditionParam,
       minPrice: minPriceParam,
       maxPrice: maxPriceParam,
-      sortBy: sortByParam,
-      sortOrder: sortOrderParam,
+      limit: 24,
     }).then(res => {
       setParts(res.data);
-      setTotalHits(res.total);
+      setTotalHits(res.total || res.data.length);
       setLoading(false);
     });
   }, [
@@ -78,638 +98,446 @@ function SearchContent() {
     conditionParam,
     minPriceParam,
     maxPriceParam,
-    sortByParam,
-    sortOrderParam,
   ]);
 
-  const updateParam = (key: string, value: string | undefined) => {
+  const updateFilters = (newParams: Record<string, string | number | undefined>) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (value === undefined || value === '') {
-      params.delete(key);
-    } else {
-      params.set(key, value);
-    }
+    Object.entries(newParams).forEach(([key, value]) => {
+      if (value === undefined || value === '') {
+        params.delete(key);
+      } else {
+        params.set(key, String(value));
+      }
+    });
     router.push(`/search?${params.toString()}`);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateParam('q', searchInput.trim() || undefined);
+    updateFilters({ q: searchInput });
+  };
+
+  const clearFilter = (key: string) => {
+    updateFilters({ [key]: undefined });
   };
 
   const clearAllFilters = () => {
-    setSearchInput('');
     router.push('/search');
+    setSearchInput('');
   };
 
-  const vehicleSummary = [makeParam, modelParam, yearParam, versionParam].filter(Boolean).join(' ');
+  // Formatted active vehicle label
+  const activeVehicleStr = [makeParam, modelParam, yearParam, versionParam].filter(Boolean).join(' ');
 
   return (
-    <div className="search-page-container container">
-      {/* Search Header Bar */}
-      <div className="search-header-box glass">
-        <form onSubmit={handleSearchSubmit} className="search-bar-form">
-          <div className="search-input-wrapper">
-            <SearchIcon size={20} className="search-icon" />
-            <input
-              type="text"
-              className="form-input search-header-input"
-              placeholder="Buscar por repuesto, marca o código OEM..."
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-            />
-            {searchInput && (
-              <button
-                type="button"
-                className="btn-clear-input"
-                onClick={() => {
-                  setSearchInput('');
-                  updateParam('q', undefined);
-                }}
-              >
-                <CloseIcon size={16} />
+    <div className="bg-surface text-on-surface min-h-screen flex flex-col antialiased pt-[68px]">
+      <Navbar />
+
+      <div className="flex flex-1 max-w-container-max-width mx-auto w-full relative px-4 md:px-margin-desktop py-6">
+        
+        {/* Sidebar: Technical Filter (Precision Automotive Hub) */}
+        <aside
+          className={`w-72 flex-shrink-0 bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-2xl p-6 h-fit sticky top-24 hidden lg:flex flex-col gap-6 ${
+            mobileFilterOpen ? '!flex fixed inset-y-0 left-0 z-50 w-80 bg-white overflow-y-auto rounded-none' : ''
+          }`}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-[var(--outline-variant)] pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded bg-[var(--primary-container)] text-[var(--on-primary-container)] flex items-center justify-center">
+                <span className="material-symbols-outlined text-lg">tune</span>
+              </div>
+              <div>
+                <h2 className="font-heading text-sm font-bold text-[var(--primary)]">Filtro Técnico</h2>
+                <p className="font-mono text-[10px] text-[var(--secondary)]">BÚSQUEDA PRECISA</p>
+              </div>
+            </div>
+            {mobileFilterOpen && (
+              <button onClick={() => setMobileFilterOpen(false)} className="lg:hidden text-gray-500">
+                <span className="material-symbols-outlined">close</span>
               </button>
             )}
           </div>
-          <button type="submit" className="btn btn-primary">
-            Buscar
-          </button>
-        </form>
 
-        {/* Selected Vehicle Fitment Banner */}
-        <div className="vehicle-filter-banner">
-          <div className="vehicle-banner-left">
-            <CarIcon size={18} className="car-icon" />
-            {vehicleSummary ? (
-              <div className="vehicle-text">
-                <span className="vehicle-label">Filtrando por vehículo:</span>
-                <span className="vehicle-name">{vehicleSummary}</span>
+          {/* Vehicle Cascade Quick Button */}
+          <div className="bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] p-3.5 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[10px] uppercase font-bold text-[var(--secondary)]">Vehículo Seleccionado</span>
+              {activeVehicleStr && (
+                <button
+                  onClick={() => updateFilters({ make: '', model: '', year: '', version: '' })}
+                  className="font-mono text-[10px] text-[var(--on-tertiary-container)] hover:underline"
+                >
+                  Quitar
+                </button>
+              )}
+            </div>
+            {activeVehicleStr ? (
+              <div className="font-heading text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-[#10b981]">check_circle</span>
+                <span>{activeVehicleStr}</span>
               </div>
             ) : (
-              <div className="vehicle-text">
-                <span className="vehicle-label">¿Buscas para un vehículo específico?</span>
-                <span className="vehicle-prompt">Selecciona tu carro para garantizar compatibilidad</span>
+              <button
+                type="button"
+                onClick={() => setVehicleDrawerOpen(!vehicleDrawerOpen)}
+                className="w-full py-2 px-3 bg-[var(--primary)] text-white font-heading text-xs font-bold rounded-lg hover:bg-[var(--primary-container)] transition-colors flex items-center justify-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-sm">directions_car</span>
+                <span>Filtrar por Vehículo</span>
+              </button>
+            )}
+
+            {/* Collapsible vehicle selector */}
+            {vehicleDrawerOpen && (
+              <div className="mt-3 pt-3 border-t border-[var(--outline-variant)]">
+                <VehicleCascadeSelector
+                  initialMake={makeParam}
+                  initialModel={modelParam}
+                  initialYear={yearParam}
+                  initialVersion={versionParam}
+                  compact={true}
+                />
               </div>
             )}
           </div>
 
-          <div className="vehicle-banner-actions">
-            {vehicleSummary && (
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => {
-                  const p = new URLSearchParams(searchParams.toString());
-                  p.delete('make');
-                  p.delete('model');
-                  p.delete('year');
-                  p.delete('version');
-                  router.push(`/search?${p.toString()}`);
-                }}
-              >
-                Quitar auto
-              </button>
-            )}
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => setVehicleDrawerOpen(!vehicleDrawerOpen)}
-            >
-              <span>{vehicleSummary ? 'Cambiar Vehículo' : 'Seleccionar Vehículo'}</span>
-              <ChevronDownIcon size={16} />
-            </button>
-          </div>
-        </div>
-
-        {/* Collapsible Vehicle Cascade Drawer */}
-        {vehicleDrawerOpen && (
-          <div className="vehicle-cascade-panel animate-slide-up">
-            <VehicleCascadeSelector
-              initialMake={makeParam}
-              initialModel={modelParam}
-              initialYear={yearParam}
-              initialVersion={versionParam}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Main Layout: Filters Sidebar + Results Grid */}
-      <div className="search-layout">
-        {/* Desktop Sidebar / Mobile Drawer */}
-        <aside className={`filters-sidebar ${mobileFilterOpen ? 'mobile-open' : ''}`}>
-          <div className="sidebar-header">
-            <div className="sidebar-title-box">
-              <FilterIcon size={18} />
-              <h3>Filtros de Búsqueda</h3>
+          {/* Sprint 4: GPS Proximity Filter */}
+          <div className="bg-[var(--surface-container-low)]/50 border border-[var(--outline-variant)] rounded-xl p-3.5">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-heading text-xs font-bold text-[var(--primary)] uppercase tracking-wider flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-sm text-emerald-600">near_me</span>
+                <span>Cercanía GPS</span>
+              </h3>
+              {userCoords && (
+                <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
+                  {gpsCityName || 'GPS Activo'}
+                </span>
+              )}
             </div>
-            <button
-              type="button"
-              className="btn-close-filter-mobile"
-              onClick={() => setMobileFilterOpen(false)}
-            >
-              <CloseIcon size={20} />
-            </button>
-          </div>
 
-          {/* Categoría */}
-          <div className="filter-group">
-            <h4 className="filter-group-title">Categoría</h4>
-            <div className="filter-options">
+            {!userCoords ? (
               <button
                 type="button"
-                className={`filter-chip-btn ${!categoryParam ? 'active' : ''}`}
-                onClick={() => updateParam('category', undefined)}
+                onClick={requestGps}
+                disabled={gpsLoading}
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-gray-50 border border-[var(--outline-variant)] rounded-lg font-heading text-xs font-bold text-[var(--primary)] transition shadow-sm"
               >
-                Todas las categorías
+                <span className={`material-symbols-outlined text-sm ${gpsLoading ? 'animate-spin' : 'text-emerald-600'}`}>
+                  {gpsLoading ? 'sync' : 'my_location'}
+                </span>
+                <span>{gpsLoading ? 'Detectando GPS...' : 'Activar Cercanía GPS'}</span>
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: 'Todos', value: null },
+                    { label: '< 5 km', value: 5 },
+                    { label: '< 15 km', value: 15 },
+                    { label: '< 30 km', value: 30 },
+                  ].map(dist => (
+                    <button
+                      key={dist.label}
+                      type="button"
+                      onClick={() => setDistanceFilter(dist.value)}
+                      className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold transition ${
+                        distanceFilter === dist.value
+                          ? 'bg-[var(--primary)] text-white shadow-sm'
+                          : 'bg-white border border-[var(--outline-variant)] text-[var(--on-surface-variant)] hover:bg-gray-100'
+                      }`}
+                    >
+                      {dist.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserCoords(null);
+                    setDistanceFilter(null);
+                  }}
+                  className="text-[10px] text-[var(--secondary)] hover:text-red-600 underline block"
+                >
+                  Desactivar filtro de ubicación
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Categories Filter */}
+          <div>
+            <h3 className="font-heading text-xs font-bold text-[var(--primary)] uppercase tracking-wider mb-2.5">
+              Categoría
+            </h3>
+            <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1">
+              <button
+                onClick={() => updateFilters({ category: '' })}
+                className={`text-left text-xs px-2.5 py-1.5 rounded-lg transition-colors flex justify-between items-center ${
+                  !categoryParam
+                    ? 'bg-[var(--primary)] text-white font-bold'
+                    : 'text-[var(--on-surface-variant)] hover:bg-[var(--surface-container)]'
+                }`}
+              >
+                <span>Todas las categorías</span>
               </button>
               {categories.map(cat => (
                 <button
                   key={cat.id}
-                  type="button"
-                  className={`filter-chip-btn ${categoryParam === cat.slug ? 'active' : ''}`}
-                  onClick={() => updateParam('category', cat.slug)}
+                  onClick={() => updateFilters({ category: cat.slug })}
+                  className={`text-left text-xs px-2.5 py-1.5 rounded-lg transition-colors flex justify-between items-center ${
+                    categoryParam === cat.slug
+                      ? 'bg-[var(--primary)] text-white font-bold'
+                      : 'text-[var(--on-surface-variant)] hover:bg-[var(--surface-container)]'
+                  }`}
                 >
-                  {cat.name}
+                  <span>{cat.name}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Condición */}
-          <div className="filter-group">
-            <h4 className="filter-group-title">Condición del Repuesto</h4>
-            <div className="filter-options">
-              <button
-                type="button"
-                className={`filter-chip-btn ${!conditionParam ? 'active' : ''}`}
-                onClick={() => updateParam('condition', undefined)}
-              >
-                Cualquiera
-              </button>
-              <button
-                type="button"
-                className={`filter-chip-btn ${conditionParam === 'NEW' ? 'active' : ''}`}
-                onClick={() => updateParam('condition', 'NEW')}
-              >
-                Nuevo (Original / Aftermarket)
-              </button>
-              <button
-                type="button"
-                className={`filter-chip-btn ${conditionParam === 'USED' ? 'active' : ''}`}
-                onClick={() => updateParam('condition', 'USED')}
-              >
-                Usado Garantizado
-              </button>
-              <button
-                type="button"
-                className={`filter-chip-btn ${conditionParam === 'REFURBISHED' ? 'active' : ''}`}
-                onClick={() => updateParam('condition', 'REFURBISHED')}
-              >
-                Remanufacturado
-              </button>
+          {/* Condition Filter */}
+          <div className="bg-[var(--surface-container-lowest)] rounded-xl p-3 border border-[var(--outline-variant)]">
+            <h3 className="font-heading text-xs font-bold text-[var(--primary)] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px] text-[var(--on-tertiary-container)]">verified</span>
+              Condición de la Pieza
+            </h3>
+            <div className="flex flex-col gap-2 font-sans text-xs">
+              {[
+                { value: '', label: 'Cualquier condición' },
+                { value: 'NEW', label: 'Nuevo (OEM)' },
+                { value: 'REFURBISHED', label: 'Remanufacturado' },
+                { value: 'USED', label: 'Usado Certificado' },
+              ].map(opt => (
+                <label key={opt.value} className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="radio"
+                    name="condition"
+                    checked={conditionParam === opt.value || (!conditionParam && opt.value === '')}
+                    onChange={() => updateFilters({ condition: opt.value || undefined })}
+                    className="accent-[var(--primary)] h-4 w-4"
+                  />
+                  <span className="group-hover:text-[var(--primary)] transition-colors">{opt.label}</span>
+                </label>
+              ))}
             </div>
           </div>
 
-          {/* Rango de Precio */}
-          <div className="filter-group">
-            <div className="price-header">
-              <h4 className="filter-group-title">Precio Máximo</h4>
-              <span className="price-val">{formatPriceCOP(priceRange)}</span>
+          {/* Price Range */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-heading text-xs font-bold text-[var(--primary)] uppercase tracking-wider">
+                Precio Máximo
+              </h3>
+              <span className="font-mono text-xs font-bold text-[var(--primary)]">
+                {formatPriceCOP(priceRange)}
+              </span>
             </div>
             <input
               type="range"
-              min={10000}
-              max={600000}
-              step={10000}
+              min="20000"
+              max="2000000"
+              step="20000"
               value={priceRange}
               onChange={e => setPriceRange(Number(e.target.value))}
-              onMouseUp={() => updateParam('maxPrice', String(priceRange))}
-              onTouchEnd={() => updateParam('maxPrice', String(priceRange))}
-              className="price-slider"
+              onMouseUp={() => updateFilters({ maxPrice: priceRange })}
+              onTouchEnd={() => updateFilters({ maxPrice: priceRange })}
+              className="w-full accent-[var(--on-tertiary-container)] cursor-pointer"
             />
-            <div className="price-slider-labels">
-              <span>$10.000</span>
-              <span>$600.000+</span>
+            <div className="flex justify-between font-mono text-[10px] text-[var(--secondary)] mt-1">
+              <span>$20.000</span>
+              <span>$2.000.000+</span>
             </div>
           </div>
 
-          <button type="button" className="btn btn-ghost btn-full btn-reset-all" onClick={clearAllFilters}>
-            Limpiar todos los filtros
-          </button>
+          {/* Reset Filters */}
+          <div className="mt-auto pt-4 border-t border-[var(--outline-variant)]">
+            <button
+              onClick={clearAllFilters}
+              className="w-full py-2.5 border border-[var(--outline-variant)] font-heading text-xs font-bold text-[var(--primary)] rounded-lg hover:bg-[var(--surface-container-highest)] transition-colors"
+            >
+              Restablecer Filtros
+            </button>
+          </div>
         </aside>
 
-        {/* Results Area */}
-        <div className="results-area">
-          {/* Active Filter Chips & Sorting Bar */}
-          <div className="results-top-bar">
-            <div className="results-count-box">
-              <span className="results-count">
-                <strong>{totalHits}</strong> {totalHits === 1 ? 'repuesto encontrado' : 'repuestos encontrados'}
+        {/* Main Content Area */}
+        <main className="flex-1 w-full lg:pl-8 flex flex-col gap-6 overflow-x-hidden">
+          
+          {/* Search Bar Top */}
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+            <form onSubmit={handleSearchSubmit} className="flex-1 w-full relative">
+              <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--secondary)] text-xl">
+                search
               </span>
-              {vehicleSummary && (
-                <span className="active-tag">
-                  Auto: {vehicleSummary}
-                  <button onClick={() => updateParam('make', undefined)}>×</button>
-                </span>
-              )}
-              {categoryParam && (
-                <span className="active-tag">
-                  Cat: {categoryParam}
-                  <button onClick={() => updateParam('category', undefined)}>×</button>
-                </span>
-              )}
-              {conditionParam && (
-                <span className="active-tag">
-                  Condición: {conditionParam}
-                  <button onClick={() => updateParam('condition', undefined)}>×</button>
-                </span>
-              )}
-            </div>
-
-            <div className="sort-controls">
+              <input
+                type="text"
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                placeholder="Buscar por nombre, código OEM, alternador, pastillas..."
+                className="w-full pl-11 pr-24 py-3 bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded-xl font-sans text-xs sm:text-sm text-[var(--on-surface)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none shadow-sm"
+              />
               <button
-                type="button"
-                className="btn btn-secondary btn-sm mobile-filter-trigger"
-                onClick={() => setMobileFilterOpen(true)}
+                type="submit"
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-[var(--primary)] text-white font-heading text-xs font-bold rounded-lg hover:bg-[var(--primary-container)] transition-colors"
               >
-                <FilterIcon size={16} />
-                <span>Filtros</span>
+                Buscar
               </button>
+            </form>
 
-              <div className="sort-select-box">
-                <label className="sort-label">Ordenar:</label>
-                <select
-                  className="form-select sort-select"
-                  value={`${sortByParam}-${sortOrderParam}`}
-                  onChange={e => {
-                    const [field, order] = e.target.value.split('-');
-                    const p = new URLSearchParams(searchParams.toString());
-                    p.set('sortBy', field);
-                    p.set('sortOrder', order);
-                    router.push(`/search?${p.toString()}`);
-                  }}
-                >
-                  <option value="minPrice-asc">Menor precio primero</option>
-                  <option value="minPrice-desc">Mayor precio primero</option>
-                  <option value="name-asc">Nombre (A - Z)</option>
-                </select>
+            <button
+              onClick={() => setMobileFilterOpen(true)}
+              className="lg:hidden w-full sm:w-auto px-4 py-3 border border-[var(--outline-variant)] rounded-xl bg-[var(--surface-container-lowest)] font-heading text-xs font-bold text-[var(--primary)] flex items-center justify-center gap-2"
+            >
+              <span className="material-symbols-outlined text-lg">tune</span>
+              <span>Filtros</span>
+            </button>
+          </div>
+
+          {/* Geo-Banner Header Widget (from mockup) */}
+          <div className="w-full h-36 sm:h-44 bg-[var(--primary-container)] border border-[var(--outline-variant)] rounded-2xl overflow-hidden relative shadow-sm flex items-end p-4 sm:p-6 text-white">
+            <img
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWYUWrZJd4R-L5LbsRfQn1SzosjvvLHfOeS_qXvVDZh8E6qtrtn0KMX9HeTH0zw8GHFOhdFaIYh733edMgY4JWVn9FpttXetmYYaFYvhw0lN5XCugBdIZCPDPd0vKTpHPNl_SnLX5UH9jChYs6B_yggmsAiIkpHN6TFwbAaWraEjof8cAEYukn97yia_9kfvX-79R6pl1KcnwZ4GVYapTBslbViCo_mifGDV9rMIaTQsEZAFwUPZpk"
+              alt="Geolocalización de inventarios"
+              className="absolute inset-0 w-full h-full object-cover opacity-25 mix-blend-overlay"
+            />
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between w-full gap-2">
+              <div>
+                <div className="inline-flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full font-mono text-[10px] uppercase font-bold text-[var(--primary-fixed)] mb-1 border border-white/10">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
+                  RED CENTRALIZADA DE ALMACENES
+                </div>
+                <h1 className="font-heading text-lg sm:text-2xl font-bold tracking-tight">
+                  {queryParam ? `Resultados para "${queryParam}"` : 'Catálogo de Repuestos y Autopartes'}
+                </h1>
+                <p className="font-sans text-xs text-gray-300 mt-0.5">
+                  {loading ? 'Consultando almacenes...' : `${totalHits} repuestos disponibles con retiro presencial o despacho`}
+                </p>
+              </div>
+
+              <div className="hidden sm:flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-lg text-xs font-mono">
+                <span className="material-symbols-outlined text-sm text-[var(--on-tertiary-container)]">location_on</span>
+                <span>Bogotá D.C. & Sede Medellín</span>
               </div>
             </div>
           </div>
 
-          {/* Parts Grid */}
-          {loading ? (
-            <div className="parts-results-grid">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="skeleton" style={{ height: 360 }} />
-              ))}
-            </div>
-          ) : parts.length > 0 ? (
-            <div className="parts-results-grid">
-              {parts.map(part => (
-                <PartCard
-                  key={part.id}
-                  part={part}
-                  verifiedVehicle={vehicleSummary || undefined}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="empty-results card glass text-center">
-              <TagIcon size={48} className="empty-icon" />
-              <h3>No encontramos repuestos con estos filtros</h3>
-              <p>
-                Prueba buscando con términos más generales, retirando el filtro de vehículo o ampliando el rango de precio.
-              </p>
-              <button type="button" className="btn btn-primary" onClick={clearAllFilters}>
-                Restablecer Búsqueda
+          {/* Active Filters Row */}
+          {(queryParam || makeParam || categoryParam || conditionParam) && (
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="font-mono text-xs text-[var(--secondary)] mr-1">Filtros activos:</span>
+              {queryParam && (
+                <span className="inline-flex items-center gap-1 bg-[var(--surface-container-high)] border border-[var(--outline-variant)] px-3 py-1 rounded-full font-mono text-xs text-[var(--on-surface)]">
+                  Búsqueda: {queryParam}
+                  <button onClick={() => clearFilter('q')} className="hover:text-red-500">
+                    <span className="material-symbols-outlined text-[14px]">close</span>
+                  </button>
+                </span>
+              )}
+              {makeParam && (
+                <span className="inline-flex items-center gap-1 bg-[var(--surface-container-high)] border border-[var(--outline-variant)] px-3 py-1 rounded-full font-mono text-xs text-[var(--on-surface)]">
+                  Vehículo: {activeVehicleStr}
+                  <button onClick={() => updateFilters({ make: '', model: '', year: '', version: '' })} className="hover:text-red-500">
+                    <span className="material-symbols-outlined text-[14px]">close</span>
+                  </button>
+                </span>
+              )}
+              {categoryParam && (
+                <span className="inline-flex items-center gap-1 bg-[var(--surface-container-high)] border border-[var(--outline-variant)] px-3 py-1 rounded-full font-mono text-xs text-[var(--on-surface)]">
+                  Categoría: {categoryParam}
+                  <button onClick={() => clearFilter('category')} className="hover:text-red-500">
+                    <span className="material-symbols-outlined text-[14px]">close</span>
+                  </button>
+                </span>
+              )}
+              {conditionParam && (
+                <span className="inline-flex items-center gap-1 bg-[var(--surface-container-high)] border border-[var(--outline-variant)] px-3 py-1 rounded-full font-mono text-xs text-[var(--on-surface)]">
+                  Condición: {conditionParam}
+                  <button onClick={() => clearFilter('condition')} className="hover:text-red-500">
+                    <span className="material-symbols-outlined text-[14px]">close</span>
+                  </button>
+                </span>
+              )}
+              <button
+                onClick={clearAllFilters}
+                className="font-mono text-xs text-[var(--on-tertiary-container)] hover:underline ml-2"
+              >
+                Limpiar todo
               </button>
             </div>
           )}
-        </div>
+
+          {/* Product Grid */}
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="h-80 bg-[var(--surface-container-low)] rounded-2xl animate-pulse" />
+              ))}
+            </div>
+          ) : (() => {
+            const displayedParts = parts.filter(part => {
+              if (distanceFilter !== null && userCoords && part.inventory?.length) {
+                const hasClose = part.inventory.some(inv => {
+                  if (!inv.location?.latitude || !inv.location?.longitude) return false;
+                  const d = calculateHaversineDistance(
+                    userCoords.latitude,
+                    userCoords.longitude,
+                    inv.location.latitude,
+                    inv.location.longitude,
+                  );
+                  return d <= distanceFilter;
+                });
+                if (!hasClose) return false;
+              }
+              return true;
+            });
+
+            return displayedParts.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {displayedParts.map(part => (
+                  <PartCard
+                    key={part.id}
+                    part={part}
+                    verifiedVehicle={activeVehicleStr}
+                    userCoords={userCoords}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="p-12 text-center bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded-2xl flex flex-col items-center">
+                <span className="material-symbols-outlined text-4xl text-[var(--secondary)] mb-3">
+                  search_off
+                </span>
+                <h3 className="font-heading text-lg font-bold text-[var(--primary)] mb-1">
+                  No encontramos piezas dentro del radio de distancia seleccionado
+                </h3>
+                <p className="font-sans text-xs text-[var(--secondary)] max-w-md mb-4">
+                  Prueba ampliando el radio a 15 km o 30 km, o consulta todas las sedes disponibles a nivel nacional.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setDistanceFilter(null)}
+                  className="px-4 py-2 bg-[var(--primary)] text-white rounded-xl font-heading text-xs font-bold"
+                >
+                  Ver todas las distancias
+                </button>
+              </div>
+            );
+          })()}
+
+        </main>
       </div>
 
-      <style jsx>{`
-        .search-page-container {
-          padding-top: 2rem;
-          padding-bottom: 4rem;
-        }
-        .search-header-box {
-          padding: 1.5rem;
-          border-radius: var(--radius-xl);
-          margin-bottom: 2rem;
-          border: 1px solid var(--border-color);
-        }
-        .search-bar-form {
-          display: flex;
-          gap: 0.75rem;
-          margin-bottom: 1.25rem;
-        }
-        .search-input-wrapper {
-          position: relative;
-          flex: 1;
-          display: flex;
-          align-items: center;
-        }
-        .search-icon {
-          position: absolute;
-          left: 1rem;
-          color: var(--text-muted);
-        }
-        .search-header-input {
-          padding-left: 2.75rem;
-          padding-right: 2.5rem;
-          font-size: 1rem;
-        }
-        .btn-clear-input {
-          position: absolute;
-          right: 0.75rem;
-          background: transparent;
-          border: none;
-          color: var(--text-muted);
-          cursor: pointer;
-        }
-        .vehicle-filter-banner {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: rgba(15, 23, 42, 0.7);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-md);
-          padding: 0.85rem 1.25rem;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-        .vehicle-banner-left {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        }
-        .car-icon {
-          color: var(--accent-secondary);
-        }
-        .vehicle-text {
-          display: flex;
-          flex-direction: column;
-        }
-        .vehicle-label {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-        .vehicle-name {
-          font-weight: 700;
-          color: var(--text-primary);
-          font-size: 0.95rem;
-        }
-        .vehicle-prompt {
-          font-size: 0.85rem;
-          color: var(--text-secondary);
-        }
-        .vehicle-banner-actions {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        .vehicle-cascade-panel {
-          margin-top: 1.25rem;
-          padding-top: 1.25rem;
-          border-top: 1px solid var(--border-color);
-        }
-        .search-layout {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 2rem;
-        }
-        @media (min-width: 960px) {
-          .search-layout {
-            grid-template-columns: 280px 1fr;
-          }
-        }
-        .filters-sidebar {
-          background: var(--bg-card);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-lg);
-          padding: 1.5rem;
-          height: fit-content;
-        }
-        @media (max-width: 959px) {
-          .filters-sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 85%;
-            max-width: 320px;
-            height: 100vh;
-            z-index: 9999;
-            overflow-y: auto;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease;
-            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.8);
-          }
-          .filters-sidebar.mobile-open {
-            transform: translateX(0);
-          }
-        }
-        .sidebar-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 1.5rem;
-          padding-bottom: 0.75rem;
-          border-bottom: 1px solid var(--border-color);
-        }
-        .sidebar-title-box {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          color: var(--accent-primary-light);
-        }
-        .sidebar-title-box h3 {
-          font-size: 1.05rem;
-          color: var(--text-primary);
-        }
-        .btn-close-filter-mobile {
-          background: transparent;
-          border: none;
-          color: var(--text-muted);
-          cursor: pointer;
-        }
-        @media (min-width: 960px) {
-          .btn-close-filter-mobile {
-            display: none;
-          }
-        }
-        .filter-group {
-          margin-bottom: 1.75rem;
-        }
-        .filter-group-title {
-          font-size: 0.85rem;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin-bottom: 0.75rem;
-        }
-        .filter-options {
-          display: flex;
-          flex-direction: column;
-          gap: 0.4rem;
-        }
-        .filter-chip-btn {
-          text-align: left;
-          background: transparent;
-          border: 1px solid transparent;
-          color: var(--text-secondary);
-          padding: 0.5rem 0.75rem;
-          border-radius: var(--radius-sm);
-          font-size: 0.85rem;
-          cursor: pointer;
-          transition: all 0.15s;
-        }
-        .filter-chip-btn:hover {
-          background: rgba(255, 255, 255, 0.04);
-          color: var(--text-primary);
-        }
-        .filter-chip-btn.active {
-          background: rgba(99, 102, 241, 0.15);
-          color: var(--accent-primary-light);
-          border-color: var(--accent-primary);
-          font-weight: 600;
-        }
-        .price-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 0.5rem;
-        }
-        .price-val {
-          font-size: 0.9rem;
-          font-weight: 700;
-          color: var(--accent-secondary);
-        }
-        .price-slider {
-          width: 100%;
-          accent-color: var(--accent-primary);
-          margin-bottom: 0.35rem;
-        }
-        .price-slider-labels {
-          display: flex;
-          justify-content: space-between;
-          font-size: 0.7rem;
-          color: var(--text-muted);
-        }
-        .btn-reset-all {
-          margin-top: 1rem;
-          border: 1px dashed var(--border-color);
-        }
-        .results-area {
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-        }
-        .results-top-bar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 1rem;
-        }
-        .results-count-box {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          flex-wrap: wrap;
-        }
-        .results-count {
-          font-size: 0.95rem;
-          color: var(--text-secondary);
-        }
-        .active-tag {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.35rem;
-          background: rgba(99, 102, 241, 0.15);
-          color: var(--accent-primary-light);
-          padding: 0.2rem 0.5rem;
-          border-radius: var(--radius-full);
-          font-size: 0.75rem;
-        }
-        .active-tag button {
-          background: transparent;
-          border: none;
-          color: inherit;
-          cursor: pointer;
-          font-weight: 700;
-        }
-        .sort-controls {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        }
-        .mobile-filter-trigger {
-          display: inline-flex;
-        }
-        @media (min-width: 960px) {
-          .mobile-filter-trigger {
-            display: none;
-          }
-        }
-        .sort-select-box {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        .sort-label {
-          font-size: 0.85rem;
-          color: var(--text-muted);
-        }
-        .sort-select {
-          padding: 0.4rem 2rem 0.4rem 0.75rem;
-          font-size: 0.85rem;
-          width: auto;
-        }
-        .parts-results-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 1.25rem;
-        }
-        @media (min-width: 640px) {
-          .parts-results-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        @media (min-width: 1200px) {
-          .parts-results-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-        }
-        .empty-results {
-          padding: 3.5rem 1.5rem;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 1rem;
-        }
-        .empty-icon {
-          color: var(--text-muted);
-        }
-        .empty-results h3 {
-          font-size: 1.35rem;
-        }
-        .empty-results p {
-          max-width: 480px;
-          color: var(--text-secondary);
-        }
-      `}</style>
+      <Footer />
+      <CompareTray />
     </div>
   );
 }
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="container" style={{ padding: '4rem 1rem' }}><div className="skeleton" style={{ height: 200 }} /></div>}>
+    <Suspense fallback={<div className="p-12 text-center font-mono">Cargando catálogo técnico...</div>}>
       <SearchContent />
     </Suspense>
   );

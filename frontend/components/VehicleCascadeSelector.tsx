@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchMakes, fetchVehicleCascade } from '../lib/api';
 import { VehicleMake } from '../lib/types';
-import { CarIcon, SearchIcon, SparklesIcon } from './Icons';
 
 interface VehicleCascadeSelectorProps {
   initialMake?: string;
@@ -68,11 +67,12 @@ export default function VehicleCascadeSelector({
       setSelectedVersion('');
       return;
     }
+    const makeObj = makes.find(m => m.name.toLowerCase() === selectedMake.toLowerCase());
     const modelObj = models.find(m => m.name.toLowerCase() === selectedModel.toLowerCase());
-    fetchVehicleCascade(undefined, modelObj?.id).then(cascade => {
+    fetchVehicleCascade(makeObj?.id, modelObj?.id).then(cascade => {
       setYears(cascade.years || []);
     });
-  }, [selectedModel, models]);
+  }, [selectedModel, selectedMake, models, makes]);
 
   // When year changes, fetch versions
   useEffect(() => {
@@ -81,19 +81,23 @@ export default function VehicleCascadeSelector({
       setSelectedVersion('');
       return;
     }
+    const makeObj = makes.find(m => m.name.toLowerCase() === selectedMake.toLowerCase());
+    const modelObj = models.find(m => m.name.toLowerCase() === selectedModel.toLowerCase());
     const yearObj = years.find(y => String(y.year) === selectedYear);
-    fetchVehicleCascade(undefined, undefined, yearObj?.id).then(cascade => {
+    fetchVehicleCascade(makeObj?.id, modelObj?.id, yearObj?.id || selectedYear).then(cascade => {
       setVersions(cascade.versions || []);
     });
-  }, [selectedYear, years]);
+  }, [selectedYear, selectedModel, selectedMake, models, makes]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedMake) return;
+
     const params = new URLSearchParams();
-    if (selectedMake) params.append('make', selectedMake);
-    if (selectedModel) params.append('model', selectedModel);
-    if (selectedYear) params.append('year', selectedYear);
-    if (selectedVersion) params.append('version', selectedVersion);
+    params.set('make', selectedMake);
+    if (selectedModel) params.set('model', selectedModel);
+    if (selectedYear) params.set('year', selectedYear);
+    if (selectedVersion) params.set('version', selectedVersion);
 
     router.push(`/search?${params.toString()}`);
   };
@@ -103,27 +107,100 @@ export default function VehicleCascadeSelector({
     setSelectedModel('');
     setSelectedYear('');
     setSelectedVersion('');
+    setModels([]);
+    setYears([]);
+    setVersions([]);
   };
 
+  if (compact) {
+    return (
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <div>
+          <label className="block font-mono text-[10px] text-secondary uppercase mb-1">Marca</label>
+          <select
+            value={selectedMake}
+            onChange={e => setSelectedMake(e.target.value)}
+            className="w-full border border-outline-variant bg-surface text-on-surface rounded px-3 py-2 text-xs focus:border-primary outline-none"
+          >
+            <option value="">Seleccionar Marca</option>
+            {makes.map(m => (
+              <option key={m.id} value={m.name}>{m.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block font-mono text-[10px] text-secondary uppercase mb-1">Modelo</label>
+          <select
+            value={selectedModel}
+            onChange={e => setSelectedModel(e.target.value)}
+            disabled={!selectedMake}
+            className="w-full border border-outline-variant bg-surface text-on-surface rounded px-3 py-2 text-xs focus:border-primary outline-none disabled:opacity-50"
+          >
+            <option value="">{loading ? 'Cargando...' : 'Seleccionar Modelo'}</option>
+            {models.map(m => (
+              <option key={m.id} value={m.name}>{m.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block font-mono text-[10px] text-secondary uppercase mb-1">Año</label>
+            <select
+              value={selectedYear}
+              onChange={e => setSelectedYear(e.target.value)}
+              disabled={!selectedModel}
+              className="w-full border border-outline-variant bg-surface text-on-surface rounded px-2.5 py-2 text-xs focus:border-primary outline-none disabled:opacity-50"
+            >
+              <option value="">Año</option>
+              {years.map(y => (
+                <option key={y.id} value={String(y.year)}>{y.year}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block font-mono text-[10px] text-secondary uppercase mb-1">Versión</label>
+            <select
+              value={selectedVersion}
+              onChange={e => setSelectedVersion(e.target.value)}
+              disabled={!selectedYear}
+              className="w-full border border-outline-variant bg-surface text-on-surface rounded px-2.5 py-2 text-xs focus:border-primary outline-none disabled:opacity-50"
+            >
+              <option value="">Versión</option>
+              {versions.map(v => (
+                <option key={v.id} value={v.name}>{v.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={!selectedMake}
+          className="w-full mt-1 bg-primary text-on-primary font-heading text-xs font-bold py-2.5 rounded hover:bg-primary-container transition-colors disabled:opacity-50"
+        >
+          Aplicar Filtro
+        </button>
+      </form>
+    );
+  }
+
   return (
-    <form onSubmit={handleSearch} className={`cascade-form ${compact ? 'compact' : ''}`}>
-      <div className="selector-grid">
-        {/* Marca */}
-        <div className="form-group">
-          <label className="form-label">
-            <span className="step-num">1</span> Marca
+    <form onSubmit={handleSubmit} className="w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+        {/* Step 1: Marca */}
+        <div className="flex flex-col gap-1.5 text-left">
+          <label className="font-mono text-xs uppercase text-on-surface-variant font-medium flex items-center gap-1.5">
+            <span className="w-4 h-4 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-bold">1</span>
+            <span>Marca</span>
           </label>
           <select
-            className="form-select"
             value={selectedMake}
-            onChange={e => {
-              setSelectedMake(e.target.value);
-              setSelectedModel('');
-              setSelectedYear('');
-              setSelectedVersion('');
-            }}
+            onChange={e => setSelectedMake(e.target.value)}
+            className="w-full border border-outline-variant bg-surface text-on-surface rounded px-4 py-3 font-body-md text-sm md:text-base focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
           >
-            <option value="">Selecciona Marca...</option>
+            <option value="">Seleccionar Marca</option>
             {makes.map(m => (
               <option key={m.id} value={m.name}>
                 {m.name}
@@ -132,24 +209,19 @@ export default function VehicleCascadeSelector({
           </select>
         </div>
 
-        {/* Modelo */}
-        <div className="form-group">
-          <label className="form-label">
-            <span className="step-num">2</span> Modelo
+        {/* Step 2: Modelo */}
+        <div className="flex flex-col gap-1.5 text-left">
+          <label className="font-mono text-xs uppercase text-on-surface-variant font-medium flex items-center gap-1.5">
+            <span className="w-4 h-4 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-bold">2</span>
+            <span>Modelo</span>
           </label>
           <select
-            className="form-select"
-            disabled={!selectedMake || models.length === 0}
             value={selectedModel}
-            onChange={e => {
-              setSelectedModel(e.target.value);
-              setSelectedYear('');
-              setSelectedVersion('');
-            }}
+            onChange={e => setSelectedModel(e.target.value)}
+            disabled={!selectedMake}
+            className="w-full border border-outline-variant bg-surface text-on-surface rounded px-4 py-3 font-body-md text-sm md:text-base focus:border-primary focus:ring-1 focus:ring-primary outline-none disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            <option value="">
-              {!selectedMake ? 'Primero elige marca' : models.length === 0 ? 'Sin modelos' : 'Selecciona Modelo...'}
-            </option>
+            <option value="">{loading ? 'Cargando modelos...' : 'Seleccionar Modelo'}</option>
             {models.map(m => (
               <option key={m.id} value={m.name}>
                 {m.name}
@@ -158,23 +230,19 @@ export default function VehicleCascadeSelector({
           </select>
         </div>
 
-        {/* Año */}
-        <div className="form-group">
-          <label className="form-label">
-            <span className="step-num">3</span> Año
+        {/* Step 3: Año */}
+        <div className="flex flex-col gap-1.5 text-left">
+          <label className="font-mono text-xs uppercase text-on-surface-variant font-medium flex items-center gap-1.5">
+            <span className="w-4 h-4 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-bold">3</span>
+            <span>Año</span>
           </label>
           <select
-            className="form-select"
-            disabled={!selectedModel || years.length === 0}
             value={selectedYear}
-            onChange={e => {
-              setSelectedYear(e.target.value);
-              setSelectedVersion('');
-            }}
+            onChange={e => setSelectedYear(e.target.value)}
+            disabled={!selectedModel}
+            className="w-full border border-outline-variant bg-surface text-on-surface rounded px-4 py-3 font-body-md text-sm md:text-base focus:border-primary focus:ring-1 focus:ring-primary outline-none disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            <option value="">
-              {!selectedModel ? 'Primero elige modelo' : 'Selecciona Año...'}
-            </option>
+            <option value="">Seleccionar Año</option>
             {years.map(y => (
               <option key={y.id} value={String(y.year)}>
                 {y.year}
@@ -183,20 +251,19 @@ export default function VehicleCascadeSelector({
           </select>
         </div>
 
-        {/* Versión / Motor */}
-        <div className="form-group">
-          <label className="form-label">
-            <span className="step-num">4</span> Versión / Motor (Opcional)
+        {/* Step 4: Versión */}
+        <div className="flex flex-col gap-1.5 text-left">
+          <label className="font-mono text-xs uppercase text-on-surface-variant font-medium flex items-center gap-1.5">
+            <span className="w-4 h-4 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-bold">4</span>
+            <span>Versión / Motor</span>
           </label>
           <select
-            className="form-select"
-            disabled={!selectedYear || versions.length === 0}
             value={selectedVersion}
             onChange={e => setSelectedVersion(e.target.value)}
+            disabled={!selectedYear}
+            className="w-full border border-outline-variant bg-surface text-on-surface rounded px-4 py-3 font-body-md text-sm md:text-base focus:border-primary focus:ring-1 focus:ring-primary outline-none disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            <option value="">
-              {!selectedYear ? 'Primero elige año' : 'Todas las versiones'}
-            </option>
+            <option value="">Seleccionar Versión</option>
             {versions.map(v => (
               <option key={v.id} value={v.name}>
                 {v.name} {v.engine ? `(${v.engine})` : ''}
@@ -204,75 +271,29 @@ export default function VehicleCascadeSelector({
             ))}
           </select>
         </div>
-      </div>
 
-      <div className="action-row">
-        <button
-          type="submit"
-          className="btn btn-primary btn-search-cascade"
-          disabled={!selectedMake}
-        >
-          <SearchIcon size={18} />
-          <span>Buscar Repuestos Compatibles</span>
-        </button>
-
-        {selectedMake && (
-          <button type="button" onClick={handleReset} className="btn btn-ghost btn-sm">
-            Limpiar selección
+        {/* Action Row */}
+        <div className="md:col-span-4 mt-3 flex flex-col sm:flex-row items-center gap-3">
+          <button
+            type="submit"
+            disabled={!selectedMake}
+            className="w-full flex-1 bg-primary text-on-primary font-button text-sm sm:text-base py-3.5 rounded-lg flex justify-center items-center gap-2 hover:bg-primary-container transition-all active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
+          >
+            <span className="material-symbols-outlined text-xl">search</span>
+            <span>Buscar Repuestos Compatibles</span>
           </button>
-        )}
-      </div>
 
-      <style jsx>{`
-        .cascade-form {
-          width: 100%;
-        }
-        .selector-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 0.85rem;
-          margin-bottom: 1.25rem;
-        }
-        @media (min-width: 640px) {
-          .selector-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-        @media (min-width: 1024px) {
-          .selector-grid {
-            grid-template-columns: repeat(4, 1fr);
-          }
-        }
-        .step-num {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 18px;
-          height: 18px;
-          background: var(--accent-primary);
-          color: white;
-          border-radius: 50%;
-          font-size: 0.7rem;
-          font-weight: 700;
-          margin-right: 0.35rem;
-        }
-        .action-row {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-        .btn-search-cascade {
-          flex: 1;
-          min-width: 200px;
-          padding: 0.85rem 1.75rem;
-        }
-        .cascade-form.compact .selector-grid {
-          grid-template-columns: 1fr;
-          gap: 0.5rem;
-          margin-bottom: 0.75rem;
-        }
-      `}</style>
+          {selectedMake && (
+            <button
+              type="button"
+              onClick={handleReset}
+              className="w-full sm:w-auto px-4 py-3 border border-outline-variant text-secondary hover:text-primary rounded-lg font-mono text-xs transition-colors"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+      </div>
     </form>
   );
 }

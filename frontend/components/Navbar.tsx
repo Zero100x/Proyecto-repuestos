@@ -1,328 +1,357 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCompare } from '../lib/compareContext';
-import {
-  CarIcon,
-  SearchIcon,
-  CompareIcon,
-  BuildingIcon,
-  UserIcon,
-  MapPinIcon,
-  WhatsAppIcon,
-  CloseIcon,
-} from './Icons';
+
+interface CurrentUserSession {
+  id?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  roleType?: string;
+  roles?: string[];
+  store?: { id?: string; name?: string };
+}
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { comparedParts } = useCompare();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<CurrentUserSession | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+
+    const checkAuth = () => {
+      const token = localStorage.getItem('repuestos_token') || localStorage.getItem('token');
+      const rawUser = localStorage.getItem('repuestos_user') || localStorage.getItem('user');
+      if (token && rawUser) {
+        try {
+          setUser(JSON.parse(rawUser));
+        } catch {
+          setUser({ email: 'Usuario' });
+        }
+      } else {
+        setUser(null);
+      }
+    };
+
+    checkAuth();
+    window.addEventListener('storage', checkAuth);
+    window.addEventListener('auth-changed', checkAuth);
+
+    // Close user dropdown when clicking outside
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      window.removeEventListener('storage', checkAuth);
+      window.removeEventListener('auth-changed', checkAuth);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('repuestos_token');
+    localStorage.removeItem('repuestos_user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setUserMenuOpen(false);
+    setMobileMenuOpen(false);
+    window.dispatchEvent(new Event('auth-changed'));
+    if (pathname === '/dashboard') {
+      router.push('/login');
+    }
+  };
 
   const navLinks = [
-    { label: 'Buscar Repuestos', href: '/search', icon: SearchIcon },
-    { label: 'Almacenes y Sedes', href: '/stores', icon: BuildingIcon },
+    { label: 'Marketplace', href: '/search' },
+    { label: 'Almacenes', href: '/stores' },
     {
       label: 'Comparador',
       href: '/compare',
-      icon: CompareIcon,
-      badge: comparedParts.length > 0 ? comparedParts.length : undefined,
+      badge: mounted && comparedParts.length > 0 ? comparedParts.length : undefined,
     },
   ];
 
+  const displayName = user
+    ? user.firstName
+      ? `${user.firstName} ${user.lastName || ''}`.trim()
+      : user.name || user.email?.split('@')[0] || 'Mi Cuenta'
+    : '';
+
+  const storeName = user?.store?.name || (user?.roles?.includes('STORE_ADMIN') ? 'Almacén' : '');
+
   return (
-    <header className="navbar-wrapper glass">
-      <div className="container nav-container">
-        {/* Logo */}
-        <Link href="/" className="logo-box">
-          <div className="logo-icon-bg">
-            <CarIcon size={22} className="logo-car" />
-          </div>
-          <div className="logo-text">
-            <span className="brand-name">
-              Repuestos<span className="brand-highlight">YA</span>
-            </span>
-            <span className="brand-tagline">Inventario Automotriz Colombia</span>
-          </div>
-        </Link>
-
-        {/* Desktop Navigation */}
-        <nav className="desktop-nav">
-          {navLinks.map(link => {
-            const Icon = link.icon;
-            const isActive = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`nav-link ${isActive ? 'active' : ''}`}
-              >
-                <Icon size={16} />
-                <span>{link.label}</span>
-                {link.badge !== undefined && (
-                  <span className="nav-badge">{link.badge}</span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Right CTA / User controls */}
-        <div className="nav-right">
-          <div className="city-pill">
-            <MapPinIcon size={14} className="city-pin" />
-            <span>Colombia</span>
-          </div>
-
-          <Link href="/login" className="btn btn-secondary btn-sm btn-login">
-            <UserIcon size={16} />
-            <span>Portal Almacén</span>
+    <header className="bg-surface fixed top-0 left-0 w-full z-50 border-b border-outline-variant shadow-sm backdrop-blur-md bg-surface/95">
+      <div className="flex justify-between items-center px-4 md:px-margin-desktop py-3.5 max-w-container-max-width mx-auto">
+        {/* Brand & Desktop Navigation */}
+        <div className="flex items-center gap-6 md:gap-gutter">
+          <Link
+            href="/"
+            className="font-heading text-xl md:text-2xl font-extrabold text-primary tracking-tight flex items-center gap-2"
+          >
+            <div className="w-8 h-8 rounded bg-primary-container text-on-primary flex items-center justify-center border border-outline-variant">
+              <span className="material-symbols-outlined text-lg text-primary-fixed">
+                precision_manufacturing
+              </span>
+            </div>
+            <span>AutoPart Pro</span>
           </Link>
 
-          {/* Mobile Hamburger Button */}
-          <button
-            type="button"
-            className="btn-hamburger"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
+          <nav className="hidden md:flex items-center gap-6 ml-6">
+            {navLinks.map((link) => {
+              const isActive =
+                pathname === link.href || pathname?.startsWith(link.href + '/');
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`font-label-sm text-label-sm transition-colors duration-200 relative pb-1 ${
+                    isActive
+                      ? 'text-primary border-b-2 border-primary font-bold'
+                      : 'text-secondary hover:text-primary'
+                  }`}
+                >
+                  <span>{link.label}</span>
+                  {link.badge ? (
+                    <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-mono font-bold bg-on-tertiary-container text-white rounded-full">
+                      {link.badge}
+                    </span>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Link
+            href="/dashboard"
+            className="hidden sm:flex items-center gap-1.5 bg-primary text-on-primary font-button text-button px-4 py-2 rounded hover:bg-primary-container transition-all active:scale-95 shadow-sm"
           >
-            {mobileMenuOpen ? <CloseIcon size={24} /> : (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
+            <span className="material-symbols-outlined text-[18px]">add_business</span>
+            <span>Publicar Repuesto</span>
+          </Link>
+
+          <Link
+            href="/compare"
+            className="text-secondary hover:text-primary transition-colors p-1 relative"
+            title="Bandeja de Comparación"
+          >
+            <span className="material-symbols-outlined text-[22px]">balance</span>
+            {comparedParts.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-on-tertiary-container text-white font-mono text-[9px] font-bold rounded-full flex items-center justify-center">
+                {comparedParts.length}
+              </span>
             )}
+          </Link>
+
+          {/* User Session / Auth Controls */}
+          {mounted && user ? (
+            <div className="relative" ref={menuRef}>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <button
+                  type="button"
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 p-1.5 pr-3 bg-surface-container-low hover:bg-surface-container rounded-full border border-outline-variant hover:border-primary transition-all text-left"
+                  title="Cuenta de usuario"
+                >
+                  <div className="w-7 h-7 rounded-full bg-primary text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="hidden lg:block text-xs leading-tight">
+                    <div className="font-heading font-bold text-primary truncate max-w-[120px]">
+                      {displayName}
+                    </div>
+                    {storeName && (
+                      <div className="font-mono text-[9px] text-secondary truncate max-w-[120px]">
+                        {storeName}
+                      </div>
+                    )}
+                  </div>
+                  <span className="material-symbols-outlined text-sm text-secondary">
+                    {userMenuOpen ? 'expand_less' : 'expand_more'}
+                  </span>
+                </button>
+
+                {/* Direct quick logout button for desktop */}
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200/80 rounded-lg transition-colors font-heading font-semibold"
+                  title="Cerrar Sesión / Salir de la cuenta"
+                >
+                  <span className="material-symbols-outlined text-[17px]">logout</span>
+                  <span className="hidden xl:inline">Salir</span>
+                </button>
+              </div>
+
+              {/* User Dropdown Menu */}
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-outline-variant py-2 z-50 animate-in fade-in slide-in-from-top-1">
+                  <div className="px-4 py-2.5 border-b border-outline-variant bg-surface-container-lowest">
+                    <div className="font-heading font-bold text-xs text-primary truncate">
+                      {displayName}
+                    </div>
+                    <div className="font-mono text-[10px] text-secondary truncate mt-0.5">
+                      {user.email || ''}
+                    </div>
+                    {storeName && (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary font-mono text-[9px] font-bold rounded">
+                        {storeName}
+                      </span>
+                    )}
+                  </div>
+
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-primary hover:bg-surface-container transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-base text-secondary">
+                      dashboard
+                    </span>
+                    <span>Panel de Control B2B</span>
+                  </Link>
+
+                  <Link
+                    href="/search"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-primary hover:bg-surface-container transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-base text-secondary">
+                      storefront
+                    </span>
+                    <span>Explorar Catálogo</span>
+                  </Link>
+
+                  <div className="my-1 border-t border-outline-variant" />
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-red-600 hover:bg-red-50 transition-colors text-left font-bold"
+                  >
+                    <span className="material-symbols-outlined text-base">logout</span>
+                    <span>Cerrar Sesión</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="hidden md:inline-flex text-secondary hover:text-primary font-button text-button px-3 py-2 transition-colors duration-200"
+              >
+                Acceso B2B
+              </Link>
+
+              <Link
+                href="/login"
+                className="w-8 h-8 rounded-full bg-surface-variant overflow-hidden border border-outline-variant flex items-center justify-center hover:border-primary transition-colors"
+                title="Iniciar Sesión"
+              >
+                <img
+                  src="/assets/avatar.svg"
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
+              </Link>
+            </div>
+          )}
+
+          {/* Mobile hamburger button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden text-primary p-1 focus:outline-none"
+            aria-label="Abrir menú"
+          >
+            <span className="material-symbols-outlined text-2xl">
+              {mobileMenuOpen ? 'close' : 'menu'}
+            </span>
           </button>
         </div>
       </div>
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="mobile-drawer animate-fade-in">
-          <div className="container mobile-drawer-content">
-            {navLinks.map(link => {
-              const Icon = link.icon;
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`mobile-link ${isActive ? 'active' : ''}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Icon size={20} />
-                  <span>{link.label}</span>
-                  {link.badge !== undefined && (
-                    <span className="nav-badge">{link.badge}</span>
-                  )}
-                </Link>
-              );
-            })}
+        <div className="md:hidden bg-surface-container-lowest border-t border-outline-variant px-4 py-4 flex flex-col gap-3 shadow-lg">
+          {/* User info if logged in */}
+          {user && (
+            <div className="p-3 bg-surface-container rounded-xl flex items-center justify-between border border-outline-variant mb-1">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-primary text-white font-bold text-xs flex items-center justify-center">
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="font-heading font-bold text-xs text-primary">{displayName}</div>
+                  <div className="font-mono text-[10px] text-secondary">{user.email}</div>
+                </div>
+              </div>
+            </div>
+          )}
 
-            <div className="mobile-divider" />
-
+          {navLinks.map((link) => (
             <Link
-              href="/login"
-              className="btn btn-primary btn-full"
+              key={link.href}
+              href={link.href}
               onClick={() => setMobileMenuOpen(false)}
+              className="font-label-sm text-sm py-2 px-3 rounded hover:bg-surface-container text-on-surface flex justify-between items-center"
             >
-              <UserIcon size={18} />
-              <span>Ingreso Almacenes y Administradores</span>
+              <span>{link.label}</span>
+              {link.badge ? (
+                <span className="px-2 py-0.5 text-xs font-mono font-bold bg-on-tertiary-container text-white rounded-full">
+                  {link.badge}
+                </span>
+              ) : null}
+            </Link>
+          ))}
+
+          <div className="pt-2 border-t border-outline-variant flex flex-col gap-2">
+            <Link
+              href="/dashboard"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full text-center py-2.5 bg-primary text-white rounded font-button text-xs font-bold"
+            >
+              Portal Almacén / Publicar
             </Link>
 
-            <div className="mobile-lead-note">
-              <WhatsAppIcon size={16} />
-              <span>Cotizaciones y consultas directas sin intermediarios</span>
-            </div>
+            {user ? (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded font-button text-xs font-bold hover:bg-red-100 transition-colors"
+              >
+                <span className="material-symbols-outlined text-sm">logout</span>
+                <span>Cerrar Sesión</span>
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-2 border border-outline-variant rounded font-button text-xs text-primary"
+              >
+                Iniciar Sesión
+              </Link>
+            )}
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        .navbar-wrapper {
-          position: sticky;
-          top: 0;
-          z-index: 1000;
-          border-bottom: 1px solid var(--border-color);
-          background: rgba(10, 14, 26, 0.88);
-          backdrop-filter: blur(16px);
-        }
-        .nav-container {
-          height: 72px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 1.5rem;
-        }
-        .logo-box {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          text-decoration: none;
-        }
-        .logo-icon-bg {
-          width: 42px;
-          height: 42px;
-          border-radius: var(--radius-md);
-          background: var(--gradient-primary);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-        }
-        .logo-car {
-          color: white;
-        }
-        .logo-text {
-          display: flex;
-          flex-direction: column;
-        }
-        .brand-name {
-          font-size: 1.35rem;
-          font-weight: 900;
-          letter-spacing: -0.03em;
-          color: #f1f5f9;
-          line-height: 1.1;
-        }
-        .brand-highlight {
-          color: #38bdf8;
-          font-style: italic;
-        }
-        .brand-tagline {
-          font-size: 0.65rem;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-        .desktop-nav {
-          display: none;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        @media (min-width: 820px) {
-          .desktop-nav {
-            display: flex;
-          }
-        }
-        .nav-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.45rem;
-          padding: 0.5rem 0.85rem;
-          font-size: 0.9rem;
-          font-weight: 500;
-          color: var(--text-secondary);
-          border-radius: var(--radius-md);
-          text-decoration: none;
-          transition: all 0.2s ease;
-        }
-        .nav-link:hover,
-        .nav-link.active {
-          color: #ffffff;
-          background: rgba(99, 102, 241, 0.12);
-        }
-        .nav-badge {
-          background: var(--accent-primary);
-          color: white;
-          font-size: 0.7rem;
-          font-weight: 700;
-          padding: 0.15rem 0.45rem;
-          border-radius: var(--radius-full);
-          margin-left: 0.2rem;
-        }
-        .nav-right {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        }
-        .city-pill {
-          display: none;
-          align-items: center;
-          gap: 0.35rem;
-          padding: 0.35rem 0.75rem;
-          background: rgba(255, 255, 255, 0.04);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-full);
-          font-size: 0.8rem;
-          color: var(--text-secondary);
-        }
-        @media (min-width: 640px) {
-          .city-pill {
-            display: inline-flex;
-          }
-        }
-        .city-pin {
-          color: var(--accent-secondary);
-        }
-        .btn-login {
-          display: none;
-        }
-        @media (min-width: 640px) {
-          .btn-login {
-            display: inline-flex;
-          }
-        }
-        .btn-hamburger {
-          display: flex;
-          background: transparent;
-          border: none;
-          color: var(--text-primary);
-          cursor: pointer;
-          padding: 0.5rem;
-        }
-        @media (min-width: 820px) {
-          .btn-hamburger {
-            display: none;
-          }
-        }
-        .mobile-drawer {
-          position: absolute;
-          top: 72px;
-          left: 0;
-          right: 0;
-          background: #0d1222;
-          border-bottom: 1px solid var(--border-color-hover);
-          padding: 1.5rem 0;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
-        }
-        .mobile-drawer-content {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-        .mobile-link {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.85rem 1rem;
-          background: var(--bg-card);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-md);
-          font-weight: 600;
-          color: var(--text-primary);
-          text-decoration: none;
-        }
-        .mobile-link.active {
-          border-color: var(--accent-primary);
-          background: rgba(99, 102, 241, 0.15);
-        }
-        .mobile-divider {
-          height: 1px;
-          background: var(--border-color);
-          margin: 0.5rem 0;
-        }
-        .mobile-lead-note {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.4rem;
-          font-size: 0.75rem;
-          color: #25d366;
-          text-align: center;
-        }
-      `}</style>
     </header>
   );
 }

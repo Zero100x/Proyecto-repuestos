@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AutoPart Pro - Marketplace Results</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;900&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary": "#00081e",
+                      "surface-container-highest": "#e4e1e5",
+                      "on-tertiary-container": "#e35f00",
+                      "on-error-container": "#93000a",
+                      "outline": "#75777f",
+                      "primary-fixed": "#d9e2ff",
+                      "tertiary": "#160400",
+                      "surface-container": "#f0edf1",
+                      "on-secondary": "#ffffff",
+                      "tertiary-container": "#3c1400",
+                      "inverse-surface": "#303033",
+                      "primary-container": "#0a1f44",
+                      "surface": "#fbf8fc",
+                      "on-background": "#1b1b1e",
+                      "on-primary-container": "#7687b2",
+                      "inverse-on-surface": "#f3f0f4",
+                      "surface-container-low": "#f6f2f7",
+                      "tertiary-fixed-dim": "#ffb693",
+                      "on-primary-fixed": "#041a3f",
+                      "surface-container-high": "#eae7eb",
+                      "error-container": "#ffdad6",
+                      "tertiary-fixed": "#ffdbcc",
+                      "on-tertiary": "#ffffff",
+                      "background": "#fbf8fc",
+                      "surface-dim": "#dcd9dd",
+                      "surface-variant": "#e4e1e5",
+                      "secondary": "#535f72",
+                      "on-secondary-fixed-variant": "#3c475a",
+                      "primary-fixed-dim": "#b4c6f4",
+                      "error": "#ba1a1a",
+                      "surface-bright": "#fbf8fc",
+                      "on-primary": "#ffffff",
+                      "on-secondary-container": "#596578",
+                      "secondary-fixed-dim": "#bbc7dd",
+                      "on-surface": "#1b1b1e",
+                      "inverse-primary": "#b4c6f4",
+                      "on-tertiary-fixed-variant": "#7a3000",
+                      "on-primary-fixed-variant": "#34466d",
+                      "surface-tint": "#4c5e86",
+                      "on-error": "#ffffff",
+                      "outline-variant": "#c5c6cf",
+                      "on-surface-variant": "#44464e",
+                      "on-secondary-fixed": "#101c2c",
+                      "secondary-fixed": "#d7e3fa",
+                      "surface-container-lowest": "#ffffff",
+                      "secondary-container": "#d7e3fa",
+                      "on-tertiary-fixed": "#351000"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "margin-mobile": "16px",
+                      "margin-desktop": "64px",
+                      "base-unit": "8px",
+                      "container-max-width": "1280px"
+              },
+              "fontFamily": {
+                      "label-sm": ["JetBrains Mono"],
+                      "button": ["Hanken Grotesk"],
+                      "body-lg": ["Inter"],
+                      "headline-lg": ["Hanken Grotesk"],
+                      "display-lg": ["Hanken Grotesk"],
+                      "headline-lg-mobile": ["Hanken Grotesk"],
+                      "body-md": ["Inter"],
+                      "title-md": ["Hanken Grotesk"]
+              },
+              "fontSize": {
+                      "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "button": ["14px", {"lineHeight": "20px", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Webkit scrollbar for technical feel */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f0edf1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c5c6cf;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #75777f;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md antialiased pt-20">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-surface dark:bg-primary-container border-b border-outline-variant dark:border-outline flat no shadows">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 max-w-container-max-width mx-auto">
+<div class="flex items-center gap-gutter">
+<a class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-bold text-primary dark:text-primary-fixed" href="#">AutoPart Pro</a>
+<div class="hidden md:flex items-center gap-base-unit bg-surface-container-high px-4 py-2 rounded-lg border border-outline-variant focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all w-96">
+<span class="material-symbols-outlined text-outline">search</span>
+<input class="bg-transparent border-none focus:ring-0 w-full font-body-md text-body-md text-on-surface placeholder:text-outline p-0" placeholder="Search by part number, VIN, or keyword..." type="text"/>
+</div>
+</div>
+<div class="hidden md:flex items-center gap-8">
+<div class="flex gap-6">
+<a class="font-label-sm text-label-sm text-primary dark:text-primary-fixed-dim border-b-2 border-primary dark:border-primary-fixed-dim pb-1 hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Marketplace</a>
+<a class="font-label-sm text-label-sm text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">My Garage</a>
+<a class="font-label-sm text-label-sm text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors duration-200" href="#">Orders</a>
+</div>
+<div class="flex items-center gap-4 border-l border-outline-variant pl-4">
+<button class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+</button>
+<button class="font-button text-button text-secondary hover:text-primary transition-colors">Notifications</button>
+<button class="bg-primary text-on-primary font-button text-button px-4 py-2 rounded hover:opacity-90 transition-opacity">List a Part</button>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden border border-outline-variant">
+<img alt="User profile avatar with status indicator" class="w-full h-full object-cover" data-alt="A detailed, professional avatar portrait of a mechanic or engineer in a bright, clean industrial setting. The lighting is crisp and cool, reflecting a high-end corporate aesthetic. The subject is wearing a clean dark uniform, standing against a minimalist gray background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQ_wPjob7Gz37M_0G7yBWl1GLrW_EfDAp-HMewTe0eGPHmNCU8IRkQOm71LqQYplH-ld5Qk9Gs7TFLJB4dMo8ooQnB088fg7vhqxvLtCHHL_aXW-Q5JMAqUIrRcfzJavbJGHpWBdQ0ewHoBRkVOYrqfcNfJgyWvQfGf2J4IYdjLorUEZMt1UVV_2IoJDQllO-ZDiVgZ70AGEbyQaoQMYoR6ZonRuACHq6tUuUckpf43EZaS4sajLt9"/>
+</div>
+</div>
+</div>
+<button class="md:hidden text-primary">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</nav>
+<div class="flex flex-1 max-w-container-max-width mx-auto w-full relative">
+<!-- SideNavBar (Technical Filter) -->
+<aside class="hidden md:flex flex-col h-[calc(100vh-80px)] w-80 sticky top-[80px] left-0 bg-surface-container-low dark:bg-surface-dim border-r border-outline-variant overflow-y-auto">
+<div class="p-gutter border-b border-outline-variant flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined fill" data-icon="tune">tune</span>
+</div>
+<div>
+<h2 class="font-title-md text-title-md font-bold text-primary dark:text-primary-fixed">Technical Filter</h2>
+<p class="font-label-sm text-label-sm text-secondary">Precision Search</p>
+</div>
+</div>
+<div class="flex-1 flex flex-col gap-base-unit p-gutter">
+<!-- Filter Section: Brand -->
+<div class="mb-4">
+<button class="w-full flex justify-between items-center py-2 text-primary font-body-md text-body-md font-medium hover:bg-surface-container-highest transition-colors rounded px-2">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="settings_input_component">settings_input_component</span>
+<span>Brand</span>
+</div>
+<span class="material-symbols-outlined text-secondary">expand_more</span>
+</button>
+<div class="pl-11 pr-2 py-2 flex flex-col gap-2">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input checked="" class="rounded border-outline text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface-variant group-hover:text-primary transition-colors">Bosch</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="rounded border-outline text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface-variant group-hover:text-primary transition-colors">Denso</span>
+</label>
+</div>
+</div>
+<!-- Filter Section: Model -->
+<div class="mb-4">
+<button class="w-full flex justify-between items-center py-2 text-primary font-body-md text-body-md font-medium hover:bg-surface-container-highest transition-colors rounded px-2">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="directions_car">directions_car</span>
+<span>Model</span>
+</div>
+<span class="material-symbols-outlined text-secondary">expand_more</span>
+</button>
+</div>
+<!-- Active Filter Section: Condition -->
+<div class="mb-4 bg-primary-container/5 rounded-xl p-2 border border-primary-container/10">
+<button class="w-full flex justify-between items-center py-2 text-primary font-body-md text-body-md font-bold">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="verified">verified</span>
+<span>Condition</span>
+</div>
+<span class="material-symbols-outlined text-primary">expand_less</span>
+</button>
+<div class="pl-9 pr-2 py-2 flex flex-col gap-3">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input checked="" class="border-outline text-primary focus:ring-primary h-4 w-4" name="condition" type="radio"/>
+<span class="font-body-md text-body-md text-primary font-medium">New (OEM)</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="border-outline text-primary focus:ring-primary h-4 w-4" name="condition" type="radio"/>
+<span class="font-body-md text-body-md text-on-surface-variant group-hover:text-primary transition-colors">Refurbished</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="border-outline text-primary focus:ring-primary h-4 w-4" name="condition" type="radio"/>
+<span class="font-body-md text-body-md text-on-surface-variant group-hover:text-primary transition-colors">Used</span>
+</label>
+</div>
+</div>
+<!-- Filter Section: Price Range -->
+<div class="mb-4">
+<button class="w-full flex justify-between items-center py-2 text-primary font-body-md text-body-md font-medium hover:bg-surface-container-highest transition-colors rounded px-2">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="payments">payments</span>
+<span>Price Range</span>
+</div>
+<span class="material-symbols-outlined text-secondary">expand_more</span>
+</button>
+</div>
+</div>
+<div class="p-gutter border-t border-outline-variant mt-auto">
+<button class="w-full py-2 border border-outline font-button text-button text-primary rounded hover:bg-surface-container-highest transition-colors">Clear All Filters</button>
+<div class="mt-6 flex flex-col gap-2">
+<a class="flex items-center gap-3 text-secondary hover:text-primary transition-colors font-label-sm text-label-sm" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="help">help</span>
+                        Help Center
+                    </a>
+<a class="flex items-center gap-3 text-secondary hover:text-primary transition-colors font-label-sm text-label-sm" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="support_agent">support_agent</span>
+                        Contact Support
+                    </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 w-full p-margin-mobile md:p-gutter flex flex-col gap-6 overflow-x-hidden">
+<!-- Context Header & Map -->
+<div class="flex flex-col gap-4">
+<div class="flex justify-between items-end">
+<div>
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary">Search Results</h1>
+<p class="font-body-md text-body-md text-secondary mt-1">Showing 142 results for "Alternator 12V 150A"</p>
+</div>
+<div class="hidden md:flex gap-2">
+<button class="p-2 border border-outline-variant rounded bg-surface text-primary hover:bg-surface-container transition-colors"><span class="material-symbols-outlined">grid_view</span></button>
+<button class="p-2 border border-outline-variant rounded bg-surface-container-highest text-secondary hover:text-primary transition-colors"><span class="material-symbols-outlined">view_list</span></button>
+</div>
+</div>
+<!-- Geo-Map Header Widget -->
+<div class="w-full h-48 bg-surface border border-outline-variant rounded-xl overflow-hidden relative group">
+<img alt="Geolocation map of available parts" class="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" data-alt="A stylized, high-tech map view of a metropolitan area (Berlin) indicating warehouse locations. The map uses a minimalist color palette of cool grays, deep blues, and subtle orange pings for locations. It looks like a sleek logistics dashboard tracking industrial inventory." data-location="Berlin" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWYUWrZJd4R-L5LbsRfQn1SzosjvvLHfOeS_qXvVDZh8E6qtrtn0KMX9HeTH0zw8GHFOhdFaIYh733edMgY4JWVn9FpttXetmYYaFYvhw0lN5XCugBdIZCPDPd0vKTpHPNl_SnLX5UH9jChYs6B_yggmsAiIkpHN6TFwbAaWraEjof8cAEYukn97yia_9kfvX-79R6pl1KcnwZ4GVYapTBslbViCo_mifGDV9rMIaTQsEZAFwUPZpk"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface/80 to-transparent pointer-events-none"></div>
+<div class="absolute bottom-4 left-4 bg-surface/90 backdrop-blur-sm border border-outline-variant px-4 py-2 rounded shadow-sm flex items-center gap-3">
+<span class="material-symbols-outlined text-on-tertiary-container fill text-lg">location_on</span>
+<span class="font-label-sm text-label-sm text-primary font-bold">5 warehouses near you</span>
+</div>
+</div>
+</div>
+<!-- Active Filters Row -->
+<div class="flex flex-wrap gap-2 items-center">
+<span class="font-label-sm text-label-sm text-secondary mr-2">Active:</span>
+<span class="inline-flex items-center gap-1 bg-surface-container-high border border-outline-variant px-3 py-1 rounded-full font-label-sm text-label-sm text-on-surface">
+                    Brand: Bosch
+                    <button class="hover:text-error transition-colors"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</span>
+<span class="inline-flex items-center gap-1 bg-surface-container-high border border-outline-variant px-3 py-1 rounded-full font-label-sm text-label-sm text-on-surface">
+                    Condition: New
+                    <button class="hover:text-error transition-colors"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</span>
+</div>
+<!-- Product Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Product Card 1 -->
+<div class="bg-surface border border-outline-variant rounded-xl overflow-hidden group hover:shadow-[0_4px_20px_rgba(10,31,68,0.08)] hover:border-primary/30 transition-all duration-300 flex flex-col h-full relative">
+<!-- Compatibility Badge -->
+<div class="absolute top-3 left-3 bg-surface/90 backdrop-blur border border-[#10b981]/30 text-[#10b981] px-2 py-1 rounded flex items-center gap-1 z-10 shadow-sm">
+<span class="material-symbols-outlined text-[16px] fill">check_circle</span>
+<span class="font-label-sm text-label-sm font-bold">Fits Vehicle</span>
+</div>
+<div class="h-48 bg-surface-container-lowest border-b border-outline-variant p-4 flex items-center justify-center relative overflow-hidden">
+<img alt="Bosch Alternator 150A" class="object-contain w-full h-full mix-blend-multiply group-hover:scale-105 transition-transform duration-500" data-alt="A pristine, high-resolution product shot of a Bosch automotive alternator on a stark white background. The metal components gleam with a subtle metallic gray texture. The lighting is bright and even, casting soft, diffused shadows beneath the part, emphasizing its technical precision and brand-new condition." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgAv44nf4OecS80EsNsS9SNCMvPmzDQreWHRFKSGMucbV2qB6ITh8RxSnayqxNSzh-Od7ItplrmW9Qh3jjMGhFKBhae38jLOhjOEmjmR6sQHpqjltNe36OhfTVM6QFjFEWFY9M7deh53OOttvaNJhEnJO5oDxL5A_ULQxuxLVPE9A3snav-y1TyRMhHWmdpMdEWu5QTEncNcP52NBpjuBaIZvtLSGfKoHkmCBmettD_t4wfZR4fyuH"/>
+</div>
+<div class="p-4 flex flex-col flex-1 gap-3">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-label-sm text-label-sm text-secondary uppercase tracking-wider bg-surface-container px-2 py-0.5 rounded">New (OEM)</span>
+<h3 class="font-title-md text-title-md text-primary font-bold mt-2 leading-tight">Bosch AL0826N Alternator</h3>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-x-2 gap-y-1 font-label-sm text-label-sm text-secondary mt-1">
+<span class="text-outline">Output:</span> <span class="text-on-surface font-medium">150 Amp</span>
+<span class="text-outline">Voltage:</span> <span class="text-on-surface font-medium">12V</span>
+</div>
+<div class="mt-auto pt-4 border-t border-outline-variant flex items-end justify-between">
+<div>
+<div class="flex items-center gap-1 text-secondary font-label-sm text-label-sm mb-1">
+<span class="material-symbols-outlined text-[16px]">distance</span>
+<span>Berlin Central (4.2km)</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-primary font-bold">€245.00</div>
+</div>
+<button class="w-10 h-10 rounded bg-primary text-on-primary flex items-center justify-center hover:bg-primary-container transition-colors shadow-sm">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="bg-surface border border-outline-variant rounded-xl overflow-hidden group hover:shadow-[0_4px_20px_rgba(10,31,68,0.08)] hover:border-primary/30 transition-all duration-300 flex flex-col h-full relative">
+<div class="absolute top-3 left-3 bg-surface/90 backdrop-blur border border-[#10b981]/30 text-[#10b981] px-2 py-1 rounded flex items-center gap-1 z-10 shadow-sm">
+<span class="material-symbols-outlined text-[16px] fill">check_circle</span>
+<span class="font-label-sm text-label-sm font-bold">Fits Vehicle</span>
+</div>
+<div class="h-48 bg-surface-container-lowest border-b border-outline-variant p-4 flex items-center justify-center relative overflow-hidden">
+<img alt="Denso Alternator" class="object-contain w-full h-full mix-blend-multiply group-hover:scale-105 transition-transform duration-500" data-alt="A clean, detailed product photograph of a Denso automotive alternator against a pure white background. The part shows very slight signs of professional refurbishment but looks essentially new. Industrial lighting highlights the metallic textures and cooling fins, presenting a highly engineered component." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqSnOACvIbceuYV52JgrtPohSihA_vVJIrvKySnY9s4pWf7z6cXXwqnX91fLTHTC-oyebwtR5Cu0zsM0PLtdDRa9SSBykxAuQlgAG-Ft6zTPuj26cB_loV_VtxQxGksMKHHK80A-lb4VZ2ZLAQrj8TPX6cL-rCya4qEJQb_-obDmmxi1MUtjSRxh8wIvm5QYY2CmzrhLnS1m4rqefK27RVcFSYU6x5_tQzuaQ1H1XjZ22PLXWfP6cj"/>
+</div>
+<div class="p-4 flex flex-col flex-1 gap-3">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-label-sm text-label-sm text-secondary uppercase tracking-wider bg-surface-container px-2 py-0.5 rounded">Refurbished</span>
+<h3 class="font-title-md text-title-md text-primary font-bold mt-2 leading-tight">Denso 210-0610 Alternator</h3>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-x-2 gap-y-1 font-label-sm text-label-sm text-secondary mt-1">
+<span class="text-outline">Output:</span> <span class="text-on-surface font-medium">140 Amp</span>
+<span class="text-outline">Voltage:</span> <span class="text-on-surface font-medium">12V</span>
+</div>
+<div class="mt-auto pt-4 border-t border-outline-variant flex items-end justify-between">
+<div>
+<div class="flex items-center gap-1 text-secondary font-label-sm text-label-sm mb-1">
+<span class="material-symbols-outlined text-[16px]">distance</span>
+<span>Munich South (12km)</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-primary font-bold">€189.50</div>
+</div>
+<button class="w-10 h-10 rounded bg-primary text-on-primary flex items-center justify-center hover:bg-primary-container transition-colors shadow-sm">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 3 (Used) -->
+<div class="bg-surface border border-outline-variant rounded-xl overflow-hidden group hover:shadow-[0_4px_20px_rgba(10,31,68,0.08)] hover:border-primary/30 transition-all duration-300 flex flex-col h-full relative opacity-90">
+<div class="absolute top-3 left-3 bg-surface/90 backdrop-blur border border-outline-variant text-secondary px-2 py-1 rounded flex items-center gap-1 z-10 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span class="font-label-sm text-label-sm font-bold">Verify Fitment</span>
+</div>
+<div class="h-48 bg-surface-container-lowest border-b border-outline-variant p-4 flex items-center justify-center relative overflow-hidden">
+<img alt="Used Alternator" class="object-contain w-full h-full mix-blend-multiply group-hover:scale-105 transition-transform duration-500" data-alt="A photograph of a used, slightly oxidized automotive alternator on a stark white background. The lighting is unforgiving, showing the wear and tear of industrial use while still appearing as a valid, functional salvage part. The metallic surfaces are duller than a new part." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuibEG1vYLX-eJnpTkNggs_EAL5ZNzQgXXSK4pLXmqHxL_zmrhVIK5odvSeIWZwdz1A53gVMfmRZwoOW2yf3skpf3d3Iwv298bcVXFDwvARF749X-10lZjuBRXMqwySZypHW7i1hq9s-pvqarql9nPTIUoT1CNvHwfewnCJCbr0YcPRo9nN4QRU_NKmDbfbESbPxwjn_dnMrwusoHezfBRi6EZhJoXI7GMBgssJhsNMkHx2PlwxaF9"/>
+</div>
+<div class="p-4 flex flex-col flex-1 gap-3">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-label-sm text-label-sm text-secondary uppercase tracking-wider bg-surface-container px-2 py-0.5 rounded">Used (Grade B)</span>
+<h3 class="font-title-md text-title-md text-primary font-bold mt-2 leading-tight">Valeo Generic 150A Unit</h3>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-x-2 gap-y-1 font-label-sm text-label-sm text-secondary mt-1">
+<span class="text-outline">Output:</span> <span class="text-on-surface font-medium">150 Amp</span>
+<span class="text-outline">Mileage:</span> <span class="text-on-surface font-medium">45k mi</span>
+</div>
+<div class="mt-auto pt-4 border-t border-outline-variant flex items-end justify-between">
+<div>
+<div class="flex items-center gap-1 text-secondary font-label-sm text-label-sm mb-1">
+<span class="material-symbols-outlined text-[16px]">distance</span>
+<span>Frankfurt Hub (8.5km)</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-primary font-bold">€95.00</div>
+</div>
+<button class="w-10 h-10 rounded border border-outline-variant text-primary flex items-center justify-center hover:bg-surface-container transition-colors shadow-sm">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

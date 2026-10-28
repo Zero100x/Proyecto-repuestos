@@ -45,6 +45,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         roles,
+        storeId: user.storeId ?? null,
       },
     };
   }

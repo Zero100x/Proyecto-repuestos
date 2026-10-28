@@ -4,7 +4,7 @@ import { MeilisearchService } from '../search/meilisearch.service';
 import {
   CreatePartCategoryDto, CreatePartDto, UpdatePartDto,
   AddPartNumberDto, AddCompatibilityDto, AddInventoryDto,
-  BulkCompatibilityDto,
+  BulkCompatibilityDto, CreateQuestionDto, AnswerQuestionDto,
 } from './dto/catalog.dto';
 
 @Injectable()
@@ -34,14 +34,16 @@ export class CatalogService {
   // ============ REPUESTOS (PDCIRA-7) ============
 
   async findAllParts(page = 1, limit = 20, categoryId?: string) {
-    const skip = (page - 1) * limit;
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
+    const skip = (pageNum - 1) * limitNum;
     const where: any = { isActive: true };
     if (categoryId) where.categoryId = categoryId;
 
     const [parts, total] = await Promise.all([
       this.prisma.part.findMany({
         skip,
-        take: limit,
+        take: limitNum,
         where,
         include: {
           category: { select: { id: true, name: true, slug: true } },
@@ -95,7 +97,13 @@ export class CatalogService {
     });
 
     if (!part) throw new NotFoundException('Repuesto no encontrado');
-    return part;
+    const minPrice = part.inventory.length > 0 ? part.inventory[0].price : null;
+    const maxPrice = part.inventory.length > 0 ? Math.max(...part.inventory.map(i => i.price)) : null;
+    return {
+      ...part,
+      minPrice,
+      maxPrice,
+    };
   }
 
   async createPart(dto: CreatePartDto) {
@@ -335,5 +343,41 @@ export class CatalogService {
     }
 
     return { message: `${parts.length} repuestos sincronizados con Meilisearch` };
+  }
+
+  // ============ PREGUNTAS TÉCNICAS (PDCIRA-17) ============
+
+  async getPartQuestions(partId: string) {
+    await this.findOnePart(partId);
+    return this.prisma.partQuestion.findMany({
+      where: { partId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createQuestion(partId: string, dto: CreateQuestionDto, userId?: string) {
+    await this.findOnePart(partId);
+    return this.prisma.partQuestion.create({
+      data: {
+        partId,
+        authorName: dto.authorName.trim(),
+        question: dto.question.trim(),
+        userId: userId || null,
+      },
+    });
+  }
+
+  async answerQuestion(questionId: string, dto: AnswerQuestionDto, userEmail?: string) {
+    const question = await this.prisma.partQuestion.findUnique({ where: { id: questionId } });
+    if (!question) throw new NotFoundException('Pregunta no encontrada');
+
+    return this.prisma.partQuestion.update({
+      where: { id: questionId },
+      data: {
+        answer: dto.answer.trim(),
+        answeredBy: dto.answeredBy?.trim() || userEmail || 'Asesor Técnico',
+        answeredAt: new Date(),
+      },
+    });
   }
 }

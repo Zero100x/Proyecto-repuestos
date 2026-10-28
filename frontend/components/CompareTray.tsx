@@ -7,8 +7,13 @@ import { CompareIcon, CloseIcon, ArrowRightIcon } from './Icons';
 
 export default function CompareTray() {
   const { comparedParts, removeFromCompare, clearCompare } = useCompare();
+  const [mounted, setMounted] = React.useState(false);
 
-  if (comparedParts.length === 0) return null;
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || comparedParts.length === 0) return null;
 
   return (
     <div className="compare-tray-wrapper animate-slide-up">

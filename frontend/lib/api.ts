@@ -1,4 +1,23 @@
-import { Part, SearchFilters, VehicleMake, Location, Store } from './types';
+import {
+  Part,
+  SearchFilters,
+  VehicleMake,
+  Location,
+  Store,
+  StoreInventoryItem,
+  InventorySummary,
+  BulkUploadReport,
+  CreatePartWithStockDto,
+  LeadItem,
+  LeadStats,
+  LeadStatus,
+  UnmetDemandItem,
+  PartQuestion,
+  ReservationStatus,
+  CreateReservationDto,
+  ReservationItem,
+  ReservationStats,
+} from './types';
 import { MOCK_PARTS, MOCK_MAKES, MOCK_LOCATIONS, MOCK_STORES, MOCK_CATEGORIES } from './mockData';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -171,6 +190,526 @@ export async function fetchLocations(): Promise<Location[]> {
   return MOCK_LOCATIONS;
 }
 
-export async function fetchCategories() {
+export async function fetchCategories(token?: string) {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const res = await fetch(`${API_BASE}/catalog/categories`, {
+      headers,
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch (err) {
+    console.warn('Backend categories API error, using mock:', err);
+  }
   return MOCK_CATEGORIES;
 }
+
+/* ==========================================================================
+   SPRINT 3: B2B INVENTORY MANAGEMENT & BULK UPLOAD
+   ========================================================================== */
+
+export async function fetchInventorySummary(
+  token: string,
+  storeId?: string,
+): Promise<InventorySummary> {
+  const url = storeId
+    ? `${API_BASE}/inventory/summary?storeId=${storeId}`
+    : `${API_BASE}/inventory/summary`;
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: Fallo al cargar el resumen del inventario`);
+  }
+  return res.json();
+}
+
+export async function fetchStoreInventory(
+  token: string,
+  options: {
+    q?: string;
+    locationId?: string;
+    status?: 'all' | 'ok' | 'low' | 'out';
+    page?: number;
+    limit?: number;
+    storeId?: string;
+  } = {},
+): Promise<{
+  data: StoreInventoryItem[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
+}> {
+  const params = new URLSearchParams();
+  if (options.q) params.append('q', options.q);
+  if (options.locationId) params.append('locationId', options.locationId);
+  if (options.status && options.status !== 'all') params.append('status', options.status);
+  if (options.page) params.append('page', String(options.page));
+  if (options.limit) params.append('limit', String(options.limit));
+  if (options.storeId) params.append('storeId', options.storeId);
+
+  const res = await fetch(`${API_BASE}/inventory?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: Fallo al cargar la lista de inventario`);
+  }
+  return res.json();
+}
+
+export async function uploadInventoryCsv(
+  token: string,
+  file: File,
+  dryRun: boolean = false,
+  storeId?: string,
+): Promise<BulkUploadReport> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('dryRun', String(dryRun));
+  if (storeId) formData.append('storeId', storeId);
+
+  const res = await fetch(`${API_BASE}/inventory/bulk-upload`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.message || `Error ${res.status}: Fallo en la carga masiva`);
+  }
+  return res.json();
+}
+
+export async function downloadCsvTemplate(token: string): Promise<string> {
+  const res = await fetch(`${API_BASE}/inventory/template`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: Fallo al descargar plantilla`);
+  }
+  return res.text();
+}
+
+export async function createPartWithStock(
+  token: string,
+  dto: CreatePartWithStockDto,
+  storeId?: string,
+): Promise<StoreInventoryItem> {
+  const url = storeId
+    ? `${API_BASE}/inventory/parts?storeId=${storeId}`
+    : `${API_BASE}/inventory/parts`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(dto),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.message || `Error ${res.status}: No se pudo crear el repuesto`);
+  }
+  return res.json();
+}
+
+export async function updateInventoryStock(
+  token: string,
+  inventoryId: string,
+  data: {
+    price?: number;
+    stock?: number;
+    condition?: string;
+    isAvailable?: boolean;
+  },
+): Promise<StoreInventoryItem> {
+  const res = await fetch(`${API_BASE}/inventory/${inventoryId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.message || `Error ${res.status}: Fallo al actualizar stock`);
+  }
+  return res.json();
+}
+
+export async function deleteInventoryItem(
+  token: string,
+  inventoryId: string,
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/inventory/${inventoryId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.message || `Error ${res.status}: No se pudo eliminar el registro`);
+  }
+  return res.json();
+}
+
+export async function fetchStoreLocations(
+  token: string,
+  storeId?: string,
+): Promise<Location[]> {
+  const url = storeId
+    ? `${API_BASE}/inventory/locations?storeId=${storeId}`
+    : `${API_BASE}/inventory/locations`;
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: Fallo al consultar sedes de la tienda`);
+  }
+  return res.json();
+}
+
+export async function createStoreLocation(
+  token: string,
+  data: {
+    storeId?: string;
+    name: string;
+    address: string;
+    city: string;
+    state?: string;
+    phone?: string;
+    whatsapp?: string;
+  },
+): Promise<Location> {
+  const res = await fetch(`${API_BASE}/locations`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.message || `Error ${res.status}: No se pudo crear la sede`);
+  }
+  return res.json();
+}
+
+export async function uploadPartImage(
+  token: string,
+  file: File,
+): Promise<{ url: string; filename: string }> {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const res = await fetch(`${API_BASE}/inventory/upload-image`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.message || `Error ${res.status}: Fallo al subir la imagen`);
+  }
+  return res.json();
+}
+
+/* ==========================================================================
+   SPRINT 4: LEADS, METRICS, DEMAND ANALYSIS & Q&A
+   ========================================================================== */
+
+export async function createLead(dto: {
+  storeId: string;
+  partId: string;
+  locationId?: string;
+  buyerName?: string;
+  buyerPhone?: string;
+  buyerCity?: string;
+  buyerMessage?: string;
+  quotedPrice?: number;
+  sourceUrl?: string;
+}): Promise<LeadItem> {
+  const res = await fetch(`${API_BASE}/leads`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Error al registrar lead');
+  }
+  return res.json();
+}
+
+export async function fetchStoreLeads(
+  token: string,
+  options: {
+    status?: LeadStatus;
+    locationId?: string;
+    page?: number;
+    limit?: number;
+    storeId?: string;
+  } = {},
+): Promise<{ data: LeadItem[]; meta: { total: number; page: number; limit: number; totalPages: number } }> {
+  const params = new URLSearchParams();
+  if (options.status) params.append('status', options.status);
+  if (options.locationId) params.append('locationId', options.locationId);
+  if (options.page) params.append('page', String(options.page));
+  if (options.limit) params.append('limit', String(options.limit));
+  if (options.storeId) params.append('storeId', options.storeId);
+
+  const res = await fetch(`${API_BASE}/leads?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: Fallo al cargar leads del almacén`);
+  }
+  return res.json();
+}
+
+export async function fetchStoreLeadStats(token: string, storeId?: string): Promise<LeadStats> {
+  const url = storeId ? `${API_BASE}/leads/stats?storeId=${storeId}` : `${API_BASE}/leads/stats`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: Fallo al cargar estadísticas de leads`);
+  }
+  return res.json();
+}
+
+export async function updateLeadStatus(
+  token: string,
+  leadId: string,
+  status: LeadStatus,
+): Promise<LeadItem> {
+  const res = await fetch(`${API_BASE}/leads/${leadId}/status`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: Fallo al actualizar estado del lead`);
+  }
+  return res.json();
+}
+
+export async function fetchUnmetDemand(token: string, city?: string): Promise<UnmetDemandItem[]> {
+  const url = city ? `${API_BASE}/leads/unmet-demand?city=${encodeURIComponent(city)}` : `${API_BASE}/leads/unmet-demand`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: Fallo al cargar demanda insatisfecha`);
+  }
+  return res.json();
+}
+
+export async function fetchPartQuestions(partId: string): Promise<PartQuestion[]> {
+  const res = await fetch(`${API_BASE}/catalog/parts/${partId}/questions`, { cache: 'no-store' });
+  if (!res.ok) {
+    return [];
+  }
+  return res.json();
+}
+
+export async function createPartQuestion(
+  partId: string,
+  data: { authorName: string; question: string },
+): Promise<PartQuestion> {
+  const res = await fetch(`${API_BASE}/catalog/parts/${partId}/questions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Error al enviar pregunta');
+  }
+  return res.json();
+}
+
+export async function answerPartQuestion(
+  token: string,
+  questionId: string,
+  data: { answer: string; answeredBy?: string },
+): Promise<PartQuestion> {
+  const res = await fetch(`${API_BASE}/catalog/questions/${questionId}/answer`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Error al responder pregunta');
+  }
+  return res.json();
+}
+
+/**
+ * Fórmula de Haversine para calcular distancia en kilómetros entre dos coordenadas GPS
+ */
+export function calculateHaversineDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371; // Radio de la Tierra en km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Number((R * c).toFixed(1));
+}
+
+/* ==========================================================================
+   SPRINT 5: RESERVACIONES EN SEDE FÍSICA (CLICK & COLLECT)
+   ========================================================================== */
+
+export async function createReservation(dto: CreateReservationDto): Promise<ReservationItem> {
+  const res = await fetch(`${API_BASE}/reservations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Error al procesar la reserva en sede');
+  }
+  return res.json();
+}
+
+export async function fetchReservationByCode(code: string): Promise<ReservationItem> {
+  const res = await fetch(`${API_BASE}/reservations/code/${encodeURIComponent(code)}`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Reserva no encontrada');
+  }
+  return res.json();
+}
+
+export async function fetchStoreReservations(
+  token: string,
+  options: {
+    status?: string;
+    search?: string;
+    q?: string;
+    locationId?: string;
+    page?: number;
+    limit?: number;
+    storeId?: string;
+  } = {},
+): Promise<{
+  data: ReservationItem[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
+}> {
+  const params = new URLSearchParams();
+  if (options.status && options.status !== 'all') params.append('status', options.status);
+  const searchVal = options.search || options.q;
+  if (searchVal) params.append('search', searchVal);
+  if (options.locationId && options.locationId !== 'all') params.append('locationId', options.locationId);
+  if (options.page) params.append('page', String(options.page));
+  if (options.limit) params.append('limit', String(options.limit));
+  if (options.storeId) params.append('storeId', options.storeId);
+
+  const res = await fetch(`${API_BASE}/reservations?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: Fallo al cargar reservas`);
+  }
+  return res.json();
+}
+
+export async function fetchStoreReservationStats(
+  token: string,
+  storeId?: string,
+): Promise<ReservationStats> {
+  const url = storeId
+    ? `${API_BASE}/reservations/stats?storeId=${encodeURIComponent(storeId)}`
+    : `${API_BASE}/reservations/stats`;
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: Fallo al cargar estadísticas de reservas`);
+  }
+  return res.json();
+}
+
+export async function updateReservationStatus(
+  token: string,
+  reservationId: string,
+  dto: {
+    status: ReservationStatus;
+    deliveredBy?: string;
+    notes?: string;
+  },
+  storeId?: string,
+): Promise<ReservationItem> {
+  const url = storeId
+    ? `${API_BASE}/reservations/${reservationId}/status?storeId=${encodeURIComponent(storeId)}`
+    : `${API_BASE}/reservations/${reservationId}/status`;
+
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Error al actualizar estado de la reserva');
+  }
+  return res.json();
+}
+
+
+
+

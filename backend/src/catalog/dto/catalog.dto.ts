@@ -140,3 +140,25 @@ export class BulkCompatibilityDto {
   @IsOptional()
   notes?: string;
 }
+
+export class CreateQuestionDto {
+  @ApiProperty({ example: 'Carlos M.' })
+  @IsString()
+  authorName: string;
+
+  @ApiProperty({ example: '¿Estas pastillas incluyen las láminas antirruido?' })
+  @IsString()
+  question: string;
+}
+
+export class AnswerQuestionDto {
+  @ApiProperty({ example: 'Sí, incluye el kit completo de herrajes y láminas antirruido de acero.' })
+  @IsString()
+  answer: string;
+
+  @ApiPropertyOptional({ example: 'Asesor Técnico Repuestos El Motor' })
+  @IsString()
+  @IsOptional()
+  answeredBy?: string;
+}
+

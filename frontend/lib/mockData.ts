@@ -1,12 +1,14 @@
 import { Part, VehicleMake, Store, Location, PartCategory } from './types';
 
 export const MOCK_CATEGORIES: PartCategory[] = [
-  { id: 'cat-1', name: 'Frenos', slug: 'frenos', description: 'Pastillas, discos, bandas y cilindros de freno', icon: 'Disc' },
-  { id: 'cat-2', name: 'Motor', slug: 'motor', description: 'Bujías, filtros, empaques, correas y distribución', icon: 'Wrench' },
-  { id: 'cat-3', name: 'Suspensión', slug: 'suspension', description: 'Amortiguadores, espirales, terminales y rótulas', icon: 'Car' },
-  { id: 'cat-4', name: 'Transmisión', slug: 'transmision', description: 'Kits de embrague, crucetas y ejes de tracción', icon: 'Layers' },
-  { id: 'cat-5', name: 'Eléctrico', slug: 'electrico', description: 'Baterías, alternadores, arrancadores y sensores', icon: 'Sparkles' },
-  { id: 'cat-6', name: 'Carrocería', slug: 'carroceria', description: 'Farolas, retrovisores, defensas y persianas', icon: 'Shield' },
+  { id: '657335ec-1c68-4480-bf34-a0875ebef00f', name: 'Frenos', slug: 'frenos', description: 'Pastillas, discos, bandas y cilindros de freno', icon: 'Disc' },
+  { id: 'e047873b-c655-4b3a-b72d-63a4b1a68674', name: 'Motor', slug: 'motor', description: 'Bujías, filtros, empaques, correas y distribución', icon: 'Wrench' },
+  { id: 'ada5caf8-153a-4cf2-81a3-617855e51630', name: 'Suspensión', slug: 'suspension', description: 'Amortiguadores, espirales, terminales y rótulas', icon: 'Car' },
+  { id: '2a767242-179f-4bb6-a8ce-78c413f07396', name: 'Transmisión', slug: 'transmision', description: 'Kits de embrague, crucetas y ejes de tracción', icon: 'Layers' },
+  { id: 'df90734f-63b4-49cc-88e8-7a563a71642e', name: 'Eléctrico', slug: 'electrico', description: 'Baterías, alternadores, arrancadores y sensores', icon: 'Sparkles' },
+  { id: '508227e3-2037-42ba-aa9c-4c6fdc48c391', name: 'Carrocería', slug: 'carroceria', description: 'Farolas, retrovisores, defensas y persianas', icon: 'Shield' },
+  { id: '29fc8bf6-fb11-4954-a626-773fa6cf5659', name: 'Filtros', slug: 'filtros', description: 'Filtros de aire, aceite, combustible', icon: 'Filter' },
+  { id: 'c7d4baa6-f09d-413f-b7ca-ca0fc62e778e', name: 'Refrigeración', slug: 'refrigeracion', description: 'Sistema de enfriamiento del motor', icon: 'Thermometer' },
 ];
 
 export const MOCK_STORES: Store[] = [
@@ -77,7 +79,7 @@ export const MOCK_LOCATIONS: Location[] = [
 export const MOCK_PARTS: Part[] = [
   {
     id: 'p-1',
-    categoryId: 'cat-1',
+    categoryId: '657335ec-1c68-4480-bf34-a0875ebef00f',
     name: 'Pastillas de freno delanteras de cerámica',
     slug: 'pastillas-freno-delanteras-ceramica',
     description: 'Juego de 4 pastillas cerámicas de alto rendimiento. Mínima emisión de polvo, frenado suave y silencioso con placa antirruido de triple capa. Resistencia térmica hasta 650°C.',
@@ -137,7 +139,7 @@ export const MOCK_PARTS: Part[] = [
   },
   {
     id: 'p-2',
-    categoryId: 'cat-1',
+    categoryId: '657335ec-1c68-4480-bf34-a0875ebef00f',
     name: 'Discos de freno ventilados delanteros (Par)',
     slug: 'discos-freno-ventilados-delanteros',
     description: 'Par de discos ventilados de fundición gris con balanceo de precisión. Protección anticorrosiva Geomet para prolongar vida útil y disipar calor de forma eficiente.',
@@ -196,7 +198,7 @@ export const MOCK_PARTS: Part[] = [
   },
   {
     id: 'p-3',
-    categoryId: 'cat-2',
+    categoryId: 'e047873b-c655-4b3a-b72d-63a4b1a68674',
     name: 'Filtro de aire de alto flujo para motor',
     slug: 'filtro-aire-alto-flujo-motor',
     description: 'Elemento filtrante de celulosa sintética de alta retención de partículas (99.5%). Protege válvulas y cilindros maximizando la entrada de aire frío al múltiple de admisión.',
@@ -245,7 +247,7 @@ export const MOCK_PARTS: Part[] = [
   },
   {
     id: 'p-4',
-    categoryId: 'cat-2',
+    categoryId: 'e047873b-c655-4b3a-b72d-63a4b1a68674',
     name: 'Kit de bujías de Iridio Laser (Juego x4)',
     slug: 'kit-bujias-iridio-laser-4',
     description: 'Electrodo central de iridio ultrafino de 0.6mm soldado por láser y pastilla de platino en tierra. Garantiza chispa constante, menor consumo y vida útil de hasta 100.000 km.',
@@ -304,7 +306,7 @@ export const MOCK_PARTS: Part[] = [
   },
   {
     id: 'p-5',
-    categoryId: 'cat-3',
+    categoryId: 'ada5caf8-153a-4cf2-81a3-617855e51630',
     name: 'Amortiguador delantero a gas reforzado',
     slug: 'amortiguador-delantero-gas-reforzado',
     description: 'Amortiguador bitubo cargado con nitrógeno a alta presión. Válvula de rebote multibloque para control superior en carretera destapada y curvas pronunciadas.',
@@ -363,7 +365,7 @@ export const MOCK_PARTS: Part[] = [
   },
   {
     id: 'p-6',
-    categoryId: 'cat-4',
+    categoryId: '2a767242-179f-4bb6-a8ce-78c413f07396',
     name: 'Kit de embrague completo (Prensa, Disco y Balinera)',
     slug: 'kit-embrague-completo-prensa-disco-balinera',
     description: 'Kit de embrague original tipo equipo pesado con amortiguación torsional de 6 resortes. Cojinete de desembrague hidráulico autoalineable.',
@@ -422,7 +424,7 @@ export const MOCK_PARTS: Part[] = [
   },
   {
     id: 'p-7',
-    categoryId: 'cat-5',
+    categoryId: 'df90734f-63b4-49cc-88e8-7a563a71642e',
     name: 'Batería automotriz libre de mantenimiento 12V 65Ah',
     slug: 'bateria-automotriz-libre-mantenimiento-65ah',
     description: 'Batería sellada con tecnología de rejilla PowerFrame patentada para alto amperaje de arranque en frío (CCA 600A). Resistente a vibraciones extremas y clima tropical.',
@@ -471,7 +473,7 @@ export const MOCK_PARTS: Part[] = [
   },
   {
     id: 'p-8',
-    categoryId: 'cat-5',
+    categoryId: 'df90734f-63b4-49cc-88e8-7a563a71642e',
     name: 'Alternador trifásico 12V 100A remanufacturado',
     slug: 'alternador-trifasico-12v-100a-remanufacturado',
     description: 'Alternador remanufacturado con estator y diodos nuevos de fábrica. Probado en banco dinámico computarizado con reporte de eficiencia de carga.',

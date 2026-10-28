@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Part, InventoryItem } from '../lib/types';
-import { formatPriceCOP, buildWhatsAppLink } from '../lib/api';
+import { formatPriceCOP, buildWhatsAppLink, createLead } from '../lib/api';
 import { WhatsAppIcon, CloseIcon, MapPinIcon, PhoneIcon, CheckCircleIcon } from './Icons';
 
 interface WhatsAppLeadModalProps {
@@ -35,16 +35,34 @@ export default function WhatsAppLeadModal({
   const oemText = part.partNumbers?.length ? ` (Ref OEM: ${part.partNumbers[0].number})` : '';
   const priceText = selectedInv.price ? formatPriceCOP(selectedInv.price) : 'Precio a convenir';
 
-  const defaultMessage = `Hola ${targetStore?.name || 'amigos'} de ${targetLocation?.name || 'su sede'}. Vi en RepuestosYA su producto: "${part.name}"${oemText} con precio ${priceText}. ${
+  const [submitting, setSubmitting] = useState(false);
+
+  const defaultMessage = `Hola ${targetStore?.name || 'amigos'} de ${targetLocation?.name || 'su sede'}. Vi en AutoPart Pro su producto: "${part.name}"${oemText} con precio ${priceText}. ${
     buyerName ? `Mi nombre es ${buyerName}. ` : ''
   }${buyerCity ? `Me encuentro en ${buyerCity}. ` : ''}${
     userNote ? `Pregunta: ${userNote}` : '¿Tienen disponibilidad inmediata para recoger hoy o realizar envío?'
   }`;
 
-  const handleLaunchWhatsApp = () => {
-    const url = buildWhatsAppLink(phoneNumber, defaultMessage);
-    window.open(url, '_blank', 'noopener,noreferrer');
-    onClose();
+  const handleLaunchWhatsApp = async () => {
+    setSubmitting(true);
+    try {
+      const storeId = targetStore?.id || targetLocation?.storeId || '41c776f7-c502-496d-82b2-085997b8390c';
+      await createLead({
+        storeId,
+        partId: part.id,
+        locationId: targetLocation?.id,
+        buyerName: buyerName.trim() || undefined,
+        buyerCity: buyerCity.trim() || undefined,
+        buyerMessage: userNote.trim() || undefined,
+        quotedPrice: selectedInv.price || undefined,
+        sourceUrl: typeof window !== 'undefined' ? window.location.pathname : undefined,
+      }).catch(err => console.warn('Could not track lead:', err));
+    } finally {
+      const url = buildWhatsAppLink(phoneNumber, defaultMessage);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setSubmitting(false);
+      onClose();
+    }
   };
 
   return (
@@ -165,9 +183,9 @@ export default function WhatsAppLeadModal({
           <button className="btn btn-ghost" onClick={onClose}>
             Cancelar
           </button>
-          <button className="btn btn-wa-action" onClick={handleLaunchWhatsApp}>
+          <button className="btn btn-wa-action" onClick={handleLaunchWhatsApp} disabled={submitting}>
             <WhatsAppIcon size={20} />
-            <span>Abrir WhatsApp Ahora</span>
+            <span>{submitting ? 'Registrando consulta...' : 'Abrir WhatsApp Ahora'}</span>
           </button>
         </div>
       </div>

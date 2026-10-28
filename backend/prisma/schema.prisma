@@ -35,6 +35,9 @@ model User {
   roles         UserRole[]
   store         Store?     @relation(fields: [storeId], references: [id])
   storeId       String?    @map("store_id")
+  leads         Lead[]
+  questions     PartQuestion[]
+  reservations  Reservation[]
 
   @@map("users")
 }
@@ -82,6 +85,8 @@ model Store {
   // Relaciones
   locations   Location[]
   users       User[]
+  leads       Lead[]
+  reservations Reservation[]
 
   @@map("stores")
 }
@@ -104,6 +109,8 @@ model Location {
   // Relaciones
   store       Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
   inventory   Inventory[]
+  leads       Lead[]
+  reservations Reservation[]
 
   @@map("locations")
 }
@@ -207,6 +214,9 @@ model Part {
   partNumbers   PartNumber[]
   compatibility PartCompatibility[]
   inventory     Inventory[]
+  leads         Lead[]
+  questions     PartQuestion[]
+  reservations  Reservation[]
 
   @@map("parts")
 }
@@ -260,9 +270,136 @@ model Inventory {
   // Relaciones
   part        Part          @relation(fields: [partId], references: [id], onDelete: Cascade)
   location    Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
 
   @@unique([partId, locationId, condition])
   @@index([partId])
   @@index([locationId])
   @@map("inventory")
+}
+
+// ============================================================
+// SPRINT 4 — ANALÍTICA DE LEADS Y MENSAJERÍA (PDCIRA-15, PDCIRA-16, PDCIRA-17)
+// ============================================================
+
+enum LeadStatus {
+  NEW         // Nuevo prospecto
+  CONTACTED   // Contactado por WhatsApp
+  CONVERTED   // Venta cerrada exitosa
+  CANCELLED   // No disponible / Descartado
+}
+
+model Lead {
+  id           String      @id @default(uuid())
+  storeId      String      @map("store_id")
+  locationId   String?     @map("location_id")
+  partId       String      @map("part_id")
+  buyerId      String?     @map("buyer_id")
+  buyerName    String?     @map("buyer_name")
+  buyerPhone   String?     @map("buyer_phone")
+  buyerCity    String?     @map("buyer_city")
+  buyerMessage String?     @map("buyer_message")
+  quotedPrice  Float?      @map("quoted_price")
+  sourceUrl    String?     @map("source_url")
+  status       LeadStatus  @default(NEW)
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  // Relaciones
+  store        Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  location     Location?   @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  part         Part        @relation(fields: [partId], references: [id], onDelete: Cascade)
+  buyer        User?       @relation(fields: [buyerId], references: [id], onDelete: SetNull)
+
+  @@index([storeId])
+  @@index([partId])
+  @@index([locationId])
+  @@index([createdAt])
+  @@map("leads")
+}
+
+model SearchQuery {
+  id           String   @id @default(uuid())
+  query        String
+  resultsCount Int      @default(0) @map("results_count")
+  city         String?
+  makeId       String?  @map("make_id")
+  modelId      String?  @map("model_id")
+  categoryId   String?  @map("category_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([query])
+  @@index([resultsCount])
+  @@index([createdAt])
+  @@map("search_queries")
+}
+
+model PartQuestion {
+  id         String    @id @default(uuid())
+  partId     String    @map("part_id")
+  userId     String?   @map("user_id")
+  authorName String    @map("author_name")
+  question   String
+  answer     String?
+  answeredBy String?   @map("answered_by")
+  answeredAt DateTime? @map("answered_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  // Relaciones
+  part       Part      @relation(fields: [partId], references: [id], onDelete: Cascade)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([partId])
+  @@index([createdAt])
+  @@map("part_questions")
+}
+
+// ============================================================
+// SPRINT 5 — SISTEMA DE RESERVAS CLICK & COLLECT EN SEDE
+// ============================================================
+
+enum ReservationStatus {
+  PENDING    // Pendiente de retiro en sede física
+  COMPLETED  // Entregado al comprador / Pago recibido
+  CANCELLED  // Cancelada
+  EXPIRED    // Expirada (pasaron >48 horas sin retiro)
+}
+
+model Reservation {
+  id               String            @id @default(uuid())
+  code             String            @unique // Ej: "RES-8392-BOG"
+  storeId          String            @map("store_id")
+  locationId       String            @map("location_id")
+  partId           String            @map("part_id")
+  inventoryId      String?           @map("inventory_id")
+  buyerId          String?           @map("buyer_id")
+  customerName     String            @map("customer_name")
+  customerPhone    String            @map("customer_phone")
+  customerEmail    String?           @map("customer_email")
+  customerDocument String?           @map("customer_document")
+  quantity         Int               @default(1)
+  unitPrice        Float             @map("unit_price")
+  totalPrice       Float             @map("total_price")
+  status           ReservationStatus @default(PENDING)
+  notes            String?
+  expiresAt        DateTime          @map("expires_at")
+  deliveredAt      DateTime?         @map("delivered_at")
+  deliveredBy      String?           @map("delivered_by")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  // Relaciones
+  store            Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  location         Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  part             Part              @relation(fields: [partId], references: [id], onDelete: Cascade)
+  inventory        Inventory?        @relation(fields: [inventoryId], references: [id], onDelete: SetNull)
+  buyer            User?             @relation(fields: [buyerId], references: [id], onDelete: SetNull)
+
+  @@index([storeId])
+  @@index([locationId])
+  @@index([partId])
+  @@index([code])
+  @@index([status])
+  @@index([createdAt])
+  @@map("reservations")
 }

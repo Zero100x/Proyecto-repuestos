@@ -1,11 +1,15 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { MeilisearchService } from './meilisearch.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @ApiTags('Search')
 @Controller('search')
 export class SearchController {
-  constructor(private meilisearch: MeilisearchService) {}
+  constructor(
+    private meilisearch: MeilisearchService,
+    private prisma: PrismaService,
+  ) {}
 
   @Get('parts')
   @ApiOperation({ summary: 'Buscar repuestos por vehículo o número de parte (PDCIRA-8)' })
@@ -37,11 +41,22 @@ export class SearchController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.meilisearch.searchParts({
+    const result = await this.meilisearch.searchParts({
       query, make, model, year, version,
       category, condition, minPrice, maxPrice,
       sortBy, sortOrder, page, limit,
     });
+
+    if (query && query.trim().length >= 2) {
+      this.prisma.searchQuery.create({
+        data: {
+          query: query.trim().toLowerCase(),
+          resultsCount: result.meta?.total || result.data?.length || 0,
+        },
+      }).catch((err) => console.warn('Error registrando searchQuery:', err));
+    }
+
+    return result;
   }
 
   @Get('filters')

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Iniciar Sesión | AutoPart Pro - Portal Técnico</title>
+<!-- Google Fonts: Hanken Grotesk, Inter, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration verbatim -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary": "#535f72",
+            "on-tertiary-fixed-variant": "#7a3000",
+            "outline-variant": "#c5c6cf",
+            "on-surface-variant": "#44464e",
+            "on-primary-fixed-variant": "#34466d",
+            "error-container": "#ffdad6",
+            "surface-container-highest": "#e4e1e5",
+            "on-error": "#ffffff",
+            "on-primary": "#ffffff",
+            "secondary-fixed-dim": "#bbc7dd",
+            "secondary-container": "#d7e3fa",
+            "on-secondary-container": "#596578",
+            "on-primary-fixed": "#041a3f",
+            "on-tertiary": "#ffffff",
+            "on-background": "#1b1b1e",
+            "inverse-primary": "#b4c6f4",
+            "surface-dim": "#dcd9dd",
+            "surface-bright": "#fbf8fc",
+            "tertiary": "#160400",
+            "outline": "#75777f",
+            "surface": "#fbf8fc",
+            "background": "#fbf8fc",
+            "on-surface": "#1b1b1e",
+            "surface-container-low": "#f6f2f7",
+            "primary-container": "#0a1f44",
+            "on-secondary-fixed": "#101c2c",
+            "on-tertiary-container": "#e35f00",
+            "on-secondary-fixed-variant": "#3c475a",
+            "surface-container-high": "#eae7eb",
+            "tertiary-container": "#3c1400",
+            "inverse-on-surface": "#f3f0f4",
+            "secondary-fixed": "#d7e3fa",
+            "on-error-container": "#93000a",
+            "primary-fixed-dim": "#b4c6f4",
+            "primary-fixed": "#d9e2ff",
+            "surface-container": "#f0edf1",
+            "on-tertiary-fixed": "#351000",
+            "on-secondary": "#ffffff",
+            "tertiary-fixed": "#ffdbcc",
+            "surface-variant": "#e4e1e5",
+            "primary": "#00081e",
+            "error": "#ba1a1a",
+            "on-primary-container": "#7687b2",
+            "inverse-surface": "#303033",
+            "surface-tint": "#4c5e86",
+            "tertiary-fixed-dim": "#ffb693",
+            "surface-container-lowest": "#ffffff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "container-max-width": "1280px",
+            "base-unit": "8px",
+            "gutter": "24px",
+            "margin-mobile": "16px",
+            "margin-desktop": "64px"
+          },
+          "fontFamily": {
+            "headline-lg-mobile": [
+              "Hanken Grotesk"
+            ],
+            "label-sm": [
+              "JetBrains Mono"
+            ],
+            "body-md": [
+              "Inter"
+            ],
+            "headline-lg": [
+              "Hanken Grotesk"
+            ],
+            "body-lg": [
+              "Inter"
+            ],
+            "title-md": [
+              "Hanken Grotesk"
+            ],
+            "display-lg": [
+              "Hanken Grotesk"
+            ],
+            "button": [
+              "Hanken Grotesk"
+            ]
+          },
+          "fontSize": {
+            "headline-lg-mobile": [
+              "24px",
+              {
+                "lineHeight": "32px",
+                "fontWeight": "600"
+              }
+            ],
+            "label-sm": [
+              "12px",
+              {
+                "lineHeight": "16px",
+                "letterSpacing": "0.05em",
+                "fontWeight": "500"
+              }
+            ],
+            "body-md": [
+              "16px",
+              {
+                "lineHeight": "24px",
+                "fontWeight": "400"
+              }
+            ],
+            "headline-lg": [
+              "32px",
+              {
+                "lineHeight": "40px",
+                "letterSpacing": "-0.01em",
+                "fontWeight": "600"
+              }
+            ],
+            "body-lg": [
+              "18px",
+              {
+                "lineHeight": "28px",
+                "fontWeight": "400"
+              }
+            ],
+            "title-md": [
+              "20px",
+              {
+                "lineHeight": "28px",
+                "fontWeight": "600"
+              }
+            ],
+            "display-lg": [
+              "48px",
+              {
+                "lineHeight": "56px",
+                "letterSpacing": "-0.02em",
+                "fontWeight": "700"
+              }
+            ],
+            "button": [
+              "14px",
+              {
+                "lineHeight": "20px",
+                "fontWeight": "700"
+              }
+            ]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-full flex flex-col justify-between antialiased selection:bg-primary selection:text-on-primary">
+<!-- Top Navigation Header (Dedicated Authentication Context) -->
+<header class="w-full bg-surface-container-lowest border-b border-outline-variant shadow-sm z-30">
+<div class="max-w-container-max-width mx-auto px-margin-mobile md:px-margin-desktop py-4 flex items-center justify-between">
+<!-- Logo Branding Anchor -->
+<a class="flex items-center gap-3 group" href="#">
+<div class="w-10 h-10 rounded bg-primary-container flex items-center justify-center text-on-primary shadow-sm border border-outline-variant">
+<span class="material-symbols-outlined text-primary-fixed text-2xl" data-icon="precision_manufacturing">precision_manufacturing</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-lg text-title-md font-bold text-primary tracking-tight">AutoPart Pro</span>
+<span class="font-label-sm text-label-sm text-secondary tracking-widest uppercase">Industrial Systems</span>
+</div>
+</a>
+<!-- Trailing Auxiliary Actions -->
+<div class="flex items-center gap-4">
+<a class="hidden sm:flex items-center gap-2 text-secondary hover:text-primary font-button text-button transition-colors" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="storefront">storefront</span>
+<span>Volver al Catálogo</span>
+</a>
+<div class="h-4 w-px bg-outline-variant hidden sm:block"></div>
+<a class="flex items-center gap-1.5 text-secondary hover:text-primary font-button text-button transition-colors" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="help_outline">help_outline</span>
+<span class="hidden xs:inline">Soporte Técnico</span>
+</a>
+</div>
+</div>
+</header>
+<!-- Main Authentication Canvas -->
+<main class="flex-grow flex items-center justify-center py-8 md:py-12 px-margin-mobile md:px-margin-desktop">
+<div class="w-full max-w-container-max-width mx-auto">
+<!-- Asymmetric Dual Panel Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-stretch rounded-xl overflow-hidden border border-outline-variant bg-surface-container-lowest shadow-sm">
+<!-- Left Side: Interactive Login Form Container (7 Columns) -->
+<section class="lg:col-span-7 p-6 sm:p-10 md:p-12 flex flex-col justify-center">
+<!-- Section Heading -->
+<div class="mb-6">
+<div class="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm mb-3 border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></span>
+              PORTAL DE ACCESO B2B v4.8
+            </div>
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight mb-2">Ingreso al Sistema</h1>
+<p class="font-body-md text-secondary">Acceda a la red de gestión y compatibilidad técnica de repuestos automotrices.</p>
+</div>
+<!-- Account Type / Role Selector (Bento Switcher) -->
+<div class="mb-8">
+<label class="block font-label-sm text-label-sm text-secondary mb-2 uppercase tracking-wider">Tipo de Operación</label>
+<div class="grid grid-cols-2 p-1 bg-surface-container rounded-lg border border-outline-variant" role="tablist">
+<!-- Tab 1: Workshop / Buyer -->
+<button aria-selected="true" class="flex items-center justify-center gap-2.5 py-3 px-4 rounded-md bg-surface-container-lowest text-primary font-button text-button shadow-sm border border-outline-variant/60 transition-all" id="tab-buyer" role="tab" type="button">
+<span class="material-symbols-outlined text-xl text-primary" data-icon="build">build</span>
+<div class="text-left">
+<div class="leading-tight">Taller / Comprador</div>
+<div class="font-label-sm text-[10px] text-secondary hidden sm:block">Demanda y Compatibilidad</div>
+</div>
+</button>
+<!-- Tab 2: Warehouse / Supplier -->
+<button aria-selected="false" class="flex items-center justify-center gap-2.5 py-3 px-4 rounded-md text-secondary hover:text-primary font-button text-button transition-all" id="tab-seller" role="tab" type="button">
+<span class="material-symbols-outlined text-xl text-secondary" data-icon="inventory_2">inventory_2</span>
+<div class="text-left">
+<div class="leading-tight">Almacén / Vendedor B2B</div>
+<div class="font-label-sm text-[10px] text-secondary hidden sm:block">Inventario y Suministro</div>
+</div>
+</button>
+</div>
+</div>
+<!-- Form Fields -->
+<form class="space-y-5" onsubmit="event.preventDefault();">
+<!-- Email / Username Input -->
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface-variant uppercase mb-1.5" for="identifier">
+                Correo Electrónico o ID Técnico
+              </label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-secondary">
+<span class="material-symbols-outlined text-lg" data-icon="badge">badge</span>
+</div>
+<input class="w-full pl-10 pr-4 py-3 bg-surface-bright border border-outline-variant rounded text-on-surface placeholder:text-secondary/50 font-body-md focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-primary-container transition-all" id="identifier" placeholder="taller@autopartpro.com o CIF/RUT" required="" type="text"/>
+</div>
+</div>
+<!-- Password Input -->
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<label class="block font-label-sm text-label-sm text-on-surface-variant uppercase" for="password">
+                  Contraseña de Seguridad
+                </label>
+<a class="font-label-sm text-label-sm text-primary hover:underline hover:text-primary-container transition-colors" href="#">
+                  ¿Olvidaste tu contraseña?
+                </a>
+</div>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-secondary">
+<span class="material-symbols-outlined text-lg" data-icon="lock">lock</span>
+</div>
+<input class="w-full pl-10 pr-11 py-3 bg-surface-bright border border-outline-variant rounded text-on-surface placeholder:text-secondary/50 font-body-md focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-primary-container transition-all" id="password" placeholder="••••••••••••" required="" type="password"/>
+<button aria-label="Mostrar u ocultar contraseña" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-secondary hover:text-primary transition-colors focus:outline-none" id="togglePassword" type="button">
+<span class="material-symbols-outlined text-xl" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<!-- Persistent Session Checkbox -->
+<div class="flex items-center justify-between pt-1">
+<label class="flex items-center gap-2.5 cursor-pointer">
+<input checked="" class="w-4 h-4 rounded border-outline-variant text-primary-container focus:ring-primary-container" type="checkbox"/>
+<span class="font-body-md text-sm text-secondary select-none">
+                  Mantener sesión iniciada en este equipo seguro
+                </span>
+</label>
+</div>
+<!-- Primary CTA Button -->
+<button class="w-full py-3.5 px-6 rounded bg-primary-container hover:bg-primary text-on-primary font-button text-button shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 group" type="submit">
+<span>Iniciar Sesión en AutoPart Pro</span>
+<span class="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<!-- SSO / Federated Logins Divider -->
+<div class="relative my-6">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-outline-variant"></div>
+</div>
+<div class="relative flex justify-center text-xs">
+<span class="bg-surface-container-lowest px-4 font-label-sm text-label-sm text-secondary uppercase tracking-wider">
+                  O ingresar mediante autenticación federada
+                </span>
+</div>
+</div>
+<!-- Alternative Auth Buttons (Bento Dual Row) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<!-- Google Workspace -->
+<button class="flex items-center justify-center gap-2 py-2.5 px-4 rounded border border-outline-variant bg-surface-container-lowest hover:bg-surface-container text-on-surface font-button text-button transition-colors" type="button">
+<span class="material-symbols-outlined text-lg text-secondary" data-icon="cloud">cloud</span>
+<span>Continuar con Google</span>
+</button>
+<!-- ERP / Corporate Certificate SSO -->
+<button class="flex items-center justify-center gap-2 py-2.5 px-4 rounded border border-outline-variant bg-surface-container-lowest hover:bg-surface-container text-on-surface font-button text-button transition-colors" type="button">
+<span class="material-symbols-outlined text-lg text-secondary" data-icon="vpn_key">vpn_key</span>
+<span>Certificado ERP / SAML</span>
+</button>
+</div>
+</form>
+<!-- Registration Prompt Footer -->
+<div class="mt-8 pt-6 border-t border-outline-variant text-center">
+<p class="font-body-md text-secondary text-sm">
+              ¿Aún no tienes cuenta profesional? 
+              <a class="font-button text-button text-primary hover:text-on-tertiary-container hover:underline ml-1 inline-flex items-center gap-1 font-bold" href="#">
+<span>Regístrate gratis</span>
+<span class="material-symbols-outlined text-sm" data-icon="north_east">north_east</span>
+</a>
+</p>
+</div>
+</section>
+<!-- Right Side: Industrial Technical Showcase & Value Propositions (5 Columns) -->
+<section class="lg:col-span-5 bg-primary-container text-on-primary p-8 md:p-10 flex flex-col justify-between relative overflow-hidden">
+<!-- Subtle Technical Grid Overlay Pattern -->
+<div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#d9e2ff 1px, transparent 1px); background-size: 20px 20px;"></div>
+<div class="relative z-10">
+<!-- Technical Status Badge -->
+<div class="flex items-center justify-between mb-8">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-on-primary-fixed-variant/40 border border-on-primary-container text-primary-fixed font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-xs" data-icon="verified">verified</span>
+                ECOSISTEMA CERTIFICADO OEM
+              </span>
+<span class="font-label-sm text-label-sm text-on-primary-container">ISO 9001:2015</span>
+</div>
+<!-- Contextual Headline -->
+<h2 class="font-headline-lg text-title-md text-on-primary font-bold mb-3 tracking-tight">
+              Precisión industrial para talleres y proveedores
+            </h2>
+<p class="font-body-md text-primary-fixed-dim text-sm mb-8 leading-relaxed">
+              Consulte despieces esquemáticos, disponibilidad en stock inmediato y coordine pedidos B2B con validación VIN automatizada.
+            </p>
+<!-- Value Propositions List -->
+<div class="space-y-4 mb-8">
+<div class="flex items-start gap-3.5 p-3 rounded-lg bg-surface-dim/10 border border-on-primary-container/30">
+<div class="w-8 h-8 rounded bg-primary-fixed/15 flex items-center justify-center shrink-0 text-primary-fixed">
+<span class="material-symbols-outlined text-lg" data-icon="settings_input_component">settings_input_component</span>
+</div>
+<div>
+<h3 class="font-button text-sm text-on-primary">Compatibilidad OEM Garantizada</h3>
+<p class="font-body-md text-xs text-on-primary-container mt-0.5">Cruce instantáneo con bases de datos TecDoc y catálogos de fabricante.</p>
+</div>
+</div>
+<div class="flex items-start gap-3.5 p-3 rounded-lg bg-surface-dim/10 border border-on-primary-container/30">
+<div class="w-8 h-8 rounded bg-primary-fixed/15 flex items-center justify-center shrink-0 text-primary-fixed">
+<span class="material-symbols-outlined text-lg" data-icon="warehouse">warehouse</span>
+</div>
+<div>
+<h3 class="font-button text-sm text-on-primary">Red de +500 Almacenes Verificados</h3>
+<p class="font-body-md text-xs text-on-primary-container mt-0.5">Enlace logístico directo con distribuidores mayoristas de primer nivel.</p>
+</div>
+</div>
+<div class="flex items-start gap-3.5 p-3 rounded-lg bg-surface-dim/10 border border-on-primary-container/30">
+<div class="w-8 h-8 rounded bg-primary-fixed/15 flex items-center justify-center shrink-0 text-primary-fixed">
+<span class="material-symbols-outlined text-lg" data-icon="update">update</span>
+</div>
+<div>
+<h3 class="font-button text-sm text-on-primary">Monitoreo de Stock en Tiempo Real</h3>
+<p class="font-body-md text-xs text-on-primary-container mt-0.5">Tiempos de entrega calculados al minuto y cotizaciones transparentes.</p>
+</div>
+</div>
+</div>
+<!-- Industrial Context Image Anchor -->
+<div class="rounded-lg overflow-hidden border border-on-primary-container/40 relative shadow-inner">
+<img class="w-full h-36 object-cover filter contrast-105" data-alt="A clean industrial laboratory featuring high-precision automotive engine components and brake assemblies on technical granite testing tables. The setting is illuminated by cool-white focused workshop lighting with metallic aluminum reflections and deep navy blue accent branding. The mood is meticulous, scientific, and authoritative, emphasizing precision engineering." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7FW6slFiwnCjg8acGskhsyuh4Xe_tqRP4s4bCFsmC3I27Aa3ZSMWeRMCsSsQzgbecIu4ZSQ11wVBv4IKB7vHB2FtTTeLa3C1sP2N6-jSqc4OX_9JxRpIPv7CnkoSn1s6sYDgNEEZghf7dqWQa0U_DGDtjDbxTHIUrhKETbgyX_J5N_OzLae420fgdXyB1AE_tUHqCF0NyRqOSu8Tx2GtX9VOP3Eh6NcGyMI5sIj0RoJgRSpZoxDMN"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary-container via-transparent to-transparent"></div>
+<div class="absolute bottom-2 left-3 right-3 flex items-center justify-between text-on-primary">
+<span class="font-label-sm text-xs font-semibold">Trazabilidad de Componentes</span>
+<span class="font-label-sm text-[11px] text-primary-fixed px-2 py-0.5 rounded bg-primary-container/80">LIVE API</span>
+</div>
+</div>
+</div>
+<!-- Bottom Metric & Security Footprint -->
+<div class="relative z-10 pt-6 mt-6 border-t border-on-primary-container/30">
+<div class="flex items-center justify-between">
+<div>
+<div class="font-headline-lg text-title-md font-bold text-on-primary">+120,000</div>
+<div class="font-label-sm text-[11px] text-on-primary-container">Referencias Activas Verificadas</div>
+</div>
+<div class="flex items-center gap-2 text-right">
+<span class="material-symbols-outlined text-2xl text-primary-fixed" data-icon="lock_clock">lock_clock</span>
+<div class="font-label-sm text-[10px] text-on-primary-container text-left leading-tight">
+                  Cifrado SSL 256-bit<br/><span class="text-on-primary font-bold">Sesión Blindada</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- Technical Minimalist Footer (JSON Blueprint Alignment) -->
+<footer class="w-full border-t border-outline-variant bg-surface-container-low py-6 z-20">
+<div class="max-w-container-max-width mx-auto px-margin-mobile md:px-margin-desktop flex flex-col md:flex-row items-center justify-between gap-4">
+<!-- Copyright Note -->
+<p class="font-label-sm text-label-sm text-secondary text-center md:text-left">
+        © 2024 AutoPart Pro. Professional Grade Inventory Systems. Todos los derechos reservados.
+      </p>
+<!-- Legal & Technical Policy Links -->
+<div class="flex flex-wrap items-center justify-center gap-6 font-label-sm text-label-sm text-secondary">
+<a class="hover:text-primary transition-colors" href="#">Términos de Servicio</a>
+<a class="hover:text-primary transition-colors" href="#">Política de Privacidad</a>
+<a class="hover:text-primary transition-colors" href="#">Documentación Técnica</a>
+<a class="hover:text-primary transition-colors" href="#">Soporte y SLA</a>
+<a class="hover:text-primary transition-colors" href="#">Estado del Sistema (99.98%)</a>
+</div>
+</div>
+</footer>
+<!-- Micro-interactions Script (Role Switcher & Password Visibility) -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Password toggle
+      const togglePasswordBtn = document.getElementById('togglePassword');
+      const passwordInput = document.getElementById('password');
+
+      if (togglePasswordBtn && passwordInput) {
+        togglePasswordBtn.addEventListener('click', () => {
+          const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+          passwordInput.setAttribute('type', type);
+          const iconSpan = togglePasswordBtn.querySelector('.material-symbols-outlined');
+          if (iconSpan) {
+            iconSpan.textContent = type === 'password' ? 'visibility' : 'visibility_off';
+          }
+        });
+      }
+
+      // Role Tabs Toggle
+      const tabBuyer = document.getElementById('tab-buyer');
+      const tabSeller = document.getElementById('tab-seller');
+
+      if (tabBuyer && tabSeller) {
+        tabBuyer.addEventListener('click', () => {
+          // Activate Buyer
+          tabBuyer.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm', 'border', 'border-outline-variant/60');
+          tabBuyer.classList.remove('text-secondary');
+          tabBuyer.setAttribute('aria-selected', 'true');
+
+          // Deactivate Seller
+          tabSeller.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm', 'border', 'border-outline-variant/60');
+          tabSeller.classList.add('text-secondary');
+          tabSeller.setAttribute('aria-selected', 'false');
+        });
+
+        tabSeller.addEventListener('click', () => {
+          // Activate Seller
+          tabSeller.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm', 'border', 'border-outline-variant/60');
+          tabSeller.classList.remove('text-secondary');
+          tabSeller.setAttribute('aria-selected', 'true');
+
+          // Deactivate Buyer
+          tabBuyer.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm', 'border', 'border-outline-variant/60');
+          tabBuyer.classList.add('text-secondary');
+          tabBuyer.setAttribute('aria-selected', 'false');
+        });
+      }
+    });
+  </script>
+</body></html>

@@ -2,20 +2,19 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { fetchStores, fetchLocations, buildWhatsAppLink } from '../../lib/api';
+import { fetchStores, fetchLocations, buildWhatsAppLink, calculateHaversineDistance } from '../../lib/api';
 import { Store, Location } from '../../lib/types';
 import InteractiveStoresMap from '../../components/InteractiveStoresMap';
 
 interface DirectoryStore {
   id: string;
   name: string;
+  nit?: string;
   badge?: string;
   distanceKm: number;
   type: 'Centro Principal' | 'Distribuidor Multimarca' | 'Centro Logístico B2B' | 'Mayorista Especializado';
   verifiedOEM: boolean;
   openStatus: string;
-  rating: number;
-  reviewCount: number;
   address: string;
   city: string;
   latitude: number;
@@ -44,8 +43,6 @@ const DEFAULT_INSPECTOR_PLACEHOLDER: DirectoryStore = {
   type: 'Centro Principal',
   verifiedOEM: true,
   openStatus: 'Abierto ahora',
-  rating: 5.0,
-  reviewCount: 1,
   address: 'Pasto, Nariño',
   city: 'Pasto',
   latitude: 1.2084,
@@ -73,7 +70,7 @@ export default function StoresDirectoryPage() {
   const [selectedDistance, setSelectedDistance] = useState<'5km' | '15km' | '30km' | 'all'>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [immediatePickupOnly, setImmediatePickupOnly] = useState(true);
-  const [sortBy, setSortBy] = useState<'distance' | 'stock' | 'rating'>('distance');
+  const [sortBy, setSortBy] = useState<'distance' | 'stock'>('distance');
   const [selectedStoreId, setSelectedStoreId] = useState<string>('');
   const [mapViewMode, setMapViewMode] = useState<'map' | 'radar'>('map');
   const [radarZoom, setRadarZoom] = useState(1);
@@ -100,19 +97,18 @@ export default function StoresDirectoryPage() {
           const isPastoCoord = rawLat && rawLat > 0.8 && rawLat < 1.8;
           const finalLat = isPastoCoord ? rawLat : 1.2084 + index * 0.0055;
           const finalLon = isPastoCoord && rawLon ? rawLon : -77.2765 - index * 0.0045;
-          const dist = 1.2 + index * 1.1;
+          const dist = calculateHaversineDistance(1.2136, -77.2811, finalLat, finalLon);
           const realStockCount = loc?._count?.inventory ?? matchedLoc?._count?.inventory ?? 2;
 
           return {
             id: st.id,
             name: st.name,
+            nit: st.nit || undefined,
             badge: index === 0 ? 'VERIFICADO EN RED' : undefined,
             distanceKm: parseFloat(dist.toFixed(1)),
             type: index % 2 === 0 ? 'Centro Principal' : 'Distribuidor Multimarca',
             verifiedOEM: true,
             openStatus: 'Abierto ahora',
-            rating: 5.0,
-            reviewCount: 12 + index * 5,
             address: loc?.address || 'San Juan de Pasto, Nariño',
             city: loc?.city || 'Pasto',
             latitude: finalLat,
@@ -121,7 +117,7 @@ export default function StoresDirectoryPage() {
               st.imageUrl ||
               loc?.imageUrl ||
               'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
-            hours: 'Hoy 08:00 - 18:30',
+            hours: 'Lunes a Sábado • Horario Comercial',
             stockCount: realStockCount,
             stockLabel: `Stock Activo: ${realStockCount} ${realStockCount === 1 ? 'referencia' : 'referencias'} en catálogo`,
             specialtyOrOEM: 'Repuestos Certificados • Retiro y Despacho en Pasto',
@@ -184,7 +180,6 @@ export default function StoresDirectoryPage() {
       .sort((a, b) => {
         if (sortBy === 'distance') return a.distanceKm - b.distanceKm;
         if (sortBy === 'stock') return b.stockCount - a.stockCount;
-        if (sortBy === 'rating') return b.rating - a.rating;
         return 0;
       });
   }, [storesList, searchQuery, selectedDistance, selectedType, immediatePickupOnly, sortBy]);
@@ -437,7 +432,6 @@ export default function StoresDirectoryPage() {
                 >
                   <option value="distance">Más cercano</option>
                   <option value="stock">Mayor inventario</option>
-                  <option value="rating">Mejor calificación</option>
                 </select>
                 <span className="material-symbols-outlined absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-base">
                   expand_more
@@ -570,11 +564,17 @@ export default function StoresDirectoryPage() {
                         </div>
                       </div>
 
-                      {/* Rating */}
-                      <div className="flex items-center gap-1 text-xs font-semibold text-gray-700 bg-amber-50/70 border border-amber-200/80 px-2.5 py-1 rounded-md">
-                        <span className="text-amber-500 text-sm">★</span>
-                        <span>{store.rating}</span>
-                        <span className="text-gray-400 font-normal">({store.reviewCount} reseñas)</span>
+                      {/* Store Verification & NIT */}
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        {store.nit && (
+                          <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-gray-100 text-gray-700 border border-gray-200 font-semibold">
+                            NIT: {store.nit}
+                          </span>
+                        )}
+                        <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                          <span className="material-symbols-outlined text-[13px] text-emerald-600">verified</span>
+                          <span>Almacén Registrado</span>
+                        </div>
                       </div>
                     </div>
 

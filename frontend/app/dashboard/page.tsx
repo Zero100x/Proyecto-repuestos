@@ -3,8 +3,6 @@
 import React, { useState, useEffect, useCallback, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
 import {
   formatPriceCOP,
   fetchInventorySummary,
@@ -609,8 +607,6 @@ export default function DashboardPage() {
 
   return (
     <div className="bg-surface text-on-surface min-h-screen flex flex-col antialiased pt-[68px]">
-      <Navbar />
-
       {/* Floating Toast Notification */}
       {toast && (
         <div
@@ -2801,8 +2797,6 @@ export default function DashboardPage() {
           onClose={() => setSelectedVoucherReservation(null)}
         />
       )}
-
-      <Footer />
     </div>
   );
 }

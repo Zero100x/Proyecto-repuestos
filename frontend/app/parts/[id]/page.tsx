@@ -3,9 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import Navbar from '../../../components/Navbar';
-import Footer from '../../../components/Footer';
-import CompareTray from '../../../components/CompareTray';
 import WhatsAppLeadModal from '../../../components/WhatsAppLeadModal';
 import ProductTechnicalQA from '../../../components/ProductTechnicalQA';
 import ReservationModal from '../../../components/ReservationModal';
@@ -53,40 +50,32 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <>
-        <Navbar />
-        <main className="max-w-[1240px] mx-auto px-4 md:px-8 py-12">
-          <div className="h-6 w-48 bg-[var(--surface-container-high)] rounded mb-8 animate-pulse" />
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-7 h-96 bg-[var(--surface-container-high)] rounded-2xl animate-pulse" />
-            <div className="lg:col-span-5 h-96 bg-[var(--surface-container-high)] rounded-2xl animate-pulse" />
-          </div>
-        </main>
-        <Footer />
-      </>
+      <main className="max-w-[1240px] mx-auto px-4 md:px-8 py-12 pt-[90px]">
+        <div className="h-6 w-48 bg-[var(--surface-container-high)] rounded mb-8 animate-pulse" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-7 h-96 bg-[var(--surface-container-high)] rounded-2xl animate-pulse" />
+          <div className="lg:col-span-5 h-96 bg-[var(--surface-container-high)] rounded-2xl animate-pulse" />
+        </div>
+      </main>
     );
   }
 
   if (!part) {
     return (
-      <>
-        <Navbar />
-        <main className="max-w-[1240px] mx-auto px-4 md:px-8 py-20 text-center">
-          <span className="material-symbols-outlined text-5xl text-[var(--secondary)] mb-4">
-            inventory_2
-          </span>
-          <h1 className="font-heading text-2xl font-bold text-[var(--primary)] mb-2">
-            Repuesto no encontrado
-          </h1>
-          <p className="font-sans text-sm text-[var(--secondary)] mb-6">
-            El componente solicitado no se encuentra disponible en la base de datos centralizada.
-          </p>
-          <Link href="/search" className="btn btn-primary px-6 py-2.5 text-xs">
-            Volver al Marketplace
-          </Link>
-        </main>
-        <Footer />
-      </>
+      <main className="max-w-[1240px] mx-auto px-4 md:px-8 py-20 pt-[90px] text-center">
+        <span className="material-symbols-outlined text-5xl text-[var(--secondary)] mb-4">
+          inventory_2
+        </span>
+        <h1 className="font-heading text-2xl font-bold text-[var(--primary)] mb-2">
+          Repuesto no encontrado
+        </h1>
+        <p className="font-sans text-sm text-[var(--secondary)] mb-6">
+          El componente solicitado no se encuentra disponible en la base de datos centralizada.
+        </p>
+        <Link href="/search" className="btn btn-primary px-6 py-2.5 text-xs">
+          Volver al Marketplace
+        </Link>
+      </main>
     );
   }
 
@@ -124,8 +113,6 @@ export default function ProductDetailPage() {
 
   return (
     <div className="bg-surface text-on-surface min-h-screen flex flex-col antialiased">
-      <Navbar />
-
       <main className="pt-[90px] pb-24 px-margin-mobile md:px-margin-desktop max-w-container-max-width mx-auto flex-1 w-full">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-6 font-mono text-xs text-[var(--secondary)]">
@@ -440,9 +427,6 @@ export default function ProductDetailPage() {
           onClose={() => setVoucherModalOpen(false)}
         />
       )}
-
-      <Footer />
-      <CompareTray />
     </div>
   );
 }

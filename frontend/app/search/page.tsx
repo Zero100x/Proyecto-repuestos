@@ -2,10 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
 import PartCard from '../../components/PartCard';
-import CompareTray from '../../components/CompareTray';
 import VehicleCascadeSelector from '../../components/VehicleCascadeSelector';
 import { fetchParts, fetchCategories, formatPriceCOP, calculateHaversineDistance } from '../../lib/api';
 import { Part, PartCategory, PartCondition } from '../../lib/types';
@@ -131,8 +128,6 @@ function SearchContent() {
 
   return (
     <div className="bg-surface text-on-surface min-h-screen flex flex-col antialiased pt-[68px]">
-      <Navbar />
-
       <div className="flex flex-1 max-w-container-max-width mx-auto w-full relative px-4 md:px-margin-desktop py-6">
         
         {/* Sidebar: Technical Filter (Precision Automotive Hub) */}
@@ -528,9 +523,6 @@ function SearchContent() {
 
         </main>
       </div>
-
-      <Footer />
-      <CompareTray />
     </div>
   );
 }

@@ -1,9 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 import VehicleCascadeSelector from '../components/VehicleCascadeSelector';
-import CompareTray from '../components/CompareTray';
 
 export const metadata = {
   title: 'AutoPart Pro — Buscador de Repuestos Automotrices',
@@ -58,8 +55,6 @@ export default function HomePage() {
 
   return (
     <div className="bg-surface text-on-surface antialiased pt-[68px] min-h-screen flex flex-col">
-      <Navbar />
-
       <main className="w-full flex flex-col items-center flex-1">
         {/* Hero Section */}
         <section className="w-full hero-pattern border-b border-outline-variant py-14 md:py-20 px-margin-mobile md:px-margin-desktop">
@@ -277,9 +272,6 @@ export default function HomePage() {
           </div>
         </section>
       </main>
-
-      <Footer />
-      <CompareTray />
     </div>
   );
 }

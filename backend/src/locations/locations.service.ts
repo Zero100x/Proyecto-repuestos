@@ -1,4 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { join, extname } from 'path';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStoreDto, CreateLocationDto, UpdateLocationDto } from './dto/locations.dto';
 
@@ -6,9 +9,22 @@ import { CreateStoreDto, CreateLocationDto, UpdateLocationDto } from './dto/loca
 export class LocationsService {
   constructor(private prisma: PrismaService) {}
 
+  saveStoreImage(file: Express.Multer.File): { imageUrl: string } {
+    const uploadsDir = join(process.cwd(), 'uploads');
+    if (!existsSync(uploadsDir)) {
+      mkdirSync(uploadsDir, { recursive: true });
+    }
+    const ext = extname(file.originalname || '.jpg').toLowerCase() || '.jpg';
+    const fileName = `store_${randomUUID()}${ext}`;
+    const fullPath = join(uploadsDir, fileName);
+    writeFileSync(fullPath, file.buffer);
+    const baseUrl = process.env.API_PUBLIC_URL || 'http://localhost:3001';
+    return { imageUrl: `${baseUrl}/uploads/${fileName}` };
+  }
+
   // ============ STORES (Almacenes) ============
 
-  async findAllStores(page = 1, limit = 20) {
+  async findAllStores(page = 1, limit = 50) {
     const skip = (page - 1) * limit;
 
     const [stores, total] = await Promise.all([
@@ -62,7 +78,7 @@ export class LocationsService {
     return this.prisma.location.findMany({
       where,
       include: {
-        store: { select: { id: true, name: true } },
+        store: { select: { id: true, name: true, nit: true, phone: true, email: true, imageUrl: true } },
         _count: { select: { inventory: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -92,7 +108,7 @@ export class LocationsService {
     return this.prisma.location.create({
       data: dto,
       include: {
-        store: { select: { id: true, name: true } },
+        store: { select: { id: true, name: true, imageUrl: true } },
       },
     });
   }
@@ -104,7 +120,7 @@ export class LocationsService {
       where: { id },
       data: dto,
       include: {
-        store: { select: { id: true, name: true } },
+        store: { select: { id: true, name: true, imageUrl: true } },
       },
     });
   }

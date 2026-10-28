@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import StoreImageUploader from '../../components/StoreImageUploader';
+import StoreLocationPicker, { StoreLocationValue } from '../../components/StoreLocationPicker';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +20,16 @@ export default function LoginPage() {
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [storeName, setStoreName] = useState('');
+  const [storeNit, setStoreNit] = useState('');
+  const [storeImageUrl, setStoreImageUrl] = useState(
+    'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80'
+  );
+  const [storeLocation, setStoreLocation] = useState<StoreLocationValue>({
+    address: 'Carrera 24 # 63F-15, 7 de Agosto',
+    city: 'Bogotá',
+    latitude: 4.6542,
+    longitude: -74.0722,
+  });
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -52,6 +64,12 @@ export default function LoginPage() {
               phone: phone.trim() || undefined,
               role: roleType,
               storeName: roleType === 'STORE_ADMIN' ? storeName.trim() : undefined,
+              storeNit: roleType === 'STORE_ADMIN' ? storeNit.trim() || undefined : undefined,
+              storeAddress: roleType === 'STORE_ADMIN' ? storeLocation.address.trim() : undefined,
+              storeCity: roleType === 'STORE_ADMIN' ? storeLocation.city.trim() : undefined,
+              storeLatitude: roleType === 'STORE_ADMIN' ? storeLocation.latitude : undefined,
+              storeLongitude: roleType === 'STORE_ADMIN' ? storeLocation.longitude : undefined,
+              storeImageUrl: roleType === 'STORE_ADMIN' ? storeImageUrl || undefined : undefined,
             };
 
       const res = await fetch(url, {
@@ -305,23 +323,53 @@ export default function LoginPage() {
                     </div>
 
                     {roleType === 'STORE_ADMIN' && (
-                      <div>
-                        <label className="block font-mono text-[11px] text-[var(--secondary)] mb-1 uppercase tracking-wider font-semibold">
-                          Nombre del Almacén / Distribuidora *
-                        </label>
-                        <div className="relative">
-                          <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--secondary)] text-lg pointer-events-none">
-                            storefront
-                          </span>
-                          <input
-                            type="text"
-                            required
-                            value={storeName}
-                            onChange={e => setStoreName(e.target.value)}
-                            placeholder="Ej. Repuestos El Motor del Norte"
-                            className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-[var(--on-surface)] focus:border-[var(--primary)] focus:bg-white focus:ring-1 focus:ring-[var(--primary)] transition-all outline-none"
-                          />
+                      <div className="space-y-4 bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-2xl p-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block font-mono text-[11px] text-[var(--secondary)] mb-1 uppercase tracking-wider font-semibold">
+                              Nombre del Almacén *
+                            </label>
+                            <div className="relative">
+                              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[var(--secondary)] text-base pointer-events-none">
+                                storefront
+                              </span>
+                              <input
+                                type="text"
+                                required
+                                value={storeName}
+                                onChange={e => setStoreName(e.target.value)}
+                                placeholder="Ej. Repuestos El Motor del Norte"
+                                className="w-full bg-white border border-[var(--outline-variant)] rounded-xl pl-9 pr-3 py-2 text-xs text-[var(--on-surface)] focus:border-[var(--primary)] outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block font-mono text-[11px] text-[var(--secondary)] mb-1 uppercase tracking-wider font-semibold">
+                              NIT / Identificación Fiscal
+                            </label>
+                            <input
+                              type="text"
+                              value={storeNit}
+                              onChange={e => setStoreNit(e.target.value)}
+                              placeholder="Ej. 900.123.456-7"
+                              className="w-full bg-white border border-[var(--outline-variant)] rounded-xl px-3 py-2 text-xs text-[var(--on-surface)] focus:border-[var(--primary)] outline-none"
+                            />
+                          </div>
                         </div>
+
+                        {/* Store Facade Image Uploader */}
+                        <StoreImageUploader
+                          value={storeImageUrl}
+                          onChange={setStoreImageUrl}
+                          storeName={storeName}
+                        />
+
+                        {/* Interactive Map & GPS Coordinates Picker */}
+                        <StoreLocationPicker
+                          value={storeLocation}
+                          onChange={setStoreLocation}
+                        />
                       </div>
                     )}
                   </>

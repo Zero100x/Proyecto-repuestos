@@ -183,11 +183,114 @@ export async function fetchVehicleCascade(makeId?: string, modelId?: string, yea
 }
 
 export async function fetchStores(): Promise<Store[]> {
+  try {
+    const res = await fetch(`${API_BASE}/stores?limit=50`, { cache: 'no-store' });
+    if (res.ok) {
+      const json = await res.json();
+      const list = Array.isArray(json) ? json : json.data;
+      if (Array.isArray(list) && list.length > 0) {
+        return list;
+      }
+    }
+  } catch (err) {
+    console.warn('Backend stores API error, using mock:', err);
+  }
   return MOCK_STORES;
 }
 
-export async function fetchLocations(): Promise<Location[]> {
-  return MOCK_LOCATIONS;
+export async function fetchLocations(storeId?: string): Promise<Location[]> {
+  try {
+    const url = storeId ? `${API_BASE}/locations?storeId=${storeId}` : `${API_BASE}/locations`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (res.ok) {
+      const json = await res.json();
+      const list = Array.isArray(json) ? json : json.data;
+      if (Array.isArray(list) && list.length > 0) {
+        return list;
+      }
+    }
+  } catch (err) {
+    console.warn('Backend locations API error, using mock:', err);
+  }
+  return storeId ? MOCK_LOCATIONS.filter(l => l.storeId === storeId) : MOCK_LOCATIONS;
+}
+
+export async function uploadStoreImage(file: File): Promise<{ imageUrl: string }> {
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const res = await fetch(`${API_BASE}/stores/upload-image`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn('Upload store image API error, falling back to DataURL:', err);
+  }
+
+  // Fallback to base64 DataURL so preview and persistence work even offline
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve({ imageUrl: String(reader.result) });
+    reader.onerror = () => reject(new Error('No se pudo procesar la imagen seleccionada'));
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function updateStoreProfile(
+  token: string,
+  storeId: string,
+  data: { name?: string; nit?: string; phone?: string; email?: string; imageUrl?: string },
+): Promise<Store> {
+  const res = await fetch(`${API_BASE}/stores/${storeId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || 'Error al actualizar los datos del almacén');
+  }
+  return res.json();
+}
+
+export async function updateStoreLocation(
+  token: string,
+  locationId: string,
+  data: {
+    name?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    latitude?: number;
+    longitude?: number;
+    imageUrl?: string;
+    phone?: string;
+    whatsapp?: string;
+  },
+): Promise<Location> {
+  const res = await fetch(`${API_BASE}/locations/${locationId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || 'Error al actualizar la ubicación de la sede');
+  }
+  return res.json();
 }
 
 export async function fetchCategories(token?: string) {
@@ -396,6 +499,9 @@ export async function createStoreLocation(
     address: string;
     city: string;
     state?: string;
+    latitude?: number;
+    longitude?: number;
+    imageUrl?: string;
     phone?: string;
     whatsapp?: string;
   },

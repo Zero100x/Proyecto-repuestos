@@ -58,7 +58,9 @@ export interface Store {
   nit?: string;
   phone?: string;
   email?: string;
+  imageUrl?: string;
   isActive: boolean;
+  locations?: Location[];
 }
 
 export interface Location {
@@ -70,10 +72,15 @@ export interface Location {
   state?: string;
   latitude?: number;
   longitude?: number;
+  placeId?: string;
+  imageUrl?: string;
   phone?: string;
   whatsapp?: string;
   isActive: boolean;
   store?: Store;
+  _count?: {
+    inventory?: number;
+  };
 }
 
 export interface InventoryItem {

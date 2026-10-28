@@ -12,9 +12,33 @@ export const MOCK_CATEGORIES: PartCategory[] = [
 ];
 
 export const MOCK_STORES: Store[] = [
-  { id: 's-1', name: 'Repuestos El Motor', nit: '900111222-1', phone: '+57 300 200 1000', email: 'contacto@elmotor.com', isActive: true },
-  { id: 's-2', name: 'AutoPartes Colombia', nit: '900333444-2', phone: '+57 300 300 2000', email: 'ventas@autopartescol.com', isActive: true },
-  { id: 's-3', name: 'Distribuidora JR Parts', nit: '900555666-3', phone: '+57 300 400 3000', email: 'info@jrparts.co', isActive: true },
+  {
+    id: 's-1',
+    name: 'Repuestos El Motor',
+    nit: '900111222-1',
+    phone: '+57 300 200 1000',
+    email: 'contacto@elmotor.com',
+    imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
+    isActive: true,
+  },
+  {
+    id: 's-2',
+    name: 'AutoPartes Colombia',
+    nit: '900333444-2',
+    phone: '+57 300 300 2000',
+    email: 'ventas@autopartescol.com',
+    imageUrl: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=900&q=80',
+    isActive: true,
+  },
+  {
+    id: 's-3',
+    name: 'Distribuidora JR Parts',
+    nit: '900555666-3',
+    phone: '+57 300 400 3000',
+    email: 'info@jrparts.co',
+    imageUrl: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=900&q=80',
+    isActive: true,
+  },
 ];
 
 export const MOCK_LOCATIONS: Location[] = [

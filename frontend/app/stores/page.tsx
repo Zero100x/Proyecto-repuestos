@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { fetchStores, fetchLocations, buildWhatsAppLink } from '../../lib/api';
 import { Store, Location } from '../../lib/types';
+import InteractiveStoresMap from '../../components/InteractiveStoresMap';
 
 interface DirectoryStore {
   id: string;
@@ -17,6 +18,9 @@ interface DirectoryStore {
   reviewCount: number;
   address: string;
   city: string;
+  latitude: number;
+  longitude: number;
+  imageUrl: string;
   hours: string;
   stockCount: number;
   stockLabel: string;
@@ -46,6 +50,9 @@ const INITIAL_STORES: DirectoryStore[] = [
     reviewCount: 184,
     address: 'Av. de los Industriales 4800, Polígono Norte',
     city: 'Bogotá',
+    latitude: 4.7212,
+    longitude: -74.0531,
+    imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
     hours: 'Hoy 08:00 - 19:00 (Continuo)',
     stockCount: 1820,
     stockLabel: 'Stock Activo: 1,820 referencias en estantería',
@@ -72,6 +79,9 @@ const INITIAL_STORES: DirectoryStore[] = [
     reviewCount: 92,
     address: 'Ruta Provincial 21, Km 12.5',
     city: 'Bogotá',
+    latitude: 4.6542,
+    longitude: -74.0722,
+    imageUrl: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=900&q=80',
     hours: 'Hoy 08:30 - 18:00',
     stockCount: 2150,
     stockLabel: 'Stock: 2,150 referencias',
@@ -98,6 +108,9 @@ const INITIAL_STORES: DirectoryStore[] = [
     reviewCount: 350,
     address: 'Corredor Industrial Este, Nave 4',
     city: 'Medellín',
+    latitude: 6.2314,
+    longitude: -75.5891,
+    imageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=900&q=80',
     hours: 'Operación Continua 24 Horas',
     stockCount: 14500,
     stockLabel: 'Inventario Industrial: 14,500 referencias',
@@ -124,6 +137,9 @@ const INITIAL_STORES: DirectoryStore[] = [
     reviewCount: 65,
     address: 'Calle Metalurgia 58, Pol. San José',
     city: 'Bogotá',
+    latitude: 4.6950,
+    longitude: -74.0850,
+    imageUrl: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=900&q=80',
     hours: 'Atención hasta 19:30',
     stockCount: 1350,
     stockLabel: 'Referencias: 1,350 disponibles',
@@ -144,11 +160,12 @@ const INITIAL_STORES: DirectoryStore[] = [
 export default function StoresDirectoryPage() {
   const [storesList, setStoresList] = useState<DirectoryStore[]>(INITIAL_STORES);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDistance, setSelectedDistance] = useState<'5km' | '15km' | '30km' | 'all'>('15km');
+  const [selectedDistance, setSelectedDistance] = useState<'5km' | '15km' | '30km' | 'all'>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [immediatePickupOnly, setImmediatePickupOnly] = useState(true);
   const [sortBy, setSortBy] = useState<'distance' | 'stock' | 'rating'>('distance');
   const [selectedStoreId, setSelectedStoreId] = useState<string>('store-depot-central');
+  const [mapViewMode, setMapViewMode] = useState<'map' | 'radar'>('map');
   const [radarZoom, setRadarZoom] = useState(1);
   const [showAdmissionModal, setShowAdmissionModal] = useState(false);
   const storeCardsRef = useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -161,12 +178,15 @@ export default function StoresDirectoryPage() {
 
         // Enhance backend stores and merge without duplicating
         const backendEnhanced: DirectoryStore[] = apiStores.map((st, index) => {
-          const loc = apiLocations.find(l => l.storeId === st.id) || apiLocations[0];
-          const dist = 5.5 + index * 4.3;
+          const loc =
+            st.locations?.[0] ||
+            apiLocations.find(l => l.storeId === st.id) ||
+            apiLocations[0];
+          const dist = 3.2 + index * 3.8;
           return {
             id: st.id,
             name: st.name,
-            badge: index === 0 ? 'ALIADO HISTÓRICO' : undefined,
+            badge: index === 0 ? 'VERIFICADO EN RED' : undefined,
             distanceKm: parseFloat(dist.toFixed(1)),
             type: index % 2 === 0 ? 'Centro Principal' : 'Distribuidor Multimarca',
             verifiedOEM: true,
@@ -175,6 +195,12 @@ export default function StoresDirectoryPage() {
             reviewCount: 45 + index * 20,
             address: loc?.address || 'Av. Principal # 45-20',
             city: loc?.city || 'Bogotá',
+            latitude: loc?.latitude ?? 4.6542 + index * 0.02,
+            longitude: loc?.longitude ?? -74.0722 + index * 0.015,
+            imageUrl:
+              st.imageUrl ||
+              loc?.imageUrl ||
+              'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
             hours: 'Hoy 08:00 - 18:30',
             stockCount: 1200 + index * 350,
             stockLabel: `Stock Activo: ${(1200 + index * 350).toLocaleString()} referencias`,
@@ -582,26 +608,47 @@ export default function StoresDirectoryPage() {
                       </div>
                     </div>
 
-                    {/* Store Title & Badges */}
+                    {/* Store Image, Title & Badges */}
                     <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900 font-heading flex items-center gap-1.5">
-                          {store.name}
-                          {store.verifiedOEM && (
-                            <span
-                              className="material-symbols-outlined text-blue-600 text-lg"
-                              title="Almacén Verificado OEM"
-                            >
-                              verified
+                      <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 flex-shrink-0 shadow-2xs">
+                          <img
+                            src={store.imageUrl}
+                            alt={store.name}
+                            className="w-full h-full object-cover"
+                            onError={e => {
+                              (e.currentTarget as HTMLImageElement).src =
+                                'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80';
+                            }}
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-lg font-bold text-gray-900 font-heading flex items-center gap-1.5">
+                            <span className="truncate">{store.name}</span>
+                            {store.verifiedOEM && (
+                              <span
+                                className="material-symbols-outlined text-blue-600 text-lg flex-shrink-0"
+                                title="Almacén Verificado OEM"
+                              >
+                                verified
+                              </span>
+                            )}
+                          </h3>
+                          <div className="text-xs text-gray-500 flex items-center gap-2 flex-wrap mt-0.5">
+                            <span>{store.type}</span>
+                            <span>•</span>
+                            <span>Verificado OEM</span>
+                            <span>•</span>
+                            <span className="text-emerald-600 font-semibold">{store.openStatus}</span>
+                          </div>
+                          <div className="text-[11px] font-mono text-gray-400 flex items-center gap-1 mt-1">
+                            <span className="material-symbols-outlined text-xs text-blue-600">
+                              pin_drop
                             </span>
-                          )}
-                        </h3>
-                        <div className="text-xs text-gray-500 flex items-center gap-2 flex-wrap mt-0.5">
-                          <span>{store.type}</span>
-                          <span>•</span>
-                          <span>Verificado OEM</span>
-                          <span>•</span>
-                          <span className="text-emerald-600 font-semibold">{store.openStatus}</span>
+                            <span>
+                              {store.city} ({store.latitude.toFixed(4)}, {store.longitude.toFixed(4)})
+                            </span>
+                          </div>
                         </div>
                       </div>
 
@@ -705,22 +752,69 @@ export default function StoresDirectoryPage() {
           {/* Right Column (~38% width, sticky): Radar Map & Inspector */}
           <div className="lg:col-span-5 xl:col-span-4 sticky top-[80px] space-y-4">
             {/* ==========================================================================
-                3A. RADAR LOGÍSTICO • GPS SYNC (INTERACTIVE SVG MAP)
+                3A. MAPA GPS INTERACTIVO & RADAR LOGÍSTICO
                ========================================================================== */}
             <div className="bg-[#0b1329] border border-slate-800 rounded-2xl overflow-hidden shadow-lg text-white">
-              {/* Radar Header */}
-              <div className="px-4 py-3 bg-[#070e20] border-b border-slate-800 flex items-center justify-between text-xs">
+              {/* Map / Radar Header with View Switcher */}
+              <div className="px-4 py-3 bg-[#070e20] border-b border-slate-800 flex items-center justify-between gap-2 text-xs">
                 <div className="flex items-center gap-2 font-mono font-bold tracking-wider text-slate-300">
-                  <span className="material-symbols-outlined text-emerald-400 text-base">radar</span>
-                  <span>RADAR LOGÍSTICO • GPS SYNC</span>
+                  <span className="material-symbols-outlined text-emerald-400 text-base">
+                    {mapViewMode === 'map' ? 'map' : 'radar'}
+                  </span>
+                  <span>{mapViewMode === 'map' ? 'MAPA GPS EN VIVO' : 'RADAR LOGÍSTICO'}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-emerald-400 font-mono text-[11px] font-semibold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
-                  <span>{filteredStores.length} en alcance</span>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg p-0.5 text-[10px] font-mono">
+                    <button
+                      type="button"
+                      onClick={() => setMapViewMode('map')}
+                      className={`px-2 py-0.5 rounded transition-colors cursor-pointer ${
+                        mapViewMode === 'map'
+                          ? 'bg-emerald-500 text-slate-950 font-bold'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Callejero
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMapViewMode('radar')}
+                      className={`px-2 py-0.5 rounded transition-colors cursor-pointer ${
+                        mapViewMode === 'radar'
+                          ? 'bg-emerald-500 text-slate-950 font-bold'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Radar
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1 text-emerald-400 font-mono text-[11px] font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+                    <span>{filteredStores.length}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Radar Graphic Viewport */}
+              {mapViewMode === 'map' ? (
+                <InteractiveStoresMap
+                  stores={filteredStores.map(st => ({
+                    id: st.id,
+                    name: st.name,
+                    address: st.address,
+                    city: st.city,
+                    latitude: st.latitude,
+                    longitude: st.longitude,
+                    distanceKm: st.distanceKm,
+                    stockCount: st.stockCount,
+                    imageUrl: st.imageUrl,
+                    openStatus: st.openStatus,
+                  }))}
+                  selectedStoreId={selectedStore.id}
+                  onSelectStore={handleSelectStore}
+                />
+              ) : (
+              /* Radar Graphic Viewport */
               <div className="relative w-full h-[280px] bg-[#070d1d] overflow-hidden select-none">
                 {/* SVG Radar Graphic */}
                 <svg
@@ -910,11 +1004,17 @@ export default function StoresDirectoryPage() {
                   </button>
                 </div>
               </div>
+              )}
 
               {/* Traffic Condition Banner */}
-              <div className="px-4 py-2 bg-[#050b18] border-t border-slate-800 flex items-center gap-2 text-[11px] font-mono text-emerald-400">
-                <span className="material-symbols-outlined text-sm text-emerald-400">traffic</span>
-                <span>Tráfico Fluido: Autopista Norte / N-VI Despejado</span>
+              <div className="px-4 py-2 bg-[#050b18] border-t border-slate-800 flex items-center justify-between gap-2 text-[11px] font-mono text-emerald-400">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-sm text-emerald-400">traffic</span>
+                  <span>Tráfico Fluido: Autopista Norte / N-VI Despejado</span>
+                </div>
+                <span className="text-[10px] text-slate-400">
+                  {selectedStore.latitude.toFixed(3)}, {selectedStore.longitude.toFixed(3)}
+                </span>
               </div>
             </div>
 
@@ -936,6 +1036,28 @@ export default function StoresDirectoryPage() {
                   </span>
                   <span className="text-xs font-bold text-gray-900 font-mono">
                     {Math.round(selectedStore.distanceKm * 2.2 + 2)} min
+                  </span>
+                </div>
+              </div>
+
+              {/* Store Facade Photo Banner */}
+              <div className="relative h-28 rounded-xl overflow-hidden border border-gray-200 bg-gray-900">
+                <img
+                  src={selectedStore.imageUrl}
+                  alt={selectedStore.name}
+                  className="w-full h-full object-cover opacity-90"
+                  onError={e => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80';
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent p-2.5 flex items-end justify-between">
+                  <span className="text-[10px] font-mono text-emerald-300 font-bold flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs">pin_drop</span>
+                    GPS: {selectedStore.latitude.toFixed(4)}, {selectedStore.longitude.toFixed(4)}
+                  </span>
+                  <span className="bg-black/60 text-white text-[10px] font-mono px-2 py-0.5 rounded">
+                    {selectedStore.city}
                   </span>
                 </div>
               </div>
@@ -983,9 +1105,7 @@ export default function StoresDirectoryPage() {
               {/* Action Buttons */}
               <div className="space-y-2 pt-1">
                 <a
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-                    `${selectedStore.address}, ${selectedStore.city}, Colombia`
-                  )}`}
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${selectedStore.latitude},${selectedStore.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-gray-800 transition-colors shadow-xs"

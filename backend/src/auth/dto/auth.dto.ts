@@ -1,5 +1,5 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LoginDto {
   @ApiProperty({ example: 'admin@repuestos.com' })
@@ -33,9 +33,50 @@ export class RegisterDto {
   @IsNotEmpty()
   lastName: string;
 
-  @ApiProperty({ example: '+573001234567', required: false })
+  @ApiPropertyOptional({ example: '+573001234567' })
   @IsString()
+  @IsOptional()
   phone?: string;
+
+  @ApiPropertyOptional({ example: 'STORE_ADMIN' })
+  @IsString()
+  @IsOptional()
+  role?: string;
+
+  @ApiPropertyOptional({ example: 'Repuestos El Motor' })
+  @IsString()
+  @IsOptional()
+  storeName?: string;
+
+  @ApiPropertyOptional({ example: '900123456-7' })
+  @IsString()
+  @IsOptional()
+  storeNit?: string;
+
+  @ApiPropertyOptional({ example: 'Calle 134 # 45-20' })
+  @IsString()
+  @IsOptional()
+  storeAddress?: string;
+
+  @ApiPropertyOptional({ example: 'Bogotá' })
+  @IsString()
+  @IsOptional()
+  storeCity?: string;
+
+  @ApiPropertyOptional({ example: 4.711 })
+  @IsNumber()
+  @IsOptional()
+  storeLatitude?: number;
+
+  @ApiPropertyOptional({ example: -74.0721 })
+  @IsNumber()
+  @IsOptional()
+  storeLongitude?: number;
+
+  @ApiPropertyOptional({ example: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=800&q=80' })
+  @IsString()
+  @IsOptional()
+  storeImageUrl?: string;
 }
 
 export class AuthResponseDto {

@@ -40,6 +40,8 @@ import {
   ReservationStatus,
 } from '../../lib/types';
 import ReservationVoucherModal from '../../components/ReservationVoucherModal';
+import StoreImageUploader from '../../components/StoreImageUploader';
+import StoreLocationPicker from '../../components/StoreLocationPicker';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -118,9 +120,12 @@ export default function DashboardPage() {
   // New Location Form State
   const [newLocForm, setNewLocForm] = useState({
     name: '',
-    address: '',
+    address: 'Carrera 24 # 63F-15, 7 de Agosto',
     city: 'Bogotá',
     state: 'Cundinamarca',
+    latitude: 4.6542,
+    longitude: -74.0722,
+    imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
     phone: '',
     whatsapp: '',
   });
@@ -502,17 +507,23 @@ export default function DashboardPage() {
         address: newLocForm.address.trim(),
         city: newLocForm.city.trim(),
         state: newLocForm.state.trim() || undefined,
+        latitude: newLocForm.latitude,
+        longitude: newLocForm.longitude,
+        imageUrl: newLocForm.imageUrl || undefined,
         phone: newLocForm.phone.trim() || undefined,
         whatsapp: newLocForm.whatsapp.trim() || undefined,
       });
 
-      showToast(`Nueva sede "${newLocForm.name}" registrada exitosamente`, 'success');
+      showToast(`Nueva sede "${newLocForm.name}" registrada exitosamente con coordenadas GPS`, 'success');
       setIsNewLocationModalOpen(false);
       setNewLocForm({
         name: '',
-        address: '',
+        address: 'Carrera 24 # 63F-15, 7 de Agosto',
         city: 'Bogotá',
         state: 'Cundinamarca',
+        latitude: 4.6542,
+        longitude: -74.0722,
+        imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
         phone: '',
         whatsapp: '',
       });
@@ -1202,24 +1213,47 @@ export default function DashboardPage() {
               {locations.map(loc => (
                 <div
                   key={loc.id}
-                  className="bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded-2xl p-6 flex flex-col justify-between hover:shadow-md transition"
+                  className="bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded-2xl overflow-hidden flex flex-col justify-between hover:shadow-md transition"
                 >
                   <div>
-                    <div className="flex justify-between items-start mb-3">
-                      <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold">
-                        {loc.city}
-                      </span>
-                      <span className="font-mono text-[10px] text-[var(--secondary)]">
-                        {(loc as any)._count?.inventory ?? 0} repuestos
-                      </span>
+                    <div className="relative h-36 bg-gray-900 overflow-hidden">
+                      <img
+                        src={
+                          loc.imageUrl ||
+                          loc.store?.imageUrl ||
+                          'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80'
+                        }
+                        alt={loc.name}
+                        className="w-full h-full object-cover opacity-90"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent p-3 flex flex-col justify-between">
+                        <div className="flex justify-between items-start">
+                          <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-blue-600/90 text-white font-bold">
+                            {loc.city}
+                          </span>
+                          <span className="font-mono text-[10px] bg-black/60 text-white px-2 py-0.5 rounded">
+                            {(loc as any)._count?.inventory ?? 0} repuestos
+                          </span>
+                        </div>
+                        {loc.latitude && loc.longitude && (
+                          <div className="font-mono text-[10px] text-emerald-300 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-xs">pin_drop</span>
+                            <span>
+                              GPS: {Number(loc.latitude).toFixed(4)}, {Number(loc.longitude).toFixed(4)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <h4 className="font-heading text-base font-bold text-[var(--primary)] mb-1">
-                      {loc.name}
-                    </h4>
-                    <p className="font-sans text-xs text-[var(--secondary)] mb-4">{loc.address}</p>
+                    <div className="p-5 pb-3">
+                      <h4 className="font-heading text-base font-bold text-[var(--primary)] mb-1">
+                        {loc.name}
+                      </h4>
+                      <p className="font-sans text-xs text-[var(--secondary)]">{loc.address}</p>
+                    </div>
                   </div>
 
-                  <div className="pt-4 border-t border-[var(--outline-variant)] flex flex-col gap-2 font-mono text-xs text-[var(--on-surface-variant)]">
+                  <div className="px-5 pb-5 pt-3 border-t border-[var(--outline-variant)] flex flex-col gap-2 font-mono text-xs text-[var(--on-surface-variant)]">
                     {loc.phone && (
                       <div className="flex items-center gap-2">
                         <span className="material-symbols-outlined text-sm text-[var(--secondary)]">call</span>
@@ -2635,12 +2669,17 @@ export default function DashboardPage() {
       {/* MODAL 3: REGISTRAR NUEVA SEDE / BODEGA (PDCIRA-6)                        */}
       {/* ========================================================================= */}
       {isNewLocationModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl border border-[var(--outline-variant)] shadow-2xl max-w-md w-full p-6 sm:p-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-[var(--outline-variant)] shadow-2xl max-w-xl w-full p-6 sm:p-8 my-8 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-6 pb-4 border-b border-[var(--outline-variant)]">
-              <h3 className="font-heading text-lg font-extrabold text-[var(--primary)]">
-                Registrar Sede o Bodega Física
-              </h3>
+              <div>
+                <h3 className="font-heading text-lg font-extrabold text-[var(--primary)]">
+                  Registrar Sede o Bodega Física
+                </h3>
+                <p className="font-sans text-xs text-[var(--secondary)] mt-0.5">
+                  Sube la foto de tu fachada y ubica el pin exacto en el mapa para tus clientes.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsNewLocationModalOpen(false)}
@@ -2665,45 +2704,29 @@ export default function DashboardPage() {
                 />
               </div>
 
-              <div>
-                <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
-                  Dirección Física *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej: Calle 68 #24-15"
-                  value={newLocForm.address}
-                  onChange={e => setNewLocForm({ ...newLocForm, address: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
-                />
-              </div>
+              <StoreImageUploader
+                value={newLocForm.imageUrl}
+                onChange={url => setNewLocForm({ ...newLocForm, imageUrl: url })}
+                storeName={newLocForm.name}
+              />
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
-                    Ciudad *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newLocForm.city}
-                    onChange={e => setNewLocForm({ ...newLocForm, city: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
-                  />
-                </div>
-                <div>
-                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
-                    Departamento
-                  </label>
-                  <input
-                    type="text"
-                    value={newLocForm.state}
-                    onChange={e => setNewLocForm({ ...newLocForm, state: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
-                  />
-                </div>
-              </div>
+              <StoreLocationPicker
+                value={{
+                  address: newLocForm.address,
+                  city: newLocForm.city,
+                  latitude: newLocForm.latitude,
+                  longitude: newLocForm.longitude,
+                }}
+                onChange={locVal =>
+                  setNewLocForm({
+                    ...newLocForm,
+                    address: locVal.address,
+                    city: locVal.city,
+                    latitude: locVal.latitude,
+                    longitude: locVal.longitude,
+                  })
+                }
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <div>

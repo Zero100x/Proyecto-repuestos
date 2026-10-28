@@ -20,6 +20,11 @@ export class CreateStoreDto {
   @IsString()
   @IsOptional()
   email?: string;
+
+  @ApiPropertyOptional({ example: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=800&q=80' })
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
 }
 
 export class CreateLocationDto {
@@ -53,6 +58,16 @@ export class CreateLocationDto {
   @IsNumber()
   @IsOptional()
   longitude?: number;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  placeId?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
 
   @ApiPropertyOptional({ example: '+573001234567' })
   @IsString()
@@ -95,6 +110,16 @@ export class UpdateLocationDto {
   @IsNumber()
   @IsOptional()
   longitude?: number;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  placeId?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
 
   @ApiPropertyOptional()
   @IsString()

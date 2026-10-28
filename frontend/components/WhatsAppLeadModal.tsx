@@ -25,7 +25,7 @@ export default function WhatsAppLeadModal({
     selectedInventory || inventoryList[0] || ({} as InventoryItem)
   );
   const [buyerName, setBuyerName] = useState('');
-  const [buyerCity, setBuyerCity] = useState(selectedInv.location?.city || 'Bogotá');
+  const [buyerCity, setBuyerCity] = useState(selectedInv.location?.city || 'Pasto');
   const [userNote, setUserNote] = useState('');
 
   const targetLocation = selectedInv.location;
@@ -152,7 +152,7 @@ export default function WhatsAppLeadModal({
               <input
                 type="text"
                 className="form-input"
-                placeholder="Ej. Bogotá, Medellín..."
+                placeholder="Ej. Pasto, Ipiales, Túquerres..."
                 value={buyerCity}
                 onChange={e => setBuyerCity(e.target.value)}
               />

@@ -413,7 +413,7 @@ function SearchContent() {
 
               <div className="hidden sm:flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-lg text-xs font-mono">
                 <span className="material-symbols-outlined text-sm text-[var(--on-tertiary-container)]">location_on</span>
-                <span>Bogotá D.C. & Sede Medellín</span>
+                <span>Pasto, Nariño & Sedes Aliadas</span>
               </div>
             </div>
           </div>

@@ -8,8 +8,8 @@ export const metadata: Metadata = {
     "Plataforma digital para consulta centralizada de repuestos automotrices. Encuentra la pieza exacta, compara precios entre almacenes y contacta al instante.",
   keywords: [
     "repuestos automotrices",
-    "autopartes colombia",
-    "repuestos bogota",
+    "autopartes pasto",
+    "repuestos pasto nariño",
     "buscar repuestos",
     "OEM autopartes",
   ],

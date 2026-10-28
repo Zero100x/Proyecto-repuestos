@@ -1462,7 +1462,7 @@ export default function DashboardPage() {
                             {/* Sede & City */}
                             <td className="p-4">
                               <p className="font-medium">{lead.location?.name || 'Sede Principal'}</p>
-                              <p className="font-mono text-[11px] text-[var(--secondary)]">{lead.buyerCity || lead.location?.city || 'Bogotá'}</p>
+                              <p className="font-mono text-[11px] text-[var(--secondary)]">{lead.buyerCity || lead.location?.city || 'Pasto'}</p>
                             </td>
 
                             {/* Message & Date */}
@@ -2697,7 +2697,7 @@ export default function DashboardPage() {
                 <input
                   type="text"
                   required
-                  placeholder="Ej: Sede 7 de Agosto / Bodega Occidente"
+                  placeholder="Ej: Sede Julián Bucheli / Bodega Parque Bolívar"
                   value={newLocForm.name}
                   onChange={e => setNewLocForm({ ...newLocForm, name: e.target.value })}
                   className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"

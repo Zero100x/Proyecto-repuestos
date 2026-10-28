@@ -126,7 +126,7 @@ export const MOCK_PARTS: Part[] = [
     years: [2019, 2020, 2021, 2022, 2023],
     versions: ['LE 1.8L', 'SE 2.0L', 'Premier 1.0T'],
     storeNames: ['Repuestos El Motor', 'AutoPartes Colombia'],
-    cities: ['Bogotá', 'Medellín'],
+    cities: ['Pasto'],
     locationCount: 3,
     inventory: [
       {
@@ -185,7 +185,7 @@ export const MOCK_PARTS: Part[] = [
     years: [2020, 2021, 2022],
     versions: ['LE 1.8L', 'Zen 1.6L'],
     storeNames: ['Repuestos El Motor', 'AutoPartes Colombia', 'Distribuidora JR Parts'],
-    cities: ['Bogotá', 'Medellín'],
+    cities: ['Pasto'],
     locationCount: 3,
     inventory: [
       {
@@ -244,7 +244,7 @@ export const MOCK_PARTS: Part[] = [
     years: [2018, 2019, 2020, 2021, 2022],
     versions: ['LE 1.8L', 'LT 1.2L', 'Advance 1.6L'],
     storeNames: ['Repuestos El Motor', 'AutoPartes Colombia'],
-    cities: ['Bogotá', 'Medellín'],
+    cities: ['Pasto'],
     locationCount: 2,
     inventory: [
       {
@@ -293,7 +293,7 @@ export const MOCK_PARTS: Part[] = [
     years: [2019, 2020, 2021, 2022, 2023],
     versions: ['LE 1.8L', 'SE 2.0L', 'Touring 2.0L'],
     storeNames: ['Repuestos El Motor', 'AutoPartes Colombia', 'Distribuidora JR Parts'],
-    cities: ['Bogotá', 'Medellín'],
+    cities: ['Pasto'],
     locationCount: 4,
     inventory: [
       {
@@ -352,7 +352,7 @@ export const MOCK_PARTS: Part[] = [
     years: [2019, 2020, 2021, 2022],
     versions: ['LE 1.8L', 'Intens 2.0L'],
     storeNames: ['Repuestos El Motor', 'Distribuidora JR Parts'],
-    cities: ['Bogotá'],
+    cities: ['Pasto'],
     locationCount: 3,
     inventory: [
       {
@@ -411,7 +411,7 @@ export const MOCK_PARTS: Part[] = [
     years: [2018, 2019, 2020, 2021],
     versions: ['1.2L MT', 'Life 1.0L', '2.4L Diesel MT'],
     storeNames: ['Repuestos El Motor', 'Distribuidora JR Parts'],
-    cities: ['Bogotá'],
+    cities: ['Pasto'],
     locationCount: 3,
     inventory: [
       {
@@ -470,7 +470,7 @@ export const MOCK_PARTS: Part[] = [
     years: [2018, 2019, 2020, 2021, 2022, 2023],
     versions: ['LE 1.8L', 'Premier 1.0T', 'Touring 2.0L', 'Intens 2.0L'],
     storeNames: ['Repuestos El Motor', 'AutoPartes Colombia'],
-    cities: ['Bogotá', 'Medellín'],
+    cities: ['Pasto'],
     locationCount: 2,
     inventory: [
       {
@@ -519,7 +519,7 @@ export const MOCK_PARTS: Part[] = [
     years: [2019, 2020, 2021],
     versions: ['LE 1.8L', 'Premier 1.0T'],
     storeNames: ['AutoPartes Colombia', 'Distribuidora JR Parts'],
-    cities: ['Medellín', 'Bogotá'],
+    cities: ['Pasto'],
     locationCount: 2,
     inventory: [
       {

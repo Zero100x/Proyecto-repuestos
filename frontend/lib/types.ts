@@ -118,6 +118,8 @@ export interface Part {
   weight?: number;
   imageUrl?: string;
   images?: string[];
+  warranty?: string;
+  hasWarranty?: boolean;
   isActive: boolean;
   category?: PartCategory;
   partNumbers?: PartNumber[];
@@ -263,6 +265,8 @@ export interface CreatePartWithStockDto {
   price: number;
   stock: number;
   condition?: PartCondition;
+  warranty?: string;
+  hasWarranty?: boolean;
   versionIds?: string[];
   compatibilities?: PartCompatibilityInput[];
 }
@@ -272,6 +276,8 @@ export interface UpdatePartAndStockDto {
   brand?: string;
   categoryId?: string;
   description?: string;
+  warranty?: string;
+  hasWarranty?: boolean;
   imageUrl?: string;
   images?: string[];
   oemNumber?: string;

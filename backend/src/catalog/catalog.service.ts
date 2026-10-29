@@ -384,6 +384,8 @@ export class CatalogService implements OnModuleInit {
       slug: part.slug,
       description: part.description,
       brand: part.brand,
+      warranty: part.warranty,
+      hasWarranty: part.hasWarranty,
       category: part.category.name,
       categorySlug: part.category.slug,
       partNumbers: part.partNumbers.map((pn) => pn.number),

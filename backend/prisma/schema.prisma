@@ -217,6 +217,8 @@ model Part {
   weight        Float?                          // Peso en kg
   imageUrl      String?   @map("image_url")
   images        String[]  @default([])
+  warranty      String?   @map("warranty")
+  hasWarranty   Boolean   @default(true) @map("has_warranty")
   isActive      Boolean   @default(true) @map("is_active")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")

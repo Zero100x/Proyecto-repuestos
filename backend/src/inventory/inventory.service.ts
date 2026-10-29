@@ -123,6 +123,7 @@ export class InventoryService {
           part: {
             select: {
               id: true, name: true, brand: true, categoryId: true, description: true, imageUrl: true, images: true,
+              warranty: true, hasWarranty: true,
               category: { select: { id: true, name: true } },
               partNumbers: { select: { number: true, type: true } },
               compatibility: {
@@ -257,6 +258,8 @@ export class InventoryService {
           ...(dto.description !== undefined ? { description: dto.description.trim() || null } : {}),
           ...(primaryImageUrl !== undefined ? { imageUrl: primaryImageUrl } : {}),
           ...(dto.images !== undefined ? { images: cleanImages } : {}),
+          ...(dto.hasWarranty !== undefined ? { hasWarranty: dto.hasWarranty } : {}),
+          ...(dto.warranty !== undefined ? { warranty: dto.hasWarranty === false ? 'Sin garantía' : (dto.warranty?.trim() || null) } : {}),
         },
       });
 
@@ -451,6 +454,8 @@ export class InventoryService {
           description: dto.description?.trim() || null,
           imageUrl: primaryImageUrl,
           images: galleryImages,
+          hasWarranty: dto.hasWarranty ?? true,
+          warranty: dto.hasWarranty === false ? 'Sin garantía' : (dto.warranty?.trim() || null),
         },
       });
 

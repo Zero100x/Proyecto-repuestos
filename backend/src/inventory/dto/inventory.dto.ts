@@ -1,5 +1,5 @@
 import {
-  IsString, IsOptional, IsNumber, IsUUID, IsEnum, IsArray, Min, MinLength, ValidateNested,
+  IsString, IsOptional, IsNumber, IsUUID, IsEnum, IsArray, Min, MinLength, ValidateNested, IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -97,6 +97,16 @@ export class CreatePartWithStockDto {
   @IsEnum(PartCondition)
   @IsOptional()
   condition?: PartCondition;
+
+  @ApiPropertyOptional({ example: '12 Meses o 20.000 KM' })
+  @IsString()
+  @IsOptional()
+  warranty?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  hasWarranty?: boolean;
 }
 
 export class UpdateStockDto {
@@ -178,6 +188,16 @@ export class UpdatePartAndStockDto {
   @IsUUID()
   @IsOptional()
   locationId?: string;
+
+  @ApiPropertyOptional({ example: '12 Meses o 20.000 KM' })
+  @IsString()
+  @IsOptional()
+  warranty?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  hasWarranty?: boolean;
 }
 
 export interface BulkUploadRowError {

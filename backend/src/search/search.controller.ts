@@ -141,6 +141,8 @@ export class SearchController {
             slug: part.slug,
             description: part.description,
             brand: part.brand,
+            warranty: (part as any).warranty,
+            hasWarranty: (part as any).hasWarranty,
             category: part.category.name,
             categorySlug: part.category.slug,
             partNumbers: part.partNumbers.map((pn) => pn.number),

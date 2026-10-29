@@ -333,7 +333,19 @@ function ProductDetailContent() {
                       <td className="py-2.5 px-4 text-[var(--secondary)] font-medium w-1/3 border-r border-[var(--outline-variant)]">
                         Garantía de Fábrica
                       </td>
-                      <td className="py-2.5 px-4 text-[var(--primary)]">12 Meses o 20.000 KM</td>
+                      <td className="py-2.5 px-4">
+                        {part.hasWarranty === false || part.warranty === 'Sin garantía' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                            Sin garantía de fábrica
+                          </span>
+                        ) : part.warranty ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            🛡️ {part.warranty}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 italic text-xs">No especificada por el almacén</span>
+                        )}
+                      </td>
                     </tr>
                     <tr className="bg-[var(--surface-container-low)]">
                       <td className="py-2.5 px-4 text-[var(--secondary)] font-medium w-1/3 border-r border-[var(--outline-variant)]">

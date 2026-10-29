@@ -116,6 +116,8 @@ export default function DashboardPage() {
     stock: '',
     condition: 'NEW' as 'NEW' | 'USED' | 'REFURBISHED',
     description: '',
+    hasWarranty: true,
+    warranty: '12 Meses',
   });
   const [partGallery, setPartGallery] = useState<
     Array<{ id: string; file?: File; previewUrl: string; name?: string }>
@@ -181,6 +183,8 @@ export default function DashboardPage() {
     stock: '',
     condition: 'NEW' as 'NEW' | 'USED' | 'REFURBISHED',
     description: '',
+    hasWarranty: true,
+    warranty: '12 Meses',
   });
   const [editPartGallery, setEditPartGallery] = useState<
     Array<{ id: string; file?: File; previewUrl: string; name?: string }>
@@ -651,6 +655,10 @@ export default function DashboardPage() {
         }
       }
 
+      const resolvedWarranty = newPartForm.hasWarranty
+        ? (newPartForm.warranty.trim() || '12 Meses')
+        : 'Sin garantía';
+
       const dto: CreatePartWithStockDto = {
         name: newPartForm.name.trim(),
         oemNumber: newPartForm.oemNumber.trim() ? newPartForm.oemNumber.trim().toUpperCase() : undefined,
@@ -661,6 +669,8 @@ export default function DashboardPage() {
         stock: Number(newPartForm.stock) || 0,
         condition: newPartForm.condition,
         description: newPartForm.description.trim() || undefined,
+        hasWarranty: newPartForm.hasWarranty,
+        warranty: resolvedWarranty,
         imageUrl: uploadedUrls[0] || undefined,
         images: uploadedUrls.length > 0 ? uploadedUrls : undefined,
         compatibilities: finalCompatibilities.length > 0 ? finalCompatibilities : undefined,
@@ -681,6 +691,8 @@ export default function DashboardPage() {
         stock: '',
         condition: 'NEW',
         description: '',
+        hasWarranty: true,
+        warranty: '12 Meses',
       });
       setPartGallery([]);
       setPartCompatibilities([]);
@@ -755,6 +767,14 @@ export default function DashboardPage() {
       item.part?.partNumbers?.[0]?.number ||
       '';
 
+    const partObj = item.part as any;
+    const hasWarranty = partObj?.hasWarranty !== undefined
+      ? Boolean(partObj.hasWarranty)
+      : (partObj?.warranty ? partObj.warranty !== 'Sin garantía' : true);
+    const warrantyText = partObj?.warranty && partObj.warranty !== 'Sin garantía'
+      ? partObj.warranty
+      : '12 Meses';
+
     setEditPartForm({
       name: item.part?.name || '',
       oemNumber: oemNum === 'SIN-OEM' ? '' : oemNum,
@@ -765,6 +785,8 @@ export default function DashboardPage() {
       stock: String(item.stock ?? 0),
       condition: item.condition || 'NEW',
       description: item.part?.description || '',
+      hasWarranty,
+      warranty: warrantyText,
     });
 
     const rawImages =
@@ -906,6 +928,10 @@ export default function DashboardPage() {
         }
       }
 
+      const resolvedWarranty = editPartForm.hasWarranty
+        ? (editPartForm.warranty.trim() || '12 Meses')
+        : 'Sin garantía';
+
       await updateInventoryPartDetails(token, editingPartItem.id, {
         name: editPartForm.name.trim(),
         oemNumber: editPartForm.oemNumber.trim(),
@@ -916,6 +942,8 @@ export default function DashboardPage() {
         stock: Number(editPartForm.stock) || 0,
         condition: editPartForm.condition,
         description: editPartForm.description.trim(),
+        hasWarranty: editPartForm.hasWarranty,
+        warranty: resolvedWarranty,
         imageUrl: uploadedUrls[0] || '',
         images: uploadedUrls,
         compatibilities: finalCompatibilities,
@@ -3198,6 +3226,84 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              {/* Garantía de Fábrica / Vendedor */}
+              <div className="p-4 rounded-2xl bg-[var(--surface-container-low)]/70 border border-[var(--outline-variant)] space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="font-heading text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-base text-[var(--primary)]">verified_user</span>
+                      <span>Garantía del Repuesto</span>
+                    </label>
+                    <p className="font-sans text-[11px] text-[var(--secondary)]">
+                      Especifica si el repuesto cuenta con garantía técnica o si se vende sin garantía.
+                    </p>
+                  </div>
+                  <div className="inline-flex rounded-xl border border-[var(--outline-variant)] bg-white p-1 text-xs font-heading font-bold shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => setNewPartForm({ ...newPartForm, hasWarranty: true, warranty: newPartForm.warranty || '12 Meses' })}
+                      className={`px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+                        newPartForm.hasWarranty
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <span>✓</span> Con Garantía
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewPartForm({ ...newPartForm, hasWarranty: false })}
+                      className={`px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+                        !newPartForm.hasWarranty
+                          ? 'bg-amber-600 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <span>✕</span> Sin Garantía
+                    </button>
+                  </div>
+                </div>
+
+                {newPartForm.hasWarranty ? (
+                  <div className="space-y-2 pt-1">
+                    <label className="block font-heading text-[11px] font-bold text-[var(--primary)]">
+                      Términos de la Garantía
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: 12 Meses o 20.000 KM, 6 Meses, 1 Año..."
+                      value={newPartForm.warranty}
+                      onChange={e => setNewPartForm({ ...newPartForm, warranty: e.target.value })}
+                      className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                    />
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-mono text-[10px] text-[var(--secondary)] mr-1">Opciones rápidas:</span>
+                      {['3 Meses', '6 Meses', '12 Meses', '12 Meses o 20.000 KM', '1 Año'].map(preset => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setNewPartForm({ ...newPartForm, warranty: preset })}
+                          className={`px-2.5 py-0.5 rounded-lg border text-[11px] font-mono transition ${
+                            newPartForm.warranty === preset
+                              ? 'bg-[var(--primary)] text-white border-[var(--primary)] font-bold shadow-sm'
+                              : 'bg-white text-gray-700 border-[var(--outline-variant)] hover:border-gray-400'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                    <span className="material-symbols-outlined text-base text-amber-600">info</span>
+                    <span>
+                      En la ficha técnica y catálogo se mostrará visiblemente: <strong>"Sin garantía de fábrica"</strong>.
+                    </span>
+                  </div>
+                )}
+              </div>
+
               {/* Vehicle Compatibility Builder (Marca, Modelo, Años, Versión) */}
               <div className="p-4 rounded-2xl bg-[var(--surface-container-low)]/70 border border-[var(--outline-variant)] space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
@@ -3810,6 +3916,84 @@ export default function DashboardPage() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Garantía de Fábrica / Vendedor */}
+              <div className="p-4 rounded-2xl bg-[var(--surface-container-low)]/70 border border-[var(--outline-variant)] space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="font-heading text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-base text-[var(--primary)]">verified_user</span>
+                      <span>Garantía del Repuesto</span>
+                    </label>
+                    <p className="font-sans text-[11px] text-[var(--secondary)]">
+                      Especifica si el repuesto cuenta con garantía técnica o si se vende sin garantía.
+                    </p>
+                  </div>
+                  <div className="inline-flex rounded-xl border border-[var(--outline-variant)] bg-white p-1 text-xs font-heading font-bold shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => setEditPartForm({ ...editPartForm, hasWarranty: true, warranty: editPartForm.warranty || '12 Meses' })}
+                      className={`px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+                        editPartForm.hasWarranty
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <span>✓</span> Con Garantía
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditPartForm({ ...editPartForm, hasWarranty: false })}
+                      className={`px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+                        !editPartForm.hasWarranty
+                          ? 'bg-amber-600 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <span>✕</span> Sin Garantía
+                    </button>
+                  </div>
+                </div>
+
+                {editPartForm.hasWarranty ? (
+                  <div className="space-y-2 pt-1">
+                    <label className="block font-heading text-[11px] font-bold text-[var(--primary)]">
+                      Términos de la Garantía
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: 12 Meses o 20.000 KM, 6 Meses, 1 Año..."
+                      value={editPartForm.warranty}
+                      onChange={e => setEditPartForm({ ...editPartForm, warranty: e.target.value })}
+                      className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                    />
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-mono text-[10px] text-[var(--secondary)] mr-1">Opciones rápidas:</span>
+                      {['3 Meses', '6 Meses', '12 Meses', '12 Meses o 20.000 KM', '1 Año'].map(preset => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setEditPartForm({ ...editPartForm, warranty: preset })}
+                          className={`px-2.5 py-0.5 rounded-lg border text-[11px] font-mono transition ${
+                            editPartForm.warranty === preset
+                              ? 'bg-[var(--primary)] text-white border-[var(--primary)] font-bold shadow-sm'
+                              : 'bg-white text-gray-700 border-[var(--outline-variant)] hover:border-gray-400'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                    <span className="material-symbols-outlined text-base text-amber-600">info</span>
+                    <span>
+                      En la ficha técnica y catálogo se mostrará visiblemente: <strong>"Sin garantía de fábrica"</strong>.
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Vehicle Compatibility Builder */}

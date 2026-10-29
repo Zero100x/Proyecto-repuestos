@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Part } from '../lib/types';
-import { formatPriceCOP, calculateHaversineDistance } from '../lib/api';
+import { formatPriceCOP, calculateHaversineDistance, resolveImageUrl } from '../lib/api';
 import { useCompare } from '../lib/compareContext';
 import WhatsAppLeadModal from './WhatsAppLeadModal';
 import {
@@ -23,6 +23,7 @@ interface PartCardProps {
 export default function PartCard({ part, verifiedVehicle, userCoords }: PartCardProps) {
   const { addToCompare, removeFromCompare, isCompared } = useCompare();
   const [showLeadModal, setShowLeadModal] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const compared = isCompared(part.id);
 
@@ -80,8 +81,13 @@ export default function PartCard({ part, verifiedVehicle, userCoords }: PartCard
 
         {/* Media */}
         <Link href={`/parts/${part.id}`} className="image-container">
-          {part.imageUrl ? (
-            <img src={part.imageUrl} alt={part.name} className="product-img" />
+          {part.imageUrl && !imgError ? (
+            <img
+              src={resolveImageUrl(part.imageUrl)}
+              alt={part.name}
+              className="product-img"
+              onError={() => setImgError(true)}
+            />
           ) : (
             <div className="placeholder-box">
               <TagIcon size={36} />

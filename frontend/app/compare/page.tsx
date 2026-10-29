@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useCompare } from '../../lib/compareContext';
-import { formatPriceCOP, fetchParts, fetchPartById } from '../../lib/api';
+import { formatPriceCOP, fetchParts, fetchPartById, resolveImageUrl } from '../../lib/api';
 import WhatsAppLeadModal from '../../components/WhatsAppLeadModal';
 import ReservationModal from '../../components/ReservationModal';
 import ReservationVoucherModal from '../../components/ReservationVoucherModal';
@@ -392,7 +392,12 @@ export default function ComparePage() {
                       <div>
                         <div className="h-32 bg-[var(--surface-container-low)] rounded-xl overflow-hidden mb-3 border border-[var(--outline-variant)] flex items-center justify-center">
                           {part.imageUrl ? (
-                            <img src={part.imageUrl} alt={part.name} className="w-full h-full object-cover" />
+                            <img
+                              src={resolveImageUrl(part.imageUrl)}
+                              alt={part.name}
+                              className="w-full h-full object-cover"
+                              onError={e => ((e.target as any).src = '/assets/engine.svg')}
+                            />
                           ) : (
                             <span className="material-symbols-outlined text-3xl text-[var(--secondary)]">directions_car</span>
                           )}
@@ -470,7 +475,7 @@ export default function ComparePage() {
                       <div className="relative h-44 bg-white rounded-2xl overflow-hidden border border-[var(--outline-variant)] flex items-center justify-center p-2 group">
                         {part.imageUrl ? (
                           <img
-                            src={part.imageUrl}
+                            src={resolveImageUrl(part.imageUrl)}
                             alt={part.name}
                             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                             onError={e => ((e.target as any).src = '/assets/engine.svg')}

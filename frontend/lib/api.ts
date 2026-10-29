@@ -38,6 +38,32 @@ export function buildWhatsAppLink(phone: string, message: string): string {
   return `https://wa.me/${cleanPhone}?text=${encodedMsg}`;
 }
 
+export function resolveImageUrl(url?: string | null): string {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+    if (trimmed.includes('localhost:3001') && API_BASE && !API_BASE.includes('localhost')) {
+      const backendOrigin = API_BASE.replace(/\/api\/?$/, '');
+      return trimmed.replace(/https?:\/\/localhost:3001/g, backendOrigin);
+    }
+    return trimmed;
+  }
+
+  if (trimmed.startsWith('/uploads/')) {
+    const backendOrigin = API_BASE ? API_BASE.replace(/\/api\/?$/, '') : 'http://localhost:3001';
+    return `${backendOrigin}${trimmed}`;
+  }
+
+  if (trimmed.startsWith('uploads/')) {
+    const backendOrigin = API_BASE ? API_BASE.replace(/\/api\/?$/, '') : 'http://localhost:3001';
+    return `${backendOrigin}/${trimmed}`;
+  }
+
+  return trimmed;
+}
+
 export async function fetchParts(filters: SearchFilters = {}): Promise<{ data: Part[]; total: number }> {
   try {
     const params = new URLSearchParams();

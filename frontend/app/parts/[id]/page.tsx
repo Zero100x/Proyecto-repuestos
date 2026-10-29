@@ -7,7 +7,7 @@ import WhatsAppLeadModal from '../../../components/WhatsAppLeadModal';
 import ProductTechnicalQA from '../../../components/ProductTechnicalQA';
 import ReservationModal from '../../../components/ReservationModal';
 import ReservationVoucherModal from '../../../components/ReservationVoucherModal';
-import { fetchPartById, fetchParts, formatPriceCOP } from '../../../lib/api';
+import { fetchPartById, fetchParts, formatPriceCOP, resolveImageUrl } from '../../../lib/api';
 import { Part, InventoryItem, ReservationItem } from '../../../lib/types';
 import { useCompare } from '../../../lib/compareContext';
 
@@ -105,7 +105,7 @@ function ProductDetailContent() {
     setVoucherModalOpen(true);
   };
 
-  const images =
+  const rawImages =
     part.images && part.images.length > 0
       ? part.images
       : part.imageUrl
@@ -113,6 +113,7 @@ function ProductDetailContent() {
       : [
           'https://lh3.googleusercontent.com/aida-public/AB6AXuCtsicmR6RzUGPu9JMuOBUJpnvR-TCle5j7u0JZtSu4_k_hsuVuMYO-iVeGr0lqWApM4KmLhVuCcqE3g7U4HCb_-IfCHe5zL2N2q6C46dYbOAdzdo83kcqSeeEsdycFL8EZ5qWIqycDEovWh8Ad-l7KIvgDBUjkZi-6UBJ2mT6-wNz8G4CjyA0oaePh816PFQtVsd35c3nGr6mI8ut_VMEPc_LIbgzhnIyySUdhkfX8DGonpqeQeofy',
         ];
+  const images = rawImages.map(img => resolveImageUrl(img));
 
   return (
     <div className="bg-surface text-on-surface min-h-screen flex flex-col antialiased">

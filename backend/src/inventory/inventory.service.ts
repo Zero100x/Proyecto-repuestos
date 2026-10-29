@@ -776,7 +776,11 @@ export class InventoryService {
       // Ignorar si no aplica
     }
 
-    const publicUrl = `/uploads/parts/${filename}`;
+    const baseUrl =
+      process.env.API_PUBLIC_URL ||
+      process.env.RENDER_EXTERNAL_URL ||
+      '';
+    const publicUrl = baseUrl ? `${baseUrl}/uploads/parts/${filename}` : `/uploads/parts/${filename}`;
     return { url: publicUrl, filename };
   }
 }

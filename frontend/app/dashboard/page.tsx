@@ -29,6 +29,7 @@ import {
   fetchStoreReservationStats,
   updateReservationStatus,
   buildWhatsAppLink,
+  resolveImageUrl,
 } from '../../lib/api';
 import {
   StoreInventoryItem,
@@ -1642,7 +1643,7 @@ export default function DashboardPage() {
                               <div className="w-10 h-10 rounded-lg overflow-hidden bg-[var(--surface-container)] flex-shrink-0 border border-[var(--outline-variant)] flex items-center justify-center">
                                 {item.part?.imageUrl ? (
                                   <img
-                                    src={item.part.imageUrl}
+                                    src={resolveImageUrl(item.part.imageUrl)}
                                     alt={item.part.name}
                                     className="w-full h-full object-cover"
                                     onError={e => ((e.target as any).src = '/assets/engine.svg')}
@@ -2100,7 +2101,7 @@ export default function DashboardPage() {
                               <div className="flex items-center gap-3">
                                 {lead.part?.imageUrl ? (
                                   <img
-                                    src={lead.part.imageUrl}
+                                    src={resolveImageUrl(lead.part.imageUrl)}
                                     alt={lead.part.name}
                                     className="w-10 h-10 object-cover rounded-lg border border-[var(--outline-variant)]"
                                   />

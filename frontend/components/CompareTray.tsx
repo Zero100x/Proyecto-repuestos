@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useCompare } from '../lib/compareContext';
+import { resolveImageUrl } from '../lib/api';
 import { CompareIcon, CloseIcon, ArrowRightIcon } from './Icons';
 
 export default function CompareTray() {
@@ -31,7 +32,7 @@ export default function CompareTray() {
             {comparedParts.map(part => (
               <div key={part.id} className="thumb-item" title={part.name}>
                 {part.imageUrl ? (
-                  <img src={part.imageUrl} alt={part.name} className="thumb-img" />
+                  <img src={resolveImageUrl(part.imageUrl)} alt={part.name} className="thumb-img" />
                 ) : (
                   <div className="thumb-fallback">{part.name.substring(0, 2)}</div>
                 )}

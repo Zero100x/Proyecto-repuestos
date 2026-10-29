@@ -141,8 +141,11 @@ export class LocationsService {
     const fileName = `store_${randomUUID()}${ext}`;
     const fullPath = join(uploadsDir, fileName);
     writeFileSync(fullPath, file.buffer);
-    const baseUrl = process.env.API_PUBLIC_URL || 'http://localhost:3001';
-    return { imageUrl: `${baseUrl}/uploads/${fileName}` };
+    const baseUrl =
+      process.env.API_PUBLIC_URL ||
+      process.env.RENDER_EXTERNAL_URL ||
+      '';
+    return { imageUrl: baseUrl ? `${baseUrl}/uploads/${fileName}` : `/uploads/${fileName}` };
   }
 
   // ============ STORES (Almacenes) ============

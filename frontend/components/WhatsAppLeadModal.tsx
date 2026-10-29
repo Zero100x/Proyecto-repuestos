@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Part, InventoryItem } from '../lib/types';
-import { formatPriceCOP, buildWhatsAppLink, createLead, fetchPartById } from '../lib/api';
+import { formatPriceCOP, buildWhatsAppLink, createLead, fetchPartById, resolveImageUrl } from '../lib/api';
 import { WhatsAppIcon, CloseIcon, MapPinIcon, PhoneIcon, CheckCircleIcon } from './Icons';
 
 interface WhatsAppLeadModalProps {
@@ -103,7 +103,12 @@ export default function WhatsAppLeadModal({
           {/* Resumen del repuesto */}
           <div className="part-mini-preview">
             {part.imageUrl && (
-              <img src={part.imageUrl} alt={part.name} className="mini-thumb" />
+              <img
+                src={resolveImageUrl(part.imageUrl)}
+                alt={part.name}
+                className="mini-thumb"
+                onError={e => ((e.target as any).src = '/assets/engine.svg')}
+              />
             )}
             <div className="mini-info">
               <h4>{part.name}</h4>

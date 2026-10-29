@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Part, InventoryItem, ReservationItem } from '../lib/types';
-import { createReservation, formatPriceCOP, fetchPartById } from '../lib/api';
+import { createReservation, formatPriceCOP, fetchPartById, resolveImageUrl } from '../lib/api';
 
 interface ReservationModalProps {
   part: Part;
@@ -165,7 +165,7 @@ export default function ReservationModal({
           <div className="flex items-center gap-3 p-3 bg-[var(--surface-container-low)] rounded-xl border border-[var(--outline-variant)]">
             <div className="w-16 h-16 bg-white rounded-lg p-1.5 flex items-center justify-center border border-gray-200 flex-shrink-0">
               <img
-                src={part.imageUrl || '/assets/engine.svg'}
+                src={resolveImageUrl(part.imageUrl) || '/assets/engine.svg'}
                 alt={part.name}
                 className="max-h-full max-w-full object-contain"
                 onError={e => ((e.target as any).src = '/assets/engine.svg')}

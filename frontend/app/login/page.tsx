@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { requestPasswordReset, resetPasswordWithCode } from '../../lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,9 +24,19 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Password Recovery 2-Step States
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
+  const [resetStep, setResetStep] = useState<1 | 2>(1);
   const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotSent, setForgotSent] = useState(false);
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState('');
+  const [forgotInfo, setForgotInfo] = useState('');
+  const [devPreviewCode, setDevPreviewCode] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,15 +109,80 @@ export default function LoginPage() {
     }
   };
 
-  const handleForgotSubmit = (e: React.FormEvent) => {
+  const openForgotModal = () => {
+    setForgotEmail(email.trim());
+    setResetStep(1);
+    setResetCode('');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setForgotError('');
+    setForgotInfo('');
+    setDevPreviewCode(null);
+    setForgotModalOpen(true);
+  };
+
+  const handleRequestCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!forgotEmail.trim()) return;
-    setForgotSent(true);
-    setTimeout(() => {
-      setForgotSent(false);
+    const targetEmail = forgotEmail.trim().toLowerCase();
+    if (!targetEmail) return;
+
+    setForgotLoading(true);
+    setForgotError('');
+    setForgotInfo('');
+    setDevPreviewCode(null);
+
+    try {
+      const res = await requestPasswordReset(targetEmail);
+      setForgotInfo(res.message);
+      if (res.devCode) {
+        setDevPreviewCode(res.devCode);
+      }
+      setResetStep(2);
+    } catch (err: any) {
+      setForgotError(err.message || 'No se pudo enviar el código de recuperación');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError('');
+
+    if (resetCode.trim().length !== 6) {
+      setForgotError('Debes ingresar el código exacto de 6 dígitos.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setForgotError('La nueva contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setForgotError('Las contraseñas no coinciden. Verifícalas.');
+      return;
+    }
+
+    setForgotLoading(true);
+    try {
+      const res = await resetPasswordWithCode({
+        email: forgotEmail.trim().toLowerCase(),
+        code: resetCode.trim(),
+        newPassword,
+      });
+
+      // Pre-fill login form and close modal
+      setEmail(forgotEmail.trim().toLowerCase());
+      setPassword('');
+      setMode('login');
       setForgotModalOpen(false);
-      setForgotEmail('');
-    }, 3000);
+      setSuccessMsg(
+        res.message || '¡Contraseña restablecida con éxito! Ahora puedes iniciar sesión con tu nueva clave.',
+      );
+    } catch (err: any) {
+      setForgotError(err.message || 'Código inválido o expirado.');
+    } finally {
+      setForgotLoading(false);
+    }
   };
 
   return (
@@ -298,7 +374,7 @@ export default function LoginPage() {
                     {mode === 'login' && (
                       <button
                         type="button"
-                        onClick={() => setForgotModalOpen(true)}
+                        onClick={openForgotModal}
                         className="font-mono text-[11px] text-[var(--primary)] hover:underline font-semibold"
                       >
                         ¿Olvidaste tu contraseña?
@@ -476,73 +552,245 @@ export default function LoginPage() {
         </div>
       </main>
 
-      {/* Password Reset Modal */}
+      {/* 2-Step Password Reset Modal */}
       {forgotModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-2xl border border-[var(--outline-variant)] shadow-2xl max-w-md w-full p-6 sm:p-7 relative">
             <button
               type="button"
-              onClick={() => {
-                setForgotModalOpen(false);
-                setForgotSent(false);
-              }}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 rounded-lg"
+              onClick={() => setForgotModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 rounded-lg transition"
+              title="Cerrar"
             >
               ✕
             </button>
 
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-[var(--primary)] flex items-center justify-center border border-blue-200">
-                <span className="material-symbols-outlined text-xl">lock_reset</span>
+            {/* Modal Header */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-11 h-11 rounded-xl bg-blue-50 text-[var(--primary)] flex items-center justify-center border border-blue-200 shrink-0">
+                <span className="material-symbols-outlined text-2xl">lock_reset</span>
               </div>
               <div>
-                <h3 className="font-heading text-base font-bold text-[var(--primary)]">
-                  Recuperar Contraseña
+                <div className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#e85d04]">
+                  PASO {resetStep} DE 2 • SEGURIDAD DE CUENTA
+                </div>
+                <h3 className="font-heading text-lg font-extrabold text-[var(--primary)]">
+                  {resetStep === 1 ? 'Recuperar Contraseña' : 'Verificar Código y Nueva Clave'}
                 </h3>
-                <p className="font-sans text-xs text-[var(--secondary)]">
-                  Te enviaremos las instrucciones de restablecimiento.
-                </p>
               </div>
             </div>
 
-            {forgotSent ? (
-              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs text-center animate-in fade-in">
-                <span className="material-symbols-outlined text-3xl text-emerald-600 mb-1">mark_email_read</span>
-                <p className="font-heading font-bold">¡Enlace enviado!</p>
-                <p className="font-sans text-[11px] mt-1 text-emerald-700">
-                  Hemos enviado un correo a <strong>{forgotEmail}</strong> con las instrucciones para crear una nueva contraseña.
+            {/* Step Indicator Bar */}
+            <div className="grid grid-cols-2 gap-2 mb-5">
+              <div className={`h-1.5 rounded-full transition-colors ${resetStep >= 1 ? 'bg-[var(--primary)]' : 'bg-gray-200'}`} />
+              <div className={`h-1.5 rounded-full transition-colors ${resetStep >= 2 ? 'bg-[#e85d04]' : 'bg-gray-200'}`} />
+            </div>
+
+            {forgotError && (
+              <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 font-sans text-xs flex items-center gap-2">
+                <span className="material-symbols-outlined text-base text-red-600">error</span>
+                <span>{forgotError}</span>
+              </div>
+            )}
+
+            {forgotInfo && (
+              <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-sans text-xs flex items-start gap-2">
+                <span className="material-symbols-outlined text-base text-emerald-600 mt-0.5">mark_email_read</span>
+                <span>{forgotInfo}</span>
+              </div>
+            )}
+
+            {/* Developer Mode OTP Preview Banner (when SMTP credentials are not yet configured in .env) */}
+            {devPreviewCode && resetStep === 2 && (
+              <div className="mb-4 p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm">terminal</span>
+                    <span>Modo Desarrollo Local (Sin SMTP)</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setResetCode(devPreviewCode)}
+                    className="text-[10px] font-mono font-bold underline text-[var(--primary)] hover:text-blue-800"
+                  >
+                    Autocompletar código
+                  </button>
+                </div>
+                <p className="text-[11px] text-amber-800">
+                  Tu código OTP generado es:{' '}
+                  <strong className="font-mono text-sm tracking-widest bg-white px-2 py-0.5 rounded border border-amber-300">
+                    {devPreviewCode}
+                  </strong>
                 </p>
               </div>
-            ) : (
-              <form onSubmit={handleForgotSubmit} className="space-y-4">
+            )}
+
+            {resetStep === 1 ? (
+              <form onSubmit={handleRequestCode} className="space-y-4">
+                <p className="font-sans text-xs text-[var(--secondary)] leading-relaxed">
+                  Ingresa el correo electrónico con el que te registraste en AutoPart Pro. Te enviaremos un código de verificación de 6 dígitos para crear una nueva contraseña.
+                </p>
+
                 <div>
                   <label className="block font-mono text-[11px] text-[var(--secondary)] mb-1 uppercase font-semibold">
-                    Correo Registrado
+                    Correo Electrónico Registrado *
                   </label>
-                  <input
-                    type="email"
-                    required
-                    value={forgotEmail}
-                    onChange={e => setForgotEmail(e.target.value)}
-                    placeholder="usuario@autopartpro.com"
-                    className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-xl px-3.5 py-2.5 text-xs text-[var(--on-surface)] focus:border-[var(--primary)] outline-none"
-                  />
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--secondary)] text-base">
+                      mail
+                    </span>
+                    <input
+                      type="email"
+                      required
+                      value={forgotEmail}
+                      onChange={e => setForgotEmail(e.target.value)}
+                      placeholder="ejemplo@correo.com"
+                      className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-xl pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-[var(--on-surface)] focus:border-[var(--primary)] focus:bg-white outline-none"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex gap-2 justify-end pt-2">
                   <button
                     type="button"
                     onClick={() => setForgotModalOpen(false)}
-                    className="px-4 py-2 border border-[var(--outline-variant)] rounded-xl font-heading text-xs font-semibold hover:bg-gray-50"
+                    className="px-4 py-2.5 border border-[var(--outline-variant)] rounded-xl font-heading text-xs font-semibold hover:bg-gray-50 transition"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-[var(--primary)] text-white rounded-xl font-heading text-xs font-bold hover:bg-[var(--primary-container)]"
+                    disabled={forgotLoading}
+                    className="px-5 py-2.5 bg-[var(--primary)] text-white rounded-xl font-heading text-xs font-bold hover:bg-[var(--primary-container)] transition flex items-center gap-1.5 disabled:opacity-50"
                   >
-                    Enviar Instrucciones
+                    {forgotLoading ? (
+                      <>
+                        <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                        <span>Enviando código...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Enviar código de recuperación</span>
+                        <span className="material-symbols-outlined text-sm">send</span>
+                      </>
+                    )}
                   </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-mono text-[11px] text-[var(--secondary)] uppercase font-semibold">
+                      Código de 6 Dígitos *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResetStep(1);
+                        setForgotError('');
+                      }}
+                      className="font-mono text-[10px] text-[var(--primary)] hover:underline font-semibold"
+                    >
+                      Cambiar correo ({forgotEmail})
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={resetCode}
+                    onChange={e => setResetCode(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="000000"
+                    className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-xl px-4 py-2.5 text-center font-mono text-lg font-extrabold tracking-[0.4em] text-[var(--primary)] focus:border-[var(--primary)] focus:bg-white outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-mono text-[11px] text-[var(--secondary)] mb-1 uppercase font-semibold">
+                    Nueva Contraseña (Mín. 6 caracteres) *
+                  </label>
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--secondary)] text-base">
+                      lock
+                    </span>
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      required
+                      minLength={6}
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      placeholder="Escribe tu nueva contraseña"
+                      className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-xl pl-10 pr-10 py-2.5 text-xs sm:text-sm text-[var(--on-surface)] focus:border-[var(--primary)] focus:bg-white outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--secondary)] hover:text-[var(--primary)]"
+                    >
+                      <span className="material-symbols-outlined text-base">
+                        {showNewPassword ? 'visibility_off' : 'visibility'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-mono text-[11px] text-[var(--secondary)] mb-1 uppercase font-semibold">
+                    Confirmar Nueva Contraseña *
+                  </label>
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--secondary)] text-base">
+                      verified_user
+                    </span>
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      required
+                      minLength={6}
+                      value={confirmNewPassword}
+                      onChange={e => setConfirmNewPassword(e.target.value)}
+                      placeholder="Repite la nueva contraseña"
+                      className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-[var(--on-surface)] focus:border-[var(--primary)] focus:bg-white outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleRequestCode}
+                    disabled={forgotLoading}
+                    className="px-3 py-2 text-xs font-mono font-semibold text-[var(--secondary)] hover:text-[var(--primary)] transition"
+                  >
+                    Reenviar código
+                  </button>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setForgotModalOpen(false)}
+                      className="px-4 py-2.5 border border-[var(--outline-variant)] rounded-xl font-heading text-xs font-semibold hover:bg-gray-50 transition"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={forgotLoading}
+                      className="px-5 py-2.5 bg-[#e85d04] text-white rounded-xl font-heading text-xs font-bold hover:bg-[#dc2f02] transition flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                    >
+                      {forgotLoading ? (
+                        <>
+                          <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                          <span>Actualizando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-sm">check_circle</span>
+                          <span>Actualizar Contraseña</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </form>
             )}

@@ -891,6 +891,43 @@ export async function updateReservationStatus(
   return res.json();
 }
 
+export async function requestPasswordReset(email: string): Promise<{
+  message: string;
+  smtpSent: boolean;
+  devCode?: string;
+}> {
+  const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = Array.isArray(data.message) ? data.message[0] : data.message;
+    throw new Error(msg || 'Error al solicitar código de recuperación');
+  }
+  return data;
+}
+
+export async function resetPasswordWithCode(dto: {
+  email: string;
+  code: string;
+  newPassword: string;
+}): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dto),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = Array.isArray(data.message) ? data.message[0] : data.message;
+    throw new Error(msg || 'Error al restablecer la contraseña');
+  }
+  return data;
+}
+
+
 
 
 

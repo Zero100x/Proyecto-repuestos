@@ -1,14 +1,16 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { MailService } from '../mail/mail.service';
+import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private mailService: MailService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -148,6 +150,11 @@ export class AuthService {
       roles,
     };
 
+    // Disparar correo de bienvenida en segundo plano (sin bloquear respuesta)
+    this.mailService
+      .sendWelcomeEmail(user.email, `${user.firstName} ${user.lastName}`.trim())
+      .catch(() => {});
+
     return {
       accessToken: this.jwtService.sign(payload),
       user: {
@@ -160,6 +167,88 @@ export class AuthService {
         storeId: user.storeId ?? null,
         store: user.store ?? null,
       },
+    };
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const cleanEmail = dto.email.trim().toLowerCase();
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: { equals: cleanEmail, mode: 'insensitive' },
+      },
+    });
+
+    if (!user || !user.isActive) {
+      throw new NotFoundException(
+        'No encontramos ninguna cuenta registrada con ese correo electrónico',
+      );
+    }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: otpCode,
+        resetPasswordExpires: expiresAt,
+      },
+    });
+
+    const fullName = `${user.firstName} ${user.lastName}`.trim();
+    const smtpSent = await this.mailService.sendPasswordResetEmail(
+      user.email,
+      fullName,
+      otpCode,
+    );
+
+    return {
+      message: smtpSent
+        ? `Hemos enviado un código de verificación de 6 dígitos al correo ${user.email}`
+        : `Código de verificación generado para ${user.email}`,
+      smtpSent,
+      // En modo desarrollo local (sin SMTP configurado), devolvemos el código para poder probar el flujo al instante
+      devCode: !smtpSent ? otpCode : undefined,
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const cleanEmail = dto.email.trim().toLowerCase();
+    const cleanCode = dto.code.trim();
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: { equals: cleanEmail, mode: 'insensitive' },
+      },
+    });
+
+    if (!user || !user.isActive) {
+      throw new NotFoundException('No se encontró la cuenta asociada a este correo');
+    }
+
+    if (!user.resetPasswordToken || user.resetPasswordToken !== cleanCode) {
+      throw new BadRequestException('El código de verificación de 6 dígitos es incorrecto');
+    }
+
+    if (!user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+      throw new BadRequestException(
+        'El código de verificación ha expirado (validez de 15 minutos). Solicita uno nuevo',
+      );
+    }
+
+    const newPasswordHash = await bcrypt.hash(dto.newPassword, 12);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: newPasswordHash,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      },
+    });
+
+    return {
+      message: 'Tu contraseña ha sido actualizada exitosamente. Ya puedes iniciar sesión.',
     };
   }
 

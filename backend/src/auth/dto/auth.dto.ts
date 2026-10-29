@@ -20,7 +20,7 @@ export class RegisterDto {
 
   @ApiProperty({ example: 'password123' })
   @IsString()
-  @MinLength(8)
+  @MinLength(6)
   password: string;
 
   @ApiProperty({ example: 'Juan' })
@@ -91,4 +91,28 @@ export class AuthResponseDto {
     lastName: string;
     roles: string[];
   };
+}
+
+export class ForgotPasswordDto {
+  @ApiProperty({ example: 'cerondiego19@gmail.com' })
+  @IsEmail({}, { message: 'Debes ingresar un correo electrónico válido' })
+  @IsNotEmpty({ message: 'El correo electrónico es obligatorio' })
+  email: string;
+}
+
+export class ResetPasswordDto {
+  @ApiProperty({ example: 'cerondiego19@gmail.com' })
+  @IsEmail({}, { message: 'Debes ingresar un correo electrónico válido' })
+  @IsNotEmpty()
+  email: string;
+
+  @ApiProperty({ example: '482910' })
+  @IsString()
+  @IsNotEmpty({ message: 'El código de 6 dígitos es obligatorio' })
+  code: string;
+
+  @ApiProperty({ example: 'nuevaClave123' })
+  @IsString()
+  @MinLength(6, { message: 'La nueva contraseña debe tener al menos 6 caracteres' })
+  newPassword: string;
 }

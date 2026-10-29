@@ -15,20 +15,26 @@ interface CompareContextType {
 function normalizeComparedPart(part: Part): Part {
   if (!part) return part;
   const clone = { ...part };
-  if ((!clone.storeNames || clone.storeNames.length === 0) && clone.inventory?.length) {
-    const extractedStores = Array.from(
-      new Set(clone.inventory.map(i => i.location?.store?.name).filter(Boolean)),
-    ) as string[];
-    if (extractedStores.length > 0) {
-      clone.storeNames = extractedStores;
+  if (clone.inventory?.length) {
+    if (!clone.storeNames || clone.storeNames.length === 0) {
+      clone.storeNames = Array.from(
+        new Set(clone.inventory.map(i => i.location?.store?.name).filter(Boolean)),
+      ) as string[];
     }
-  }
-  if ((!clone.cities || clone.cities.length === 0) && clone.inventory?.length) {
-    const extractedCities = Array.from(
-      new Set(clone.inventory.map(i => i.location?.city).filter(Boolean)),
-    ) as string[];
-    if (extractedCities.length > 0) {
-      clone.cities = extractedCities;
+    if (!clone.addresses || clone.addresses.length === 0) {
+      clone.addresses = Array.from(
+        new Set(clone.inventory.map(i => i.location?.address).filter(Boolean)),
+      ) as string[];
+    }
+    if (!clone.locationNames || clone.locationNames.length === 0) {
+      clone.locationNames = Array.from(
+        new Set(clone.inventory.map(i => i.location?.name).filter(Boolean)),
+      ) as string[];
+    }
+    if (!clone.cities || clone.cities.length === 0) {
+      clone.cities = Array.from(
+        new Set(clone.inventory.map(i => i.location?.city).filter(Boolean)),
+      ) as string[];
     }
   }
   return clone;

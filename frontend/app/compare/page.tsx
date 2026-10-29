@@ -9,42 +9,98 @@ import ReservationModal from '../../components/ReservationModal';
 import ReservationVoucherModal from '../../components/ReservationVoucherModal';
 import { Part, InventoryItem, ReservationItem } from '../../lib/types';
 
-function getPartStoreName(part: Part): string {
-  if (part.storeNames && part.storeNames.length > 0 && part.storeNames[0]?.trim()) {
-    return part.storeNames[0].trim();
-  }
-  if (part.inventory && part.inventory.length > 0) {
-    for (const inv of part.inventory) {
-      if (inv.location?.store?.name?.trim()) {
-        return inv.location.store.name.trim();
-      }
-      if (inv.location?.name?.trim()) {
-        return inv.location.name.trim();
-      }
-    }
-  }
-  if ((part as any).store?.name?.trim()) {
-    return (part as any).store.name.trim();
-  }
-  return 'Almacén Registrado';
+export interface PartStoreDetails {
+  storeName: string;
+  branchName: string;
+  address: string;
+  city: string;
+  latitude?: number;
+  longitude?: number;
+  phone?: string;
+  gpsUrl: string;
 }
 
-function getPartLocationText(part: Part): string {
+function getPartStoreDetails(part: Part): PartStoreDetails {
+  let storeName = 'Almacén Registrado';
+  let branchName = 'Sede Principal';
+  let address = '';
+  let city = 'Pasto, Nariño';
+  let latitude: number | undefined = undefined;
+  let longitude: number | undefined = undefined;
+  let phone = '';
+
+  // 1. From direct inventory
   if (part.inventory && part.inventory.length > 0) {
     for (const inv of part.inventory) {
       const loc = inv.location;
       if (loc) {
-        if (loc.address && loc.city) return `${loc.address}, ${loc.city}`;
-        if (loc.address) return loc.address;
-        if (loc.city) return loc.city;
-        if (loc.name) return loc.name;
+        if (loc.store?.name) storeName = loc.store.name;
+        if (loc.name) branchName = loc.name;
+        if (loc.address) address = loc.address;
+        if (loc.city) city = loc.city;
+        if (loc.latitude) latitude = loc.latitude;
+        if (loc.longitude) longitude = loc.longitude;
+        if (loc.phone || loc.whatsapp) phone = loc.whatsapp || loc.phone || '';
+        break;
       }
     }
   }
-  if (part.cities && part.cities.length > 0 && part.cities[0]?.trim()) {
-    return part.cities[0].trim();
+
+  // 2. From locations array (if present in Meilisearch hit or response)
+  if (!address && part.locations && part.locations.length > 0) {
+    const loc = part.locations[0];
+    if (loc.storeName) storeName = loc.storeName;
+    if (loc.name) branchName = loc.name;
+    if (loc.address) address = loc.address;
+    if (loc.city) city = loc.city;
+    if (loc.latitude) latitude = loc.latitude;
+    if (loc.longitude) longitude = loc.longitude;
+    if (loc.phone) phone = loc.phone;
   }
-  return 'Pasto, Nariño';
+
+  // 3. Fallbacks from storeNames, addresses, locationNames, cities
+  if (storeName === 'Almacén Registrado' && part.storeNames && part.storeNames.length > 0) {
+    storeName = part.storeNames[0];
+  }
+  if (!address && part.addresses && part.addresses.length > 0) {
+    address = part.addresses[0];
+  }
+  if (branchName === 'Sede Principal' && part.locationNames && part.locationNames.length > 0) {
+    branchName = part.locationNames[0];
+  }
+  if (city === 'Pasto, Nariño' && part.cities && part.cities.length > 0) {
+    city = part.cities[0];
+  }
+
+  // Clean city formatting
+  const formattedCity = city.includes('Perímetro Urbano') ? 'Pasto, Nariño' : city;
+  const finalAddress = address ? address : formattedCity;
+
+  // Build real Google Maps link for Pasto
+  const gpsUrl =
+    latitude && longitude
+      ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${finalAddress}, San Juan de Pasto`)}`;
+
+  return {
+    storeName,
+    branchName,
+    address: finalAddress,
+    city: formattedCity,
+    latitude,
+    longitude,
+    phone,
+    gpsUrl,
+  };
+}
+
+function getPartStoreName(part: Part): string {
+  return getPartStoreDetails(part).storeName;
+}
+
+function getPartLocationText(part: Part): string {
+  const d = getPartStoreDetails(part);
+  return `${d.address}, ${d.city}`;
 }
 
 function getPartStock(part: Part): number {
@@ -78,8 +134,10 @@ export default function ComparePage() {
   }, []);
 
   // Hydrate parts from backend whenever comparedParts loads or changes
+  const comparedIdsKey = useMemo(() => comparedParts.map(p => p.id).join(','), [comparedParts]);
+
   useEffect(() => {
-    if (comparedParts.length === 0) return;
+    if (!comparedIdsKey) return;
 
     let cancelled = false;
     Promise.all(
@@ -91,6 +149,8 @@ export default function ComparePage() {
               ...p,
               ...fresh,
               storeNames: fresh.storeNames?.length ? fresh.storeNames : p.storeNames,
+              addresses: fresh.addresses?.length ? fresh.addresses : p.addresses,
+              locations: fresh.locations?.length ? fresh.locations : p.locations,
             };
           }
         } catch {
@@ -100,16 +160,19 @@ export default function ComparePage() {
       })
     ).then(hydrated => {
       if (!cancelled) {
-        const hasDifferences = hydrated.some((h, idx) => {
+        const needsUpdate = hydrated.some((h, idx) => {
           const original = comparedParts[idx];
           if (!original) return true;
+          const origD = getPartStoreDetails(original);
+          const hydD = getPartStoreDetails(h);
           return (
-            getPartStoreName(original) !== getPartStoreName(h) ||
-            getPartStock(original) !== getPartStock(h) ||
-            (h.inventory?.length || 0) !== (original.inventory?.length || 0)
+            origD.address !== hydD.address ||
+            origD.storeName !== hydD.storeName ||
+            !original.inventory?.length ||
+            (original.inventory?.length || 0) !== (h.inventory?.length || 0)
           );
         });
-        if (hasDifferences) {
+        if (needsUpdate) {
           setComparedPartsList(hydrated);
         }
       }
@@ -118,7 +181,7 @@ export default function ComparePage() {
     return () => {
       cancelled = true;
     };
-  }, [comparedParts.length]);
+  }, [comparedIdsKey]);
 
   // Filter catalog parts that aren't already in comparison
   const availableToAdd = useMemo(() => {
@@ -361,9 +424,8 @@ export default function ComparePage() {
                     ? 'REMANUFACTURADO'
                     : 'USADO VERIFICADO';
 
-                const storeName = getPartStoreName(part);
+                const storeDetails = getPartStoreDetails(part);
                 const stockCount = getPartStock(part);
-                const locCity = getPartLocationText(part);
 
                 return (
                   <div
@@ -450,26 +512,65 @@ export default function ComparePage() {
                         </button>
                       </div>
 
-                      {/* Section: DISPONIBILIDAD (Real Data Only) */}
-                      <div className="bg-[var(--surface-container-low)]/60 border border-[var(--outline-variant)] rounded-2xl p-3.5 space-y-2 text-xs">
-                        <div className="font-mono text-[10px] uppercase font-bold text-[var(--secondary)] tracking-wider">
-                          DISPONIBILIDAD EN PASTO
+                      {/* Section: DISPONIBILIDAD Y UBICACIÓN FÍSICA EN PASTO */}
+                      <div className="bg-[var(--surface-container-low)]/80 border border-[var(--outline-variant)] rounded-2xl p-3.5 space-y-2.5 text-xs shadow-xs">
+                        <div className="flex items-center justify-between pb-1.5 border-b border-[var(--outline-variant)]">
+                          <span className="font-mono text-[10px] uppercase font-bold text-[var(--secondary)] tracking-wider flex items-center gap-1">
+                            <span className="material-symbols-outlined text-xs text-emerald-600">store</span>
+                            <span>DISPONIBILIDAD EN PASTO</span>
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[9px] font-mono font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>Retiro Inmediato</span>
+                          </span>
                         </div>
+
+                        {/* Almacén */}
                         <div className="flex justify-between items-baseline gap-2">
-                          <span className="text-[var(--secondary)] text-[11px]">Almacén:</span>
-                          <span className="font-bold text-[var(--primary)] truncate">{storeName}</span>
+                          <span className="text-[var(--secondary)] text-[11px] font-medium">Almacén:</span>
+                          <span className="font-heading font-extrabold text-[var(--primary)] text-xs truncate flex items-center gap-1">
+                            {storeDetails.storeName}
+                            <span className="material-symbols-outlined text-xs text-blue-600" title="Almacén Verificado">verified</span>
+                          </span>
                         </div>
-                        <div className="flex justify-between items-baseline gap-2">
-                          <span className="text-[var(--secondary)] text-[11px]">Ubicación:</span>
-                          <span className="font-medium text-gray-800 truncate">{locCity}</span>
+
+                        {/* Punto de Venta y Dirección física del almacén donde lo venden */}
+                        <div className="bg-white p-2.5 rounded-xl border border-[var(--outline-variant)] space-y-1">
+                          <div className="flex items-center justify-between gap-1 text-[10px] font-mono font-bold text-[var(--secondary)] uppercase">
+                            <span className="flex items-center gap-1 text-[#e85d04]">
+                              <span className="material-symbols-outlined text-xs">location_on</span>
+                              <span>Punto de Venta / Sede:</span>
+                            </span>
+                            <span className="text-gray-600 truncate">{storeDetails.branchName}</span>
+                          </div>
+                          
+                          <div className="text-xs font-bold text-gray-900 leading-tight">
+                            {storeDetails.address}
+                          </div>
+                          
+                          <div className="flex items-center justify-between gap-2 pt-1 text-[11px] text-gray-500 font-sans border-t border-gray-100">
+                            <span>{storeDetails.city}</span>
+                            <a
+                              href={storeDetails.gpsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 font-mono text-[10px] font-bold text-[#e85d04] hover:text-[#dc2f02] hover:underline"
+                              title="Abrir ubicación en Google Maps"
+                            >
+                              <span>Ver Mapa GPS</span>
+                              <span className="material-symbols-outlined text-xs">open_in_new</span>
+                            </a>
+                          </div>
                         </div>
+
+                        {/* Modalidad y Stock */}
                         <div className="flex justify-between items-baseline gap-2">
                           <span className="text-[var(--secondary)] text-[11px]">Modalidad:</span>
-                          <span className="font-medium text-emerald-700">Retiro en sede</span>
+                          <span className="font-medium text-emerald-700">Retiro en mostrador (30 min)</span>
                         </div>
                         <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-[var(--outline-variant)]">
                           <span className="text-[var(--secondary)] text-[11px]">Stock Físico:</span>
-                          <span className="font-mono font-bold text-emerald-700">{stockCount} unidades</span>
+                          <span className="font-mono font-bold text-emerald-700">{stockCount} unidades disponibles</span>
                         </div>
                       </div>
 
@@ -670,11 +771,46 @@ export default function ComparePage() {
                       <td className="p-4 font-mono font-bold text-[var(--secondary)] bg-gray-50/50">
                         Almacén en Pasto
                       </td>
-                      {comparedParts.map(p => (
-                        <td key={p.id} className="p-4 font-bold text-gray-900">
-                          {getPartStoreName(p)}
-                        </td>
-                      ))}
+                      {comparedParts.map(p => {
+                        const d = getPartStoreDetails(p);
+                        return (
+                          <td key={p.id} className="p-4">
+                            <div className="font-bold text-gray-900 flex items-center gap-1">
+                              <span>{d.storeName}</span>
+                              <span className="material-symbols-outlined text-xs text-blue-600" title="Almacén Verificado">verified</span>
+                            </div>
+                            <div className="text-xs text-[var(--secondary)] mt-0.5">{d.branchName}</div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    {/* Row 5b: Dirección Física donde lo venden */}
+                    <tr>
+                      <td className="p-4 font-mono font-bold text-[var(--secondary)] bg-gray-50/50">
+                        Dirección del Almacén
+                      </td>
+                      {comparedParts.map(p => {
+                        const d = getPartStoreDetails(p);
+                        return (
+                          <td key={p.id} className="p-4">
+                            <div className="font-bold text-gray-900 flex items-start gap-1">
+                              <span className="material-symbols-outlined text-xs text-[#e85d04] mt-0.5">location_on</span>
+                              <span>{d.address}</span>
+                            </div>
+                            <div className="text-[11px] text-gray-500 pl-4">{d.city}</div>
+                            <a
+                              href={d.gpsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] font-mono text-[#e85d04] hover:underline pl-4 inline-flex items-center gap-0.5 mt-0.5 font-bold"
+                            >
+                              <span>Cómo llegar (GPS)</span>
+                              <span className="material-symbols-outlined text-[10px]">open_in_new</span>
+                            </a>
+                          </td>
+                        );
+                      })}
                     </tr>
 
                     {/* Row 6: Stock Físico */}

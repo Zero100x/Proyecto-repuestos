@@ -59,7 +59,20 @@ async function sync() {
     const totalStock = part.inventory.reduce((sum, i) => sum + i.stock, 0);
     const conditions = Array.from(new Set(part.inventory.map((i) => i.condition)));
     const storeNames = Array.from(new Set(part.inventory.map((i) => i.location?.store?.name).filter(Boolean)));
+    const addresses = Array.from(new Set(part.inventory.map((i) => i.location?.address).filter(Boolean)));
+    const locationNames = Array.from(new Set(part.inventory.map((i) => i.location?.name).filter(Boolean)));
     const cities = Array.from(new Set(part.inventory.map((i) => i.location?.city).filter(Boolean)));
+    const locations = part.inventory.map((i) => ({
+      id: i.location?.id,
+      storeId: i.location?.storeId,
+      storeName: i.location?.store?.name,
+      name: i.location?.name,
+      address: i.location?.address,
+      city: i.location?.city,
+      latitude: i.location?.latitude,
+      longitude: i.location?.longitude,
+      phone: i.location?.phone || i.location?.whatsapp,
+    }));
 
     return {
       id: part.id,
@@ -81,7 +94,10 @@ async function sync() {
       totalStock,
       isAvailable: totalStock > 0,
       storeNames,
+      addresses,
+      locationNames,
       cities,
+      locations,
       locationCount: part.inventory.length,
       updatedAt: part.updatedAt.toISOString(),
     };

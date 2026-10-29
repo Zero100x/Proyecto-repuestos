@@ -106,7 +106,20 @@ export class CatalogService implements OnModuleInit {
     const minPrice = part.inventory.length > 0 ? part.inventory[0].price : null;
     const maxPrice = part.inventory.length > 0 ? Math.max(...part.inventory.map(i => i.price)) : null;
     const storeNames = Array.from(new Set(part.inventory.map(i => i.location?.store?.name).filter(Boolean)));
+    const addresses = Array.from(new Set(part.inventory.map(i => i.location?.address).filter(Boolean)));
+    const locationNames = Array.from(new Set(part.inventory.map(i => i.location?.name).filter(Boolean)));
     const cities = Array.from(new Set(part.inventory.map(i => i.location?.city).filter(Boolean)));
+    const locations = part.inventory.map((i) => ({
+      id: i.location?.id,
+      storeId: i.location?.storeId,
+      storeName: i.location?.store?.name,
+      name: i.location?.name,
+      address: i.location?.address,
+      city: i.location?.city,
+      latitude: i.location?.latitude,
+      longitude: i.location?.longitude,
+      phone: i.location?.phone || i.location?.whatsapp,
+    }));
     const makes = Array.from(new Set(part.compatibility.map(c => c.version?.year?.model?.make?.name).filter(Boolean)));
     const models = Array.from(new Set(part.compatibility.map(c => c.version?.year?.model?.name).filter(Boolean)));
     const years = Array.from(new Set(part.compatibility.map(c => c.version?.year?.year).filter(Boolean)));
@@ -120,7 +133,10 @@ export class CatalogService implements OnModuleInit {
       maxPrice,
       totalStock,
       storeNames,
+      addresses,
+      locationNames,
       cities,
+      locations,
       makes,
       models,
       years,
@@ -348,7 +364,20 @@ export class CatalogService implements OnModuleInit {
       conditions: [...new Set(part.inventory.map((i) => i.condition))],
       locationCount: part.inventory.length,
       storeNames: [...new Set(part.inventory.map((i) => i.location?.store?.name).filter(Boolean))],
+      addresses: [...new Set(part.inventory.map((i) => i.location?.address).filter(Boolean))],
+      locationNames: [...new Set(part.inventory.map((i) => i.location?.name).filter(Boolean))],
       cities: [...new Set(part.inventory.map((i) => i.location?.city).filter(Boolean))],
+      locations: part.inventory.map((i) => ({
+        id: i.location?.id,
+        storeId: i.location?.storeId,
+        storeName: i.location?.store?.name,
+        name: i.location?.name,
+        address: i.location?.address,
+        city: i.location?.city,
+        latitude: i.location?.latitude,
+        longitude: i.location?.longitude,
+        phone: i.location?.phone || i.location?.whatsapp,
+      })),
       isAvailable: part.inventory.length > 0,
       imageUrl: part.imageUrl,
       images: part.images ?? (part.imageUrl ? [part.imageUrl] : []),

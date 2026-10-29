@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Part, InventoryItem, ReservationItem } from '../lib/types';
-import { createReservation, formatPriceCOP } from '../lib/api';
+import { createReservation, formatPriceCOP, fetchPartById } from '../lib/api';
 
 interface ReservationModalProps {
   part: Part;
@@ -19,10 +19,12 @@ export default function ReservationModal({
   onSuccess,
   initialInventory,
 }: ReservationModalProps) {
-  const inventoryList = (part.inventory || []).filter(i => i.isAvailable && i.stock > 0);
+  const [internalInventory, setInternalInventory] = useState<InventoryItem[]>(
+    (part.inventory || []).filter(i => i.isAvailable && i.stock > 0)
+  );
 
   const [selectedInventoryId, setSelectedInventoryId] = useState<string>(
-    initialInventory?.id || inventoryList[0]?.id || '',
+    initialInventory?.id || ''
   );
   const [quantity, setQuantity] = useState<number>(1);
   const [customerName, setCustomerName] = useState('');
@@ -32,6 +34,28 @@ export default function ReservationModal({
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      const avail = (part.inventory || []).filter(i => i.isAvailable && i.stock > 0);
+      if (avail.length === 0 && part.id) {
+        fetchPartById(part.id).then(full => {
+          if (full?.inventory && full.inventory.length > 0) {
+            const list = full.inventory.filter(i => i.isAvailable && i.stock > 0);
+            setInternalInventory(list);
+            if (list.length > 0) setSelectedInventoryId(list[0].id);
+          }
+        });
+      } else {
+        setInternalInventory(avail);
+        if (avail.length > 0 && !selectedInventoryId) {
+          setSelectedInventoryId(avail[0].id);
+        }
+      }
+    }
+  }, [isOpen, part.id, part.inventory]);
+
+  const inventoryList = internalInventory;
 
   // Auto-fill logged in user info
   useEffect(() => {

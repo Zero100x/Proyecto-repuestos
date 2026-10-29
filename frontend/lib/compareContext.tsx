@@ -9,6 +9,29 @@ interface CompareContextType {
   removeFromCompare: (partId: string) => void;
   clearCompare: () => void;
   isCompared: (partId: string) => boolean;
+  setComparedPartsList: (parts: Part[]) => void;
+}
+
+function normalizeComparedPart(part: Part): Part {
+  if (!part) return part;
+  const clone = { ...part };
+  if ((!clone.storeNames || clone.storeNames.length === 0) && clone.inventory?.length) {
+    const extractedStores = Array.from(
+      new Set(clone.inventory.map(i => i.location?.store?.name).filter(Boolean)),
+    ) as string[];
+    if (extractedStores.length > 0) {
+      clone.storeNames = extractedStores;
+    }
+  }
+  if ((!clone.cities || clone.cities.length === 0) && clone.inventory?.length) {
+    const extractedCities = Array.from(
+      new Set(clone.inventory.map(i => i.location?.city).filter(Boolean)),
+    ) as string[];
+    if (extractedCities.length > 0) {
+      clone.cities = extractedCities;
+    }
+  }
+  return clone;
 }
 
 const CompareContext = createContext<CompareContextType | undefined>(undefined);
@@ -20,7 +43,11 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
     try {
       const saved = localStorage.getItem('repuestos_compare_list');
       if (saved) {
-        setComparedParts(JSON.parse(saved));
+        const parsed = JSON.parse(saved) as Part[];
+        if (Array.isArray(parsed)) {
+          const normalized = parsed.map(normalizeComparedPart);
+          setComparedParts(normalized);
+        }
       }
     } catch (e) {
       console.warn('Could not read compare state from storage:', e);
@@ -35,6 +62,12 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const setComparedPartsList = (parts: Part[]) => {
+    const normalized = parts.map(normalizeComparedPart);
+    setComparedParts(normalized);
+    saveToStorage(normalized);
+  };
+
   const addToCompare = (part: Part): boolean => {
     if (comparedParts.some(p => p.id === part.id)) {
       return false;
@@ -43,7 +76,8 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
       alert('Puedes comparar un máximo de 4 repuestos al mismo tiempo.');
       return false;
     }
-    const updated = [...comparedParts, part];
+    const normalized = normalizeComparedPart(part);
+    const updated = [...comparedParts, normalized];
     setComparedParts(updated);
     saveToStorage(updated);
     return true;
@@ -66,7 +100,7 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CompareContext.Provider
-      value={{ comparedParts, addToCompare, removeFromCompare, clearCompare, isCompared }}
+      value={{ comparedParts, addToCompare, removeFromCompare, clearCompare, isCompared, setComparedPartsList }}
     >
       {children}
     </CompareContext.Provider>

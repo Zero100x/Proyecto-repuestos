@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Part, InventoryItem } from '../lib/types';
-import { formatPriceCOP, buildWhatsAppLink, createLead } from '../lib/api';
+import { formatPriceCOP, buildWhatsAppLink, createLead, fetchPartById } from '../lib/api';
 import { WhatsAppIcon, CloseIcon, MapPinIcon, PhoneIcon, CheckCircleIcon } from './Icons';
 
 interface WhatsAppLeadModalProps {
@@ -18,9 +18,24 @@ export default function WhatsAppLeadModal({
   onClose,
   selectedInventory,
 }: WhatsAppLeadModalProps) {
-  if (!isOpen) return null;
+  const [fetchedInventory, setFetchedInventory] = useState<InventoryItem[]>(part.inventory || []);
 
-  const inventoryList = part.inventory || [];
+  useEffect(() => {
+    if (isOpen) {
+      if (!part.inventory || part.inventory.length === 0) {
+        fetchPartById(part.id).then(full => {
+          if (full?.inventory && full.inventory.length > 0) {
+            setFetchedInventory(full.inventory);
+            setSelectedInv(full.inventory[0]);
+          }
+        });
+      } else {
+        setFetchedInventory(part.inventory);
+      }
+    }
+  }, [isOpen, part.id, part.inventory]);
+
+  const inventoryList = fetchedInventory;
   const [selectedInv, setSelectedInv] = useState<InventoryItem>(
     selectedInventory || inventoryList[0] || ({} as InventoryItem)
   );
@@ -30,14 +45,15 @@ export default function WhatsAppLeadModal({
 
   const targetLocation = selectedInv.location;
   const targetStore = targetLocation?.store;
-  const phoneNumber = targetLocation?.whatsapp || targetLocation?.phone || '+573002001001';
+  const storeDisplayName = targetStore?.name || part.storeNames?.[0] || 'Almacén Aliado';
+  const phoneNumber = targetLocation?.whatsapp || targetLocation?.phone || targetStore?.phone || '+573002001001';
 
   const oemText = part.partNumbers?.length ? ` (Ref OEM: ${part.partNumbers[0].number})` : '';
   const priceText = selectedInv.price ? formatPriceCOP(selectedInv.price) : 'Precio a convenir';
 
   const [submitting, setSubmitting] = useState(false);
 
-  const defaultMessage = `Hola ${targetStore?.name || 'amigos'} de ${targetLocation?.name || 'su sede'}. Vi en AutoPart Pro su producto: "${part.name}"${oemText} con precio ${priceText}. ${
+  const defaultMessage = `Hola ${storeDisplayName} de ${targetLocation?.name || 'su sede en Pasto'}. Vi en AutoPart Pro su producto: "${part.name}"${oemText} con precio ${priceText}. ${
     buyerName ? `Mi nombre es ${buyerName}. ` : ''
   }${buyerCity ? `Me encuentro en ${buyerCity}. ` : ''}${
     userNote ? `Pregunta: ${userNote}` : '¿Tienen disponibilidad inmediata para recoger hoy o realizar envío?'
@@ -64,6 +80,8 @@ export default function WhatsAppLeadModal({
       onClose();
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="modal-backdrop" onClick={onClose}>

@@ -93,7 +93,7 @@ export class CatalogService implements OnModuleInit {
           include: {
             location: {
               include: {
-                store: { select: { id: true, name: true } },
+                store: { select: { id: true, name: true, phone: true, nit: true, imageUrl: true } },
               },
             },
           },
@@ -105,10 +105,28 @@ export class CatalogService implements OnModuleInit {
     if (!part) throw new NotFoundException('Repuesto no encontrado');
     const minPrice = part.inventory.length > 0 ? part.inventory[0].price : null;
     const maxPrice = part.inventory.length > 0 ? Math.max(...part.inventory.map(i => i.price)) : null;
+    const storeNames = Array.from(new Set(part.inventory.map(i => i.location?.store?.name).filter(Boolean)));
+    const cities = Array.from(new Set(part.inventory.map(i => i.location?.city).filter(Boolean)));
+    const makes = Array.from(new Set(part.compatibility.map(c => c.version?.year?.model?.make?.name).filter(Boolean)));
+    const models = Array.from(new Set(part.compatibility.map(c => c.version?.year?.model?.name).filter(Boolean)));
+    const years = Array.from(new Set(part.compatibility.map(c => c.version?.year?.year).filter(Boolean)));
+    const versions = Array.from(new Set(part.compatibility.map(c => c.version?.name).filter(Boolean)));
+    const conditions = Array.from(new Set(part.inventory.map(i => i.condition)));
+    const totalStock = part.inventory.reduce((sum, i) => sum + i.stock, 0);
+
     return {
       ...part,
       minPrice,
       maxPrice,
+      totalStock,
+      storeNames,
+      cities,
+      makes,
+      models,
+      years,
+      versions,
+      conditions,
+      locationCount: part.inventory.length,
     };
   }
 
@@ -329,7 +347,8 @@ export class CatalogService implements OnModuleInit {
       totalStock: part.inventory.reduce((sum, i) => sum + i.stock, 0),
       conditions: [...new Set(part.inventory.map((i) => i.condition))],
       locationCount: part.inventory.length,
-      storeNames: [...new Set(part.inventory.map((i) => i.location.store.name))],
+      storeNames: [...new Set(part.inventory.map((i) => i.location?.store?.name).filter(Boolean))],
+      cities: [...new Set(part.inventory.map((i) => i.location?.city).filter(Boolean))],
       isAvailable: part.inventory.length > 0,
       imageUrl: part.imageUrl,
       images: part.images ?? (part.imageUrl ? [part.imageUrl] : []),

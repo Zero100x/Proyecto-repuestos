@@ -3,14 +3,62 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useCompare } from '../../lib/compareContext';
-import { formatPriceCOP, fetchParts } from '../../lib/api';
+import { formatPriceCOP, fetchParts, fetchPartById } from '../../lib/api';
 import WhatsAppLeadModal from '../../components/WhatsAppLeadModal';
 import ReservationModal from '../../components/ReservationModal';
 import ReservationVoucherModal from '../../components/ReservationVoucherModal';
 import { Part, InventoryItem, ReservationItem } from '../../lib/types';
 
+function getPartStoreName(part: Part): string {
+  if (part.storeNames && part.storeNames.length > 0 && part.storeNames[0]?.trim()) {
+    return part.storeNames[0].trim();
+  }
+  if (part.inventory && part.inventory.length > 0) {
+    for (const inv of part.inventory) {
+      if (inv.location?.store?.name?.trim()) {
+        return inv.location.store.name.trim();
+      }
+      if (inv.location?.name?.trim()) {
+        return inv.location.name.trim();
+      }
+    }
+  }
+  if ((part as any).store?.name?.trim()) {
+    return (part as any).store.name.trim();
+  }
+  return 'Almacén Registrado';
+}
+
+function getPartLocationText(part: Part): string {
+  if (part.inventory && part.inventory.length > 0) {
+    for (const inv of part.inventory) {
+      const loc = inv.location;
+      if (loc) {
+        if (loc.address && loc.city) return `${loc.address}, ${loc.city}`;
+        if (loc.address) return loc.address;
+        if (loc.city) return loc.city;
+        if (loc.name) return loc.name;
+      }
+    }
+  }
+  if (part.cities && part.cities.length > 0 && part.cities[0]?.trim()) {
+    return part.cities[0].trim();
+  }
+  return 'Pasto, Nariño';
+}
+
+function getPartStock(part: Part): number {
+  if (typeof part.totalStock === 'number' && part.totalStock >= 0) {
+    return part.totalStock;
+  }
+  if (part.inventory && part.inventory.length > 0) {
+    return part.inventory.reduce((acc, i) => acc + (i.stock || 0), 0);
+  }
+  return 0;
+}
+
 export default function ComparePage() {
-  const { comparedParts, removeFromCompare, clearCompare, addToCompare } = useCompare();
+  const { comparedParts, removeFromCompare, clearCompare, addToCompare, setComparedPartsList } = useCompare();
 
   // Modals state
   const [selectedPartForLead, setSelectedPartForLead] = useState<Part | null>(null);
@@ -28,6 +76,49 @@ export default function ComparePage() {
       .then(res => setCatalogParts(res.data))
       .catch(() => {});
   }, []);
+
+  // Hydrate parts from backend whenever comparedParts loads or changes
+  useEffect(() => {
+    if (comparedParts.length === 0) return;
+
+    let cancelled = false;
+    Promise.all(
+      comparedParts.map(async p => {
+        try {
+          const fresh = await fetchPartById(p.id);
+          if (fresh) {
+            return {
+              ...p,
+              ...fresh,
+              storeNames: fresh.storeNames?.length ? fresh.storeNames : p.storeNames,
+            };
+          }
+        } catch {
+          // keep existing if error
+        }
+        return p;
+      })
+    ).then(hydrated => {
+      if (!cancelled) {
+        const hasDifferences = hydrated.some((h, idx) => {
+          const original = comparedParts[idx];
+          if (!original) return true;
+          return (
+            getPartStoreName(original) !== getPartStoreName(h) ||
+            getPartStock(original) !== getPartStock(h) ||
+            (h.inventory?.length || 0) !== (original.inventory?.length || 0)
+          );
+        });
+        if (hasDifferences) {
+          setComparedPartsList(hydrated);
+        }
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [comparedParts.length]);
 
   // Filter catalog parts that aren't already in comparison
   const availableToAdd = useMemo(() => {
@@ -270,9 +361,9 @@ export default function ComparePage() {
                     ? 'REMANUFACTURADO'
                     : 'USADO VERIFICADO';
 
-                const storeName = part.storeNames?.[0] || 'Almacén Aliado Pasto';
-                const stockCount = part.totalStock ?? part.inventory?.reduce((acc, i) => acc + i.stock, 0) ?? 0;
-                const locCity = part.cities?.[0] || 'Pasto, Nariño';
+                const storeName = getPartStoreName(part);
+                const stockCount = getPartStock(part);
+                const locCity = getPartLocationText(part);
 
                 return (
                   <div
@@ -581,7 +672,7 @@ export default function ComparePage() {
                       </td>
                       {comparedParts.map(p => (
                         <td key={p.id} className="p-4 font-bold text-gray-900">
-                          {p.storeNames?.[0] || 'Almacén Aliado'}
+                          {getPartStoreName(p)}
                         </td>
                       ))}
                     </tr>
@@ -592,7 +683,7 @@ export default function ComparePage() {
                         Stock Físico Inmediato
                       </td>
                       {comparedParts.map(p => {
-                        const stock = p.totalStock ?? p.inventory?.reduce((acc, i) => acc + i.stock, 0) ?? 0;
+                        const stock = getPartStock(p);
                         return (
                           <td key={p.id} className="p-4 font-mono font-bold text-emerald-700">
                             {stock} unidades en mostrador

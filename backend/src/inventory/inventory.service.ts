@@ -232,6 +232,20 @@ export class InventoryService {
         ? cleanImages[0]
         : undefined;
 
+    let resolvedCategoryId = dto.categoryId;
+    if (dto.categoryId) {
+      const cat = await this.prisma.partCategory.findFirst({
+        where: {
+          OR: [
+            { id: dto.categoryId },
+            { slug: { equals: dto.categoryId, mode: 'insensitive' } },
+            { name: { equals: dto.categoryId, mode: 'insensitive' } },
+          ],
+        },
+      });
+      if (cat) resolvedCategoryId = cat.id;
+    }
+
     await this.prisma.$transaction(async (tx) => {
       // 1. Actualizar datos de Part
       await tx.part.update({
@@ -239,7 +253,7 @@ export class InventoryService {
         data: {
           ...(dto.name?.trim() ? { name: dto.name.trim() } : {}),
           ...(dto.brand !== undefined ? { brand: dto.brand.trim() || null } : {}),
-          ...(dto.categoryId ? { categoryId: dto.categoryId } : {}),
+          ...(resolvedCategoryId ? { categoryId: resolvedCategoryId } : {}),
           ...(dto.description !== undefined ? { description: dto.description.trim() || null } : {}),
           ...(primaryImageUrl !== undefined ? { imageUrl: primaryImageUrl } : {}),
           ...(dto.images !== undefined ? { images: cleanImages } : {}),
@@ -358,8 +372,39 @@ export class InventoryService {
     const sid = this.resolveStoreId(user, storeId);
     await this.assertLocationInStore(dto.locationId, sid);
 
-    const category = await this.prisma.partCategory.findUnique({ where: { id: dto.categoryId } });
+    let category = await this.prisma.partCategory.findUnique({ where: { id: dto.categoryId } });
+    if (!category) {
+      category = await this.prisma.partCategory.findFirst({
+        where: {
+          OR: [
+            { slug: { equals: dto.categoryId, mode: 'insensitive' } },
+            { name: { equals: dto.categoryId, mode: 'insensitive' } },
+          ],
+        },
+      });
+    }
+
+    if (!category) {
+      const cleanSlug = dto.categoryId.replace(/^cat-/, '').toLowerCase();
+      category = await this.prisma.partCategory.findFirst({
+        where: { slug: cleanSlug },
+      });
+    }
+
+    if (!category) {
+      category = await this.prisma.partCategory.create({
+        data: {
+          name: dto.categoryId.length < 30 ? dto.categoryId : 'General',
+          slug: dto.categoryId.length < 30 ? dto.categoryId.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'general',
+          description: 'Categoría generada automáticamente',
+        },
+      }).catch(async () => {
+        return this.prisma.partCategory.findFirst();
+      });
+    }
+
     if (!category) throw new BadRequestException('Categoría no válida');
+    dto.categoryId = category.id;
 
     const cleanImages = (dto.images ?? [])
       .map((u) => u?.trim())

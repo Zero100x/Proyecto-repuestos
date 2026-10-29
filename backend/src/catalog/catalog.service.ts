@@ -7,6 +7,19 @@ import {
   BulkCompatibilityDto, CreateQuestionDto, AnswerQuestionDto,
 } from './dto/catalog.dto';
 
+const DEFAULT_CATEGORIES = [
+  { id: '657335ec-1c68-4480-bf34-a0875ebef00f', name: 'Frenos', slug: 'frenos', description: 'Pastillas, discos, bandas y cilindros de freno' },
+  { id: 'e047873b-c655-4b3a-b72d-63a4b1a68674', name: 'Motor', slug: 'motor', description: 'Bujías, filtros, empaques, correas y distribución' },
+  { id: 'ada5caf8-153a-4cf2-81a3-617855e51630', name: 'Suspensión', slug: 'suspension', description: 'Amortiguadores, espirales, terminales y rótulas' },
+  { id: '2a767242-179f-4bb6-a8ce-78c413f07396', name: 'Transmisión', slug: 'transmision', description: 'Kits de embrague, crucetas y ejes de tracción' },
+  { id: 'df90734f-63b4-49cc-88e8-7a563a71642e', name: 'Eléctrico', slug: 'electrico', description: 'Baterías, alternadores, arrancadores y sensores' },
+  { id: '508227e3-2037-42ba-aa9c-4c6fdc48c391', name: 'Carrocería', slug: 'carroceria', description: 'Farolas, retrovisores, defensas y persianas' },
+  { id: '29fc8bf6-fb11-4954-a626-773fa6cf5659', name: 'Filtros', slug: 'filtros', description: 'Filtros de aire, aceite, combustible' },
+  { id: 'c7d4baa6-f09d-413f-b7ca-ca0fc62e778e', name: 'Refrigeración', slug: 'refrigeracion', description: 'Sistema de enfriamiento del motor' },
+  { id: '8a11bc32-9b21-4d1a-8c19-123456789abc', name: 'Dirección', slug: 'direccion', description: 'Cremalleras y terminales de dirección' },
+  { id: '9b22cd43-ac32-4e2b-9d2a-234567890bcd', name: 'Iluminación', slug: 'iluminacion', description: 'Farolas, stops y bombillos' },
+];
+
 @Injectable()
 export class CatalogService implements OnModuleInit {
   constructor(
@@ -15,14 +28,40 @@ export class CatalogService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    await this.ensureDefaultCategories();
     setTimeout(() => {
       this.syncAllPartsToSearch().catch(() => {});
     }, 1500);
   }
 
+  async ensureDefaultCategories() {
+    try {
+      for (const cat of DEFAULT_CATEGORIES) {
+        await this.prisma.partCategory.upsert({
+          where: { id: cat.id },
+          update: {},
+          create: cat,
+        }).catch(async () => {
+          await this.prisma.partCategory.upsert({
+            where: { slug: cat.slug },
+            update: {},
+            create: cat,
+          }).catch(() => {});
+        });
+      }
+    } catch (err) {
+      console.warn('Error inicializando categorías por defecto:', err);
+    }
+  }
+
   // ============ CATEGORÍAS ============
 
   async findAllCategories() {
+    const count = await this.prisma.partCategory.count();
+    if (count === 0) {
+      await this.ensureDefaultCategories();
+    }
+
     return this.prisma.partCategory.findMany({
       include: {
         children: true,

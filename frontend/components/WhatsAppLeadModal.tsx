@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Part, InventoryItem } from '../lib/types';
 import { formatPriceCOP, buildWhatsAppLink, createLead, fetchPartById, resolveImageUrl } from '../lib/api';
-import { WhatsAppIcon, CloseIcon, MapPinIcon, PhoneIcon, CheckCircleIcon } from './Icons';
+import { WhatsAppIcon } from './Icons';
 
 interface WhatsAppLeadModalProps {
   part: Part;
@@ -84,47 +84,69 @@ export default function WhatsAppLeadModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-content glass" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="header-title-box">
-            <div className="badge-wa">
-              <WhatsAppIcon size={18} />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl max-w-lg w-full max-h-[92vh] flex flex-col shadow-2xl border border-[var(--outline-variant)] overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-[var(--outline-variant)] bg-white flex justify-between items-start">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 mb-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>Lead Directo Sin Comisiones</span>
             </div>
-            <h3>Contactar al Almacén por WhatsApp</h3>
+            <h3 className="font-heading text-lg sm:text-xl font-extrabold text-[var(--primary)]">
+              Contactar al Almacén por WhatsApp
+            </h3>
+            <p className="font-sans text-xs text-[var(--secondary)] mt-0.5">
+              Consulta disponibilidad y cotiza directamente con el asesor del almacén.
+            </p>
           </div>
-          <button className="btn-close" onClick={onClose}>
-            <CloseIcon size={20} />
+          <button
+            onClick={onClose}
+            className="p-1.5 text-gray-400 hover:text-gray-700 rounded-xl hover:bg-gray-100 transition"
+          >
+            <span className="material-symbols-outlined text-xl">close</span>
           </button>
         </div>
 
-        <div className="modal-body">
+        {/* Scrollable Body */}
+        <div className="p-6 overflow-y-auto space-y-4">
           {/* Resumen del repuesto */}
-          <div className="part-mini-preview">
-            {part.imageUrl && (
+          <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[var(--surface-container-low)] border border-[var(--outline-variant)]">
+            <div className="w-16 h-16 rounded-xl bg-white border border-[var(--outline-variant)] overflow-hidden flex-shrink-0 flex items-center justify-center p-1">
               <img
                 src={resolveImageUrl(part.imageUrl)}
                 alt={part.name}
-                className="mini-thumb"
+                className="w-full h-full object-contain"
                 onError={e => ((e.target as any).src = '/assets/engine.svg')}
               />
-            )}
-            <div className="mini-info">
-              <h4>{part.name}</h4>
-              <p className="mini-brand">{part.brand} • {part.category?.name}</p>
-              <span className="mini-price">
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-heading text-xs sm:text-sm font-bold text-[var(--primary)] line-clamp-2">
+                {part.name}
+              </h4>
+              <p className="font-sans text-[11px] text-[var(--secondary)] mt-0.5">
+                {part.brand || 'Estándar OEM'} • {part.category?.name || 'Repuestos'}
+              </p>
+              <div className="font-mono text-sm font-extrabold text-[#059669] mt-1">
                 {selectedInv.price ? formatPriceCOP(selectedInv.price) : 'Consultar precio'}
-              </span>
+              </div>
             </div>
           </div>
 
-          {/* Selector de sede */}
+          {/* Selector de sede (si hay más de una) */}
           {inventoryList.length > 1 && (
-            <div className="form-group">
-              <label className="form-label">Selecciona la Sede / Almacén a contactar:</label>
+            <div>
+              <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                Selecciona la Sede / Almacén a contactar:
+              </label>
               <select
-                className="form-select"
+                className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)] text-gray-900"
                 value={selectedInv.id}
                 onChange={e => {
                   const found = inventoryList.find(i => i.id === e.target.value);
@@ -142,244 +164,109 @@ export default function WhatsAppLeadModal({
 
           {/* Info de la sede */}
           {targetLocation && (
-            <div className="location-card-preview">
-              <div className="loc-line">
-                <MapPinIcon size={16} />
+            <div className="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200 space-y-2">
+              <div className="flex items-center gap-2 text-xs text-[var(--primary)]">
+                <span className="material-symbols-outlined text-base text-emerald-600 flex-shrink-0">store</span>
+                <span className="font-bold">{storeDisplayName}</span>
+                {targetLocation.name && (
+                  <span className="text-[var(--secondary)] font-normal">({targetLocation.name})</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <span className="material-symbols-outlined text-base text-gray-400 flex-shrink-0">location_on</span>
                 <span>{targetLocation.address}, {targetLocation.city}</span>
               </div>
-              <div className="loc-line">
-                <PhoneIcon size={16} />
-                <span>WhatsApp Directo: {phoneNumber}</span>
-              </div>
-              <div className="loc-badge">
-                <CheckCircleIcon size={14} />
-                <span>Almacén Aliado Verificado</span>
+              <div className="flex items-center justify-between pt-1 border-t border-emerald-200/60 text-xs">
+                <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
+                  <span className="material-symbols-outlined text-sm text-emerald-600">verified</span>
+                  <span>Almacén Aliado Verificado</span>
+                </div>
+                <div className="flex items-center gap-1 font-mono text-gray-600">
+                  <span className="text-[11px]">WhatsApp:</span>
+                  <span className="font-bold text-gray-900">{phoneNumber}</span>
+                </div>
               </div>
             </div>
           )}
 
           {/* Formulario rápido */}
-          <div className="fields-row">
-            <div className="form-group">
-              <label className="form-label">Tu Nombre (Opcional):</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                Tu Nombre (Opcional)
+              </label>
               <input
                 type="text"
-                className="form-input"
-                placeholder="Ej. Carlos Rodríguez"
+                className="w-full px-3.5 py-2.5 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)] text-gray-900 placeholder:text-gray-400"
+                placeholder="Ej: Carlos Rodríguez"
                 value={buyerName}
                 onChange={e => setBuyerName(e.target.value)}
               />
             </div>
-            <div className="form-group">
-              <label className="form-label">Tu Ciudad:</label>
+            <div>
+              <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+                Tu Ciudad / Barrio
+              </label>
               <input
                 type="text"
-                className="form-input"
-                placeholder="Ej. Pasto, Ipiales, Túquerres..."
+                className="w-full px-3.5 py-2.5 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)] text-gray-900 placeholder:text-gray-400"
+                placeholder="Ej: Pasto, Ipiales, Bucheli..."
                 value={buyerCity}
                 onChange={e => setBuyerCity(e.target.value)}
               />
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Mensaje personalizado o consulta adicional:</label>
+          <div>
+            <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-1">
+              Mensaje personalizado o consulta adicional
+            </label>
             <textarea
-              className="form-input text-area"
+              className="w-full px-3.5 py-2.5 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)] text-gray-900 placeholder:text-gray-400 resize-none"
               rows={2}
-              placeholder="Ej. ¿Tienen el lado izquierdo? ¿Cuánto vale el envío al norte?"
+              placeholder="Ej: ¿Tienen el lado izquierdo? ¿Cuánto cuesta el envío al norte?"
               value={userNote}
               onChange={e => setUserNote(e.target.value)}
             />
           </div>
 
-          {/* Vista previa del mensaje */}
-          <div className="message-preview-box">
-            <p className="preview-label">Mensaje que se enviará automáticamente:</p>
-            <div className="chat-bubble">
-              <p>{defaultMessage}</p>
+          {/* Vista previa del mensaje de WhatsApp */}
+          <div className="space-y-1.5">
+            <label className="block font-heading text-[11px] font-bold text-[var(--secondary)]">
+              Mensaje que se enviará automáticamente al chat:
+            </label>
+            <div className="p-3.5 rounded-2xl bg-[#efeae2] border border-[#d1d7db] relative">
+              <div className="bg-[#d9fdd3] text-[#111b21] rounded-2xl rounded-tr-none p-3 shadow-sm text-xs font-sans leading-relaxed border border-[#c1e9be]">
+                <p className="whitespace-pre-wrap">{defaultMessage}</p>
+                <div className="flex items-center justify-end gap-1 mt-1 text-[10px] text-gray-500 font-mono">
+                  <span>Ahora</span>
+                  <span className="text-emerald-700 font-bold">✓✓</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose}>
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-[var(--outline-variant)] bg-gray-50/70 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            className="px-4 py-2.5 rounded-xl border border-[var(--outline-variant)] font-heading text-xs font-bold text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition"
+            onClick={onClose}
+          >
             Cancelar
           </button>
-          <button className="btn btn-wa-action" onClick={handleLaunchWhatsApp} disabled={submitting}>
-            <WhatsAppIcon size={20} />
+          <button
+            type="button"
+            className="px-5 py-2.5 bg-[#25D366] hover:bg-[#1ebe57] text-white font-heading text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm transition hover:shadow-md disabled:opacity-50"
+            onClick={handleLaunchWhatsApp}
+            disabled={submitting}
+          >
+            <WhatsAppIcon size={18} />
             <span>{submitting ? 'Registrando consulta...' : 'Abrir WhatsApp Ahora'}</span>
           </button>
         </div>
       </div>
-
-      <style jsx>{`
-        .modal-backdrop {
-          position: fixed;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.75);
-          backdrop-filter: blur(8px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 9999;
-          padding: 1rem;
-        }
-        .modal-content {
-          width: 100%;
-          max-width: 580px;
-          border-radius: var(--radius-xl);
-          background: #13192b;
-          border: 1px solid var(--border-color-hover);
-          box-shadow: var(--shadow-lg), var(--shadow-glow);
-          display: flex;
-          flex-direction: column;
-          max-height: 90vh;
-          overflow-y: auto;
-        }
-        .modal-header {
-          padding: 1.25rem 1.5rem;
-          border-bottom: 1px solid var(--border-color);
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-        }
-        .badge-wa {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.35rem;
-          color: #25d366;
-          font-size: 0.75rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin-bottom: 0.25rem;
-        }
-        .modal-header h3 {
-          font-size: 1.2rem;
-          color: var(--text-primary);
-        }
-        .btn-close {
-          background: transparent;
-          border: none;
-          color: var(--text-muted);
-          cursor: pointer;
-          padding: 0.25rem;
-          border-radius: 50%;
-          display: flex;
-        }
-        .btn-close:hover {
-          color: white;
-          background: rgba(255, 255, 255, 0.1);
-        }
-        .modal-body {
-          padding: 1.25rem 1.5rem;
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-        .part-mini-preview {
-          display: flex;
-          gap: 1rem;
-          background: var(--bg-card);
-          padding: 0.85rem;
-          border-radius: var(--radius-md);
-          border: 1px solid var(--border-color);
-        }
-        .mini-thumb {
-          width: 60px;
-          height: 60px;
-          border-radius: var(--radius-sm);
-          object-fit: cover;
-        }
-        .mini-info h4 {
-          font-size: 0.95rem;
-          line-height: 1.3;
-        }
-        .mini-brand {
-          font-size: 0.8rem;
-          color: var(--text-secondary);
-        }
-        .mini-price {
-          font-size: 1.05rem;
-          font-weight: 800;
-          color: var(--accent-secondary);
-        }
-        .location-card-preview {
-          background: rgba(16, 185, 129, 0.08);
-          border: 1px solid rgba(16, 185, 129, 0.25);
-          padding: 0.85rem;
-          border-radius: var(--radius-md);
-          font-size: 0.85rem;
-        }
-        .loc-line {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          color: var(--text-primary);
-          margin-bottom: 0.35rem;
-        }
-        .loc-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.35rem;
-          color: #10b981;
-          font-weight: 600;
-          font-size: 0.75rem;
-        }
-        .fields-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.75rem;
-        }
-        .text-area {
-          resize: none;
-        }
-        .message-preview-box {
-          background: rgba(0, 0, 0, 0.25);
-          padding: 0.75rem;
-          border-radius: var(--radius-md);
-        }
-        .preview-label {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          margin-bottom: 0.35rem;
-        }
-        .chat-bubble {
-          background: #075e54;
-          color: #e9fbf0;
-          padding: 0.65rem 0.85rem;
-          border-radius: 8px 8px 8px 0;
-          font-size: 0.825rem;
-          line-height: 1.4;
-        }
-        .modal-footer {
-          padding: 1rem 1.5rem;
-          border-top: 1px solid var(--border-color);
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 0.75rem;
-        }
-        .btn-wa-action {
-          background: #25d366;
-          color: #0b2212;
-          font-weight: 700;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1.5rem;
-          border-radius: var(--radius-md);
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .btn-wa-action:hover {
-          background: #1ebe57;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4);
-        }
-      `}</style>
     </div>
   );
 }

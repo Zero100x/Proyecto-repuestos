@@ -3,8 +3,6 @@ import Link from 'next/link';
 import VehicleCascadeSelector from '../components/VehicleCascadeSelector';
 import { fetchStores } from '../lib/api';
 
-export const dynamic = 'force-dynamic';
-
 export const metadata = {
   title: 'AutoPart Pro — Buscador de Repuestos Automotrices en Pasto, Nariño',
   description: 'Encuentra repuestos OEM y de posventa en almacenes verificados de San Juan de Pasto con compatibilidad garantizada.',

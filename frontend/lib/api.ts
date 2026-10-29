@@ -204,6 +204,37 @@ export async function fetchStores(): Promise<Store[]> {
   return [];
 }
 
+export async function fetchPlatformStats(): Promise<{ partsCount: number; storesCount: number }> {
+  let partsCount = 0;
+  let storesCount = 0;
+
+  try {
+    const [partsRes, storesRes] = await Promise.all([
+      fetch(`${API_BASE}/search/parts?limit=1`, { cache: 'no-store' }).catch(() => null),
+      fetch(`${API_BASE}/stores?page=1&limit=50`, { cache: 'no-store' }).catch(() => null),
+    ]);
+
+    if (partsRes && partsRes.ok) {
+      const json = await partsRes.json();
+      partsCount = Number(json?.meta?.total ?? json?.data?.length ?? 0);
+    }
+
+    if (storesRes && storesRes.ok) {
+      const json = await storesRes.json();
+      if (typeof json?.meta?.total === 'number') {
+        storesCount = json.meta.total;
+      } else {
+        const list = Array.isArray(json) ? json : json?.data;
+        storesCount = Array.isArray(list) ? list.length : 0;
+      }
+    }
+  } catch (err) {
+    console.warn('Backend stats error:', err);
+  }
+
+  return { partsCount, storesCount };
+}
+
 export async function fetchLocations(storeId?: string): Promise<Location[]> {
   try {
     const url = storeId ? `${API_BASE}/locations?storeId=${storeId}` : `${API_BASE}/locations`;

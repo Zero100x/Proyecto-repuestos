@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import VehicleCascadeSelector from '../components/VehicleCascadeSelector';
+import PlatformMetrics from '../components/PlatformMetrics';
 import { fetchStores } from '../lib/api';
 
 export const metadata = {
@@ -157,25 +158,8 @@ export default function HomePage() {
               <VehicleCascadeSelector />
             </div>
 
-            {/* Metrics Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-10 w-full max-w-4xl">
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 text-center">
-                <div className="font-heading text-2xl font-bold text-primary">+50.000</div>
-                <div className="font-mono text-xs text-secondary mt-1">REPUESTOS ACTIVOS</div>
-              </div>
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 text-center">
-                <div className="font-heading text-2xl font-bold text-primary">100%</div>
-                <div className="font-mono text-xs text-secondary mt-1">COMPATIBILIDAD OEM</div>
-              </div>
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 text-center">
-                <div className="font-heading text-2xl font-bold text-primary">+35</div>
-                <div className="font-mono text-xs text-secondary mt-1">ALMACENES ALIADOS</div>
-              </div>
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 text-center">
-                <div className="font-heading text-2xl font-bold text-on-tertiary-container">&lt; 15 min</div>
-                <div className="font-mono text-xs text-secondary mt-1">RESPUESTA WHATSAPP</div>
-              </div>
-            </div>
+            {/* Metrics Row - Datos Reales Conectados a la Base de Datos */}
+            <PlatformMetrics />
 
           </div>
         </section>

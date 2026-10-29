@@ -45,10 +45,11 @@ export default function LoginPage() {
     setSuccessMsg('');
 
     try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
       const url =
         mode === 'login'
-          ? 'http://localhost:3001/api/auth/login'
-          : 'http://localhost:3001/api/auth/register';
+          ? `${apiBase}/auth/login`
+          : `${apiBase}/auth/register`;
 
       const payload =
         mode === 'login'

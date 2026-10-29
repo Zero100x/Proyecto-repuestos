@@ -69,10 +69,18 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const isStoreRegistration = dto.role === 'STORE_ADMIN' || Boolean(dto.storeName?.trim());
 
-    // Buscar el rol correspondiente
+    // Buscar o crear automáticamente el rol correspondiente (para despliegues nuevos en la nube)
     const targetRoleName = isStoreRegistration ? 'STORE_ADMIN' : 'BUYER';
-    const targetRole = await this.prisma.role.findUnique({
+    const targetRole = await this.prisma.role.upsert({
       where: { name: targetRoleName },
+      update: {},
+      create: {
+        name: targetRoleName,
+        description:
+          targetRoleName === 'STORE_ADMIN'
+            ? 'Administrador de almacén de repuestos'
+            : 'Comprador de repuestos',
+      },
     });
 
     let createdStoreId: string | undefined = undefined;

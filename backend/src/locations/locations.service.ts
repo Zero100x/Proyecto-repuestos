@@ -58,6 +58,9 @@ export class LocationsService {
         phone: storePhone,
         email: existingUser.email,
         imageUrl: dto.imageUrl || undefined,
+        operatingHours: dto.operatingHours || undefined,
+        hasDelivery: dto.hasDelivery !== undefined ? dto.hasDelivery : undefined,
+        deliveryDetails: dto.deliveryDetails || undefined,
         locations: {
           create: {
             name: `Sede Principal — ${storeCity}`,
@@ -69,6 +72,9 @@ export class LocationsService {
             imageUrl: dto.imageUrl || undefined,
             phone: storePhone,
             whatsapp: storeWhatsapp,
+            operatingHours: dto.operatingHours || undefined,
+            hasDelivery: dto.hasDelivery !== undefined ? dto.hasDelivery : undefined,
+            deliveryDetails: dto.deliveryDetails || undefined,
           },
         },
       },
@@ -236,15 +242,28 @@ export class LocationsService {
   }
 
   async updateLocation(id: string, dto: UpdateLocationDto) {
-    await this.findOneLocation(id);
+    const loc = await this.findOneLocation(id);
 
-    return this.prisma.location.update({
+    const updated = await this.prisma.location.update({
       where: { id },
       data: dto,
       include: {
         store: { select: { id: true, name: true, imageUrl: true } },
       },
     });
+
+    if (loc.storeId && (dto.operatingHours || dto.hasDelivery !== undefined || dto.deliveryDetails !== undefined)) {
+      await this.prisma.store.update({
+        where: { id: loc.storeId },
+        data: {
+          operatingHours: dto.operatingHours,
+          hasDelivery: dto.hasDelivery,
+          deliveryDetails: dto.deliveryDetails,
+        },
+      }).catch(() => {});
+    }
+
+    return updated;
   }
 
   async deactivateLocation(id: string) {

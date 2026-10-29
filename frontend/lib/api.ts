@@ -324,7 +324,16 @@ export async function onboardUserStore(
 export async function updateStoreProfile(
   token: string,
   storeId: string,
-  data: { name?: string; nit?: string; phone?: string; email?: string; imageUrl?: string },
+  data: {
+    name?: string;
+    nit?: string;
+    phone?: string;
+    email?: string;
+    imageUrl?: string;
+    operatingHours?: string;
+    hasDelivery?: boolean;
+    deliveryDetails?: string;
+  },
 ): Promise<Store> {
   const res = await fetch(`${API_BASE}/stores/${storeId}`, {
     method: 'PUT',
@@ -355,6 +364,9 @@ export async function updateStoreLocation(
     imageUrl?: string;
     phone?: string;
     whatsapp?: string;
+    operatingHours?: string;
+    hasDelivery?: boolean;
+    deliveryDetails?: string;
   },
 ): Promise<Location> {
   const res = await fetch(`${API_BASE}/locations/${locationId}`, {

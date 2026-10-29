@@ -59,6 +59,9 @@ export interface Store {
   phone?: string;
   email?: string;
   imageUrl?: string;
+  operatingHours?: string;
+  hasDelivery?: boolean;
+  deliveryDetails?: string;
   isActive: boolean;
   locations?: Location[];
 }
@@ -76,6 +79,9 @@ export interface Location {
   imageUrl?: string;
   phone?: string;
   whatsapp?: string;
+  operatingHours?: string;
+  hasDelivery?: boolean;
+  deliveryDetails?: string;
   isActive: boolean;
   store?: Store;
   _count?: {
@@ -169,6 +175,7 @@ export interface User {
   phone?: string;
   roles: Array<{ role: { name: 'BUYER' | 'STORE_ADMIN' | 'PLATFORM_ADMIN' } }>;
   storeId?: string;
+  store?: Store;
 }
 
 export interface InventorySummary {
@@ -179,6 +186,9 @@ export interface InventorySummary {
     phone?: string;
     email?: string;
     imageUrl?: string;
+    operatingHours?: string;
+    hasDelivery?: boolean;
+    deliveryDetails?: string;
   };
   totalItems: number;
   totalUnits: number;

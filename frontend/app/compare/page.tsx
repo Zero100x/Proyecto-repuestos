@@ -18,6 +18,9 @@ export interface PartStoreDetails {
   longitude?: number;
   phone?: string;
   gpsUrl: string;
+  operatingHours: string;
+  hasDelivery: boolean;
+  deliveryDetails?: string;
 }
 
 function getPartStoreDetails(part: Part): PartStoreDetails {
@@ -28,6 +31,9 @@ function getPartStoreDetails(part: Part): PartStoreDetails {
   let latitude: number | undefined = undefined;
   let longitude: number | undefined = undefined;
   let phone = '';
+  let operatingHours = 'Lunes a Sábado • 08:00 - 18:30';
+  let hasDelivery = true;
+  let deliveryDetails = 'Despacho express disponible en Pasto';
 
   // 1. From direct inventory
   if (part.inventory && part.inventory.length > 0) {
@@ -41,6 +47,15 @@ function getPartStoreDetails(part: Part): PartStoreDetails {
         if (loc.latitude) latitude = loc.latitude;
         if (loc.longitude) longitude = loc.longitude;
         if (loc.phone || loc.whatsapp) phone = loc.whatsapp || loc.phone || '';
+        if (loc.operatingHours || loc.store?.operatingHours) {
+          operatingHours = loc.operatingHours || loc.store?.operatingHours || operatingHours;
+        }
+        if (loc.hasDelivery !== undefined || loc.store?.hasDelivery !== undefined) {
+          hasDelivery = loc.hasDelivery ?? loc.store?.hasDelivery ?? true;
+        }
+        if (loc.deliveryDetails || loc.store?.deliveryDetails) {
+          deliveryDetails = loc.deliveryDetails || loc.store?.deliveryDetails || deliveryDetails;
+        }
         break;
       }
     }
@@ -91,6 +106,9 @@ function getPartStoreDetails(part: Part): PartStoreDetails {
     longitude,
     phone,
     gpsUrl,
+    operatingHours,
+    hasDelivery,
+    deliveryDetails,
   };
 }
 
@@ -563,10 +581,22 @@ export default function ComparePage() {
                           </div>
                         </div>
 
-                        {/* Modalidad y Stock */}
+                        {/* Horario y Modalidad de Entrega */}
+                        <div className="flex justify-between items-baseline gap-2">
+                          <span className="text-[var(--secondary)] text-[11px]">Horario:</span>
+                          <span className="font-mono text-[11px] text-gray-800 text-right">{storeDetails.operatingHours}</span>
+                        </div>
                         <div className="flex justify-between items-baseline gap-2">
                           <span className="text-[var(--secondary)] text-[11px]">Modalidad:</span>
-                          <span className="font-medium text-emerald-700">Retiro en mostrador (30 min)</span>
+                          {storeDetails.hasDelivery ? (
+                            <span className="font-medium text-blue-700 text-right">
+                              Retiro en sede o Domicilio en Pasto
+                            </span>
+                          ) : (
+                            <span className="font-medium text-amber-700 text-right">
+                              Solo retiro presencial en sede
+                            </span>
+                          )}
                         </div>
                         <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-[var(--outline-variant)]">
                           <span className="text-[var(--secondary)] text-[11px]">Stock Físico:</span>

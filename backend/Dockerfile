@@ -22,3 +22,4 @@ RUN mkdir -p /app/uploads/parts
 
 EXPOSE 3001
 CMD ["sh", "-c", "npx prisma db push && node dist/src/main.js"]
+

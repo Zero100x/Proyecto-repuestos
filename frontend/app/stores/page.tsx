@@ -32,6 +32,7 @@ interface DirectoryStore {
   estimatedPickupTime: string;
   hasImmediatePickup: boolean;
   hasExpressDelivery: boolean;
+  deliveryDetails?: string;
   hasLiveApi: boolean;
   mapCoords: { x: number; y: number; label: string };
 }
@@ -117,7 +118,7 @@ export default function StoresDirectoryPage() {
               st.imageUrl ||
               loc?.imageUrl ||
               'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
-            hours: 'Lunes a Sábado • Horario Comercial',
+            hours: loc?.operatingHours || st.operatingHours || 'Lunes a Sábado • 08:00 - 18:30',
             stockCount: realStockCount,
             stockLabel: `Stock Activo: ${realStockCount} ${realStockCount === 1 ? 'referencia' : 'referencias'} en catálogo`,
             specialtyOrOEM: 'Repuestos Certificados • Retiro y Despacho en Pasto',
@@ -128,7 +129,8 @@ export default function StoresDirectoryPage() {
             estimatedVanMinutes: `${10 + index * 5} - ${15 + index * 5} minutos`,
             estimatedPickupTime: 'Listo en 30 min',
             hasImmediatePickup: true,
-            hasExpressDelivery: true,
+            hasExpressDelivery: loc?.hasDelivery ?? st.hasDelivery ?? true,
+            deliveryDetails: loc?.deliveryDetails || st.deliveryDetails || 'Despacho express disponible en Pasto',
             hasLiveApi: true,
             mapCoords: {
               x: 200 + (index * 60) % 180,
@@ -616,12 +618,19 @@ export default function StoresDirectoryPage() {
                           Retiro en mostrador en 30m
                         </span>
                       )}
-                      {store.hasExpressDelivery && (
+                      {store.hasExpressDelivery ? (
                         <span className="bg-blue-50 text-blue-700 border border-blue-200 text-xs px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1">
                           <span className="material-symbols-outlined text-sm text-blue-600">
                             local_shipping
                           </span>
-                          Despacho express disponible
+                          {store.deliveryDetails || 'Despacho express disponible'}
+                        </span>
+                      ) : (
+                        <span className="bg-amber-50 text-amber-700 border border-amber-200 text-xs px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1">
+                          <span className="material-symbols-outlined text-sm text-amber-600">
+                            storefront
+                          </span>
+                          Solo retiro en sede física (Sin domicilio)
                         </span>
                       )}
                       {store.hasLiveApi && (

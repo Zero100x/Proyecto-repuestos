@@ -80,8 +80,11 @@ model Store {
   nit         String?    @unique  // Identificación fiscal
   phone       String?
   email       String?
-  imageUrl    String?    @map("image_url")
-  isActive    Boolean    @default(true) @map("is_active")
+  imageUrl        String?    @map("image_url")
+  operatingHours  String?    @default("Lunes a Sábado • 08:00 - 18:30") @map("operating_hours")
+  hasDelivery     Boolean    @default(true) @map("has_delivery")
+  deliveryDetails String?    @default("Despacho express disponible en Pasto") @map("delivery_details")
+  isActive        Boolean    @default(true) @map("is_active")
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
 
@@ -106,8 +109,11 @@ model Location {
   placeId     String?    @map("place_id")
   imageUrl    String?    @map("image_url")
   phone       String?
-  whatsapp    String?
-  isActive    Boolean    @default(true) @map("is_active")
+  whatsapp        String?
+  operatingHours  String?    @default("Lunes a Sábado • 08:00 - 18:30") @map("operating_hours")
+  hasDelivery     Boolean    @default(true) @map("has_delivery")
+  deliveryDetails String?    @default("Despacho express disponible en Pasto") @map("delivery_details")
+  isActive        Boolean    @default(true) @map("is_active")
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
 

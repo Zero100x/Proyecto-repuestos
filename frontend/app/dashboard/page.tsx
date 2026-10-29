@@ -139,6 +139,9 @@ export default function DashboardPage() {
     nit: '',
     phone: '',
     whatsapp: '',
+    operatingHours: 'Lunes a Sábado • 08:00 - 18:30',
+    hasDelivery: true,
+    deliveryDetails: 'Despacho express disponible en Pasto',
     address: 'Carrera 19 # 14-35, Barrio Julián Bucheli',
     city: 'Pasto',
     latitude: 1.2084,
@@ -159,6 +162,9 @@ export default function DashboardPage() {
     imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
     phone: '',
     whatsapp: '',
+    operatingHours: 'Lunes a Sábado • 08:00 - 18:30',
+    hasDelivery: true,
+    deliveryDetails: 'Despacho express disponible en Pasto',
   });
   const [creatingLoc, setCreatingLoc] = useState(false);
 
@@ -206,6 +212,9 @@ export default function DashboardPage() {
     imageUrl: '',
     phone: '',
     whatsapp: '',
+    operatingHours: 'Lunes a Sábado • 08:00 - 18:30',
+    hasDelivery: true,
+    deliveryDetails: 'Despacho express disponible en Pasto',
   });
   const [savingLocEdit, setSavingLocEdit] = useState(false);
 
@@ -725,6 +734,9 @@ export default function DashboardPage() {
         imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
         phone: '',
         whatsapp: '',
+    operatingHours: 'Lunes a Sábado • 08:00 - 18:30',
+    hasDelivery: true,
+    deliveryDetails: 'Despacho express disponible en Pasto',
       });
       loadMetadata(token);
       loadSummary(token);
@@ -940,6 +952,22 @@ export default function DashboardPage() {
         'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80',
       phone: loc.phone || summary?.store?.phone || user?.phone || '',
       whatsapp: loc.whatsapp || loc.phone || user?.phone || '',
+      operatingHours:
+        loc.operatingHours ||
+        summary?.store?.operatingHours ||
+        user?.store?.operatingHours ||
+        'Lunes a Sábado • 08:00 - 18:30',
+      hasDelivery:
+        loc.hasDelivery !== undefined
+          ? loc.hasDelivery
+          : summary?.store?.hasDelivery !== undefined
+          ? summary.store.hasDelivery
+          : true,
+      deliveryDetails:
+        loc.deliveryDetails ||
+        summary?.store?.deliveryDetails ||
+        user?.store?.deliveryDetails ||
+        'Despacho express disponible en Pasto',
     });
     setEditingLocation(loc);
   };
@@ -961,6 +989,9 @@ export default function DashboardPage() {
         imageUrl: editLocForm.imageUrl || undefined,
         phone: editLocForm.phone.trim() || undefined,
         whatsapp: editLocForm.whatsapp.trim() || editLocForm.phone.trim() || undefined,
+        operatingHours: editLocForm.operatingHours.trim() || 'Lunes a Sábado • 08:00 - 18:30',
+        hasDelivery: editLocForm.hasDelivery,
+        deliveryDetails: editLocForm.deliveryDetails.trim() || undefined,
       });
 
       if (storeId && editLocForm.storeName.trim()) {
@@ -969,6 +1000,9 @@ export default function DashboardPage() {
           nit: editLocForm.storeNit.trim() || undefined,
           phone: editLocForm.phone.trim() || undefined,
           imageUrl: editLocForm.imageUrl || undefined,
+          operatingHours: editLocForm.operatingHours.trim() || 'Lunes a Sábado • 08:00 - 18:30',
+          hasDelivery: editLocForm.hasDelivery,
+          deliveryDetails: editLocForm.deliveryDetails.trim() || undefined,
         });
         if (user) {
           const nextUser = {
@@ -4202,6 +4236,104 @@ export default function DashboardPage() {
                     onChange={e => setEditLocForm({ ...editLocForm, whatsapp: e.target.value })}
                     className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)]"
                   />
+                </div>
+              </div>
+
+              {/* Horario de Atención y Servicio a Domicilio en Pasto */}
+              <div className="p-4 bg-gray-50/90 rounded-2xl border border-[var(--outline-variant)] space-y-4">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block font-heading text-xs font-bold text-[var(--primary)] flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-base text-amber-600">schedule</span>
+                      Horario de Atención de la Sede
+                    </label>
+                    <span className="font-mono text-[10px] text-[var(--secondary)]">Visible en directorio</span>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={editLocForm.operatingHours}
+                    onChange={e => setEditLocForm({ ...editLocForm, operatingHours: e.target.value })}
+                    placeholder="Ej: Lunes a Sábado • 08:00 - 18:30"
+                    className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                  />
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    <span className="text-[10px] text-gray-500 self-center mr-1">Rápido:</span>
+                    {[
+                      'Lunes a Sábado • 08:00 - 18:30',
+                      'Lun a Vie 08:00 - 18:00 • Sáb 08:00 - 13:00',
+                      'Jornada Continua 07:30 - 19:00',
+                    ].map(preset => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setEditLocForm({ ...editLocForm, operatingHours: preset })}
+                        className="px-2 py-0.5 bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-md text-[10px] font-mono transition"
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-gray-200/80">
+                  <label className="block font-heading text-xs font-bold text-[var(--primary)] mb-2 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base text-blue-600">local_shipping</span>
+                    ¿Cuentan con Servicio a Domicilio en Pasto?
+                  </label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setEditLocForm({ ...editLocForm, hasDelivery: true })}
+                      className={`p-3 rounded-xl border text-left flex items-start gap-2.5 transition ${
+                        editLocForm.hasDelivery
+                          ? 'border-blue-500 bg-blue-50/70 text-blue-900 shadow-xs'
+                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className={`material-symbols-outlined text-lg ${editLocForm.hasDelivery ? 'text-blue-600' : 'text-gray-400'}`}>
+                        check_circle
+                      </span>
+                      <div>
+                        <div className="font-heading text-xs font-bold">Sí, despacho a domicilio</div>
+                        <div className="text-[11px] text-gray-500 mt-0.5">Envío express en perímetro urbano de Pasto</div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditLocForm({ ...editLocForm, hasDelivery: false })}
+                      className={`p-3 rounded-xl border text-left flex items-start gap-2.5 transition ${
+                        !editLocForm.hasDelivery
+                          ? 'border-amber-500 bg-amber-50/70 text-amber-900 shadow-xs'
+                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className={`material-symbols-outlined text-lg ${!editLocForm.hasDelivery ? 'text-amber-600' : 'text-gray-400'}`}>
+                        storefront
+                      </span>
+                      <div>
+                        <div className="font-heading text-xs font-bold">No, solo retiro en tienda</div>
+                        <div className="text-[11px] text-gray-500 mt-0.5">El cliente recoge en el mostrador físico</div>
+                      </div>
+                    </button>
+                  </div>
+
+                  {editLocForm.hasDelivery && (
+                    <div className="mt-3">
+                      <label className="block text-[11px] font-medium text-gray-700 mb-1">
+                        Detalles o Tiempo de Entrega en Pasto:
+                      </label>
+                      <input
+                        type="text"
+                        value={editLocForm.deliveryDetails}
+                        onChange={e => setEditLocForm({ ...editLocForm, deliveryDetails: e.target.value })}
+                        placeholder="Ej: Despacho express en 30-60 min en Pasto"
+                        className="w-full px-3 py-1.5 bg-white border border-[var(--outline-variant)] rounded-lg font-sans text-xs focus:outline-none focus:border-[var(--primary)]"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 

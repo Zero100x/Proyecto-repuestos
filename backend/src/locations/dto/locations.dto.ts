@@ -25,6 +25,21 @@ export class CreateStoreDto {
   @IsString()
   @IsOptional()
   imageUrl?: string;
+
+  @ApiPropertyOptional({ example: 'Lunes a Sábado • 08:00 - 18:30' })
+  @IsString()
+  @IsOptional()
+  operatingHours?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  hasDelivery?: boolean;
+
+  @ApiPropertyOptional({ example: 'Despacho express disponible en Pasto' })
+  @IsString()
+  @IsOptional()
+  deliveryDetails?: string;
 }
 
 export class OnboardStoreDto {
@@ -71,6 +86,21 @@ export class OnboardStoreDto {
   @IsString()
   @IsOptional()
   imageUrl?: string;
+
+  @ApiPropertyOptional({ example: 'Lunes a Sábado • 08:00 - 18:30' })
+  @IsString()
+  @IsOptional()
+  operatingHours?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  hasDelivery?: boolean;
+
+  @ApiPropertyOptional({ example: 'Despacho express disponible en Pasto' })
+  @IsString()
+  @IsOptional()
+  deliveryDetails?: string;
 }
 
 export class CreateLocationDto {
@@ -124,6 +154,21 @@ export class CreateLocationDto {
   @IsString()
   @IsOptional()
   whatsapp?: string;
+
+  @ApiPropertyOptional({ example: 'Lunes a Sábado • 08:00 - 18:30' })
+  @IsString()
+  @IsOptional()
+  operatingHours?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  hasDelivery?: boolean;
+
+  @ApiPropertyOptional({ example: 'Despacho express disponible en Pasto' })
+  @IsString()
+  @IsOptional()
+  deliveryDetails?: string;
 }
 
 export class UpdateLocationDto {
@@ -181,4 +226,19 @@ export class UpdateLocationDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @ApiPropertyOptional({ example: 'Lunes a Sábado • 08:00 - 18:30' })
+  @IsString()
+  @IsOptional()
+  operatingHours?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  hasDelivery?: boolean;
+
+  @ApiPropertyOptional({ example: 'Despacho express disponible en Pasto' })
+  @IsString()
+  @IsOptional()
+  deliveryDetails?: string;
 }

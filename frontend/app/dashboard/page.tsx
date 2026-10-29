@@ -1758,7 +1758,7 @@ export default function DashboardPage() {
                                 <input
                                   type="number"
                                   min="0"
-                                  step="1000"
+                                  step="any"
                                   value={editPrice}
                                   onChange={e => setEditPrice(Math.max(0, parseInt(e.target.value) || 0))}
                                   className="w-28 pl-6 pr-2 py-1 bg-white border-2 border-[var(--primary)] rounded font-mono text-xs outline-none"
@@ -3200,8 +3200,8 @@ export default function DashboardPage() {
                     <input
                       type="number"
                       required
-                      min="1000"
-                      step="500"
+                      min="0"
+                      step="any"
                       placeholder="Ej: 285000"
                       value={newPartForm.price}
                       onChange={e => setNewPartForm({ ...newPartForm, price: e.target.value })}
@@ -3879,7 +3879,7 @@ export default function DashboardPage() {
                     type="number"
                     required
                     min="0"
-                    step="500"
+                    step="any"
                     value={editPartForm.price}
                     onChange={e => setEditPartForm({ ...editPartForm, price: e.target.value })}
                     className="w-full px-3 py-2 bg-white border border-[var(--outline-variant)] rounded-xl font-mono text-xs focus:outline-none focus:border-[var(--primary)]"

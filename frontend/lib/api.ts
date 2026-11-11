@@ -278,30 +278,102 @@ export async function fetchLocations(storeId?: string): Promise<Location[]> {
   return [];
 }
 
-export async function uploadStoreImage(file: File): Promise<{ imageUrl: string }> {
-  try {
-    const formData = new FormData();
-    formData.append('image', file);
+export async function optimizeImageForUpload(file: File): Promise<File> {
+  if (typeof window === 'undefined' || !file) return file;
+  const mime = (file.type || '').toLowerCase();
+  if (mime === 'image/gif' && file.size <= 5 * 1024 * 1024) return file;
 
-    const res = await fetch(`${API_BASE}/stores/upload-image`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (res.ok) {
-      return await res.json();
-    }
-  } catch (err) {
-    console.warn('Upload store image API error, falling back to DataURL:', err);
+  const webSafeMimes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
+  if (webSafeMimes.has(mime) && file.size <= 900 * 1024) {
+    return file;
   }
 
-  // Fallback to base64 DataURL so preview and persistence work even offline
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve({ imageUrl: String(reader.result) });
-    reader.onerror = () => reject(new Error('No se pudo procesar la imagen seleccionada'));
-    reader.readAsDataURL(file);
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      try {
+        const maxDim = 1600;
+        let { width, height } = img;
+        if (!width || !height) {
+          URL.revokeObjectURL(objectUrl);
+          resolve(file);
+          return;
+        }
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width = Math.max(1, Math.round(width * ratio));
+          height = Math.max(1, Math.round(height * ratio));
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          URL.revokeObjectURL(objectUrl);
+          resolve(file);
+          return;
+        }
+
+        const preserveAlpha = mime === 'image/png' || mime === 'image/webp';
+        const outputType = preserveAlpha ? 'image/webp' : 'image/jpeg';
+        if (!preserveAlpha) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, width, height);
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            URL.revokeObjectURL(objectUrl);
+            if (!blob || (webSafeMimes.has(mime) && blob.size >= file.size && file.size <= 5 * 1024 * 1024)) {
+              resolve(file);
+              return;
+            }
+            const baseName = (file.name || 'imagen').replace(/\.[^.]+$/, '');
+            const ext = outputType === 'image/webp' ? '.webp' : '.jpg';
+            resolve(
+              new File([blob], `${baseName}${ext}`, {
+                type: outputType,
+                lastModified: Date.now(),
+              }),
+            );
+          },
+          outputType,
+          0.84,
+        );
+      } catch {
+        URL.revokeObjectURL(objectUrl);
+        resolve(file);
+      }
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(file);
+    };
+
+    img.src = objectUrl;
   });
+}
+
+export async function uploadStoreImage(file: File): Promise<{ imageUrl: string }> {
+  const preparedFile = await optimizeImageForUpload(file);
+  const formData = new FormData();
+  formData.append('image', preparedFile);
+
+  const res = await fetch(`${API_BASE}/stores/upload-image`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(errorJson.message || `Error ${res.status}: No se pudo subir la imagen`);
+  }
+  return res.json();
 }
 
 export async function onboardUserStore(
@@ -670,8 +742,9 @@ export async function uploadPartImage(
   token: string,
   file: File,
 ): Promise<{ url: string; filename: string }> {
+  const preparedFile = await optimizeImageForUpload(file);
   const formData = new FormData();
-  formData.append('image', file);
+  formData.append('image', preparedFile);
 
   const res = await fetch(`${API_BASE}/inventory/upload-image`, {
     method: 'POST',

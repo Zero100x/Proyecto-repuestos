@@ -7,10 +7,14 @@ import { randomUUID } from 'crypto';
 const EXT_TO_MIME: Record<string, string> = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
+  '.jfif': 'image/jpeg',
   '.png': 'image/png',
   '.webp': 'image/webp',
   '.gif': 'image/gif',
   '.avif': 'image/avif',
+  '.bmp': 'image/bmp',
+  '.heic': 'image/heic',
+  '.heif': 'image/heif',
 };
 
 const MIME_TO_EXT: Record<string, string> = {
@@ -151,3 +155,4 @@ export class MediaService {
     return null;
   }
 }
+

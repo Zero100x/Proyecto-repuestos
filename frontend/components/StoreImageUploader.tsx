@@ -44,8 +44,8 @@ export default function StoreImageUploader({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      setError('El archivo supera el límite máximo de 5 MB.');
+    if (file.size > 15 * 1024 * 1024) {
+      setError('El archivo supera el límite máximo de 15 MB.');
       return;
     }
 
@@ -115,7 +115,7 @@ export default function StoreImageUploader({
               {uploading ? 'Subiendo imagen...' : 'Haz clic para subir la foto de tu almacén'}
             </div>
             <p className="text-[11px] text-gray-400">
-              Formatos: JPG, PNG o WEBP (Máx. 5 MB)
+              Formatos: JPG, PNG o WEBP (Máx. 15 MB, se optimiza automáticamente)
             </p>
           </div>
         </div>

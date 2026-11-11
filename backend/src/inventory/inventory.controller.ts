@@ -25,6 +25,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { InventoryService, AuthUser } from './inventory.service';
 import { MediaService } from '../media/media.service';
+import { IMAGE_MULTER_OPTIONS } from '../media/image-upload.options';
 import { CreatePartWithStockDto, UpdateStockDto, UpdatePartAndStockDto } from './dto/inventory.dto';
 
 @ApiTags('Inventory Management (B2B)')
@@ -127,15 +128,7 @@ export class InventoryController {
   @Post('upload-image')
   @ApiOperation({ summary: 'Subir imagen para ficha de repuesto' })
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('image', {
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
-    fileFilter: (req, file, cb) => {
-      if (!file.mimetype.match(/\/(jpg|jpeg|png|webp|gif|avif)$/i)) {
-        return cb(new BadRequestException('Solo se admiten formatos de imagen: JPG, PNG, WEBP, GIF, AVIF'), false);
-      }
-      cb(null, true);
-    },
-  }))
+  @UseInterceptors(FileInterceptor('image', IMAGE_MULTER_OPTIONS))
   async uploadImage(@UploadedFile() file?: Express.Multer.File, @Req() req?: Request) {
     if (!file || !file.buffer) {
       throw new BadRequestException('Debes enviar una imagen válida en el campo "image"');

@@ -26,3 +26,4 @@ export class MediaController {
     return res.status(200).send(file.buffer);
   }
 }
+

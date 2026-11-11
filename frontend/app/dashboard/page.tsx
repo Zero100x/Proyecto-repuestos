@@ -659,6 +659,42 @@ export default function DashboardPage() {
     setCompatDraft(prev => ({ ...prev, model: '', version: '' }));
   };
 
+  const uploadGalleryItems = async (
+    jwt: string,
+    gallery: Array<{ id: string; file?: File; previewUrl: string; name?: string }>,
+    extraUrl: string,
+  ): Promise<string[]> => {
+    const urls: string[] = [];
+    for (const item of gallery.slice(0, 5)) {
+      if (item.file) {
+        try {
+          const uploadRes = await uploadPartImage(jwt, item.file);
+          if (uploadRes?.url) {
+            urls.push(uploadRes.url);
+            continue;
+          }
+        } catch (primaryErr) {
+          try {
+            const fallbackRes = await uploadStoreImage(item.file);
+            if (fallbackRes?.imageUrl) {
+              urls.push(fallbackRes.imageUrl);
+              continue;
+            }
+          } catch {
+            throw primaryErr;
+          }
+        }
+      } else if (item.previewUrl) {
+        urls.push(item.previewUrl);
+      }
+    }
+    const trimmedExtra = extraUrl.trim();
+    if (trimmedExtra && urls.length < 5 && !urls.includes(trimmedExtra)) {
+      urls.push(trimmedExtra);
+    }
+    return urls;
+  };
+
   // Handle New Part Submission (PDCIRA-13)
   const handleNewPartSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -676,30 +712,7 @@ export default function DashboardPage() {
     setNewPartError(null);
     try {
       // 1. Procesar galería multi-imagen (hasta 5 fotos)
-      const uploadedUrls: string[] = [];
-      for (const item of partGallery.slice(0, 5)) {
-        if (item.file) {
-          try {
-            const uploadRes = await uploadPartImage(token, item.file);
-            if (uploadRes?.url) {
-              uploadedUrls.push(uploadRes.url);
-              continue;
-            }
-          } catch {
-            // Fallback a uploadStoreImage / DataURL
-            const fallbackRes = await uploadStoreImage(item.file);
-            if (fallbackRes?.imageUrl) {
-              uploadedUrls.push(fallbackRes.imageUrl);
-            }
-          }
-        } else if (item.previewUrl) {
-          uploadedUrls.push(item.previewUrl);
-        }
-      }
-
-      if (partImageUrlInput.trim() && uploadedUrls.length < 5 && !uploadedUrls.includes(partImageUrlInput.trim())) {
-        uploadedUrls.push(partImageUrlInput.trim());
-      }
+      const uploadedUrls = await uploadGalleryItems(token, partGallery, partImageUrlInput);
 
       const finalCompatibilities = [...partCompatibilities];
       // Si el usuario escribió un modelo en el borrador pero olvidó darle "+ Agregar", lo incluimos automáticamente
@@ -951,29 +964,7 @@ export default function DashboardPage() {
     setSavingPartDetails(true);
     setEditPartError(null);
     try {
-      const uploadedUrls: string[] = [];
-      for (const item of editPartGallery.slice(0, 5)) {
-        if (item.file) {
-          try {
-            const uploadRes = await uploadPartImage(token, item.file);
-            if (uploadRes?.url) {
-              uploadedUrls.push(uploadRes.url);
-              continue;
-            }
-          } catch {
-            const fallbackRes = await uploadStoreImage(item.file);
-            if (fallbackRes?.imageUrl) {
-              uploadedUrls.push(fallbackRes.imageUrl);
-            }
-          }
-        } else if (item.previewUrl) {
-          uploadedUrls.push(item.previewUrl);
-        }
-      }
-
-      if (editPartImageUrlInput.trim() && uploadedUrls.length < 5 && !uploadedUrls.includes(editPartImageUrlInput.trim())) {
-        uploadedUrls.push(editPartImageUrlInput.trim());
-      }
+      const uploadedUrls = await uploadGalleryItems(token, editPartGallery, editPartImageUrlInput);
 
       const finalCompatibilities = [...editPartCompatibilities];
       const draftMake = (editCompatDraft.make === '__OTHER__' ? editCompatDraft.customMake : editCompatDraft.make).trim();

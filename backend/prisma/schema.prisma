@@ -417,3 +417,20 @@ model Reservation {
   @@index([createdAt])
   @@map("reservations")
 }
+
+// ============================================================
+// SPRINT 6 — ALMACENAMIENTO PERSISTENTE DE IMÁGENES EN POSTGRESQL
+// ============================================================
+
+model StoredImage {
+  id        String   @id @default(uuid())
+  filename  String   @unique
+  mimeType  String   @map("mime_type")
+  data      Bytes
+  size      Int
+  category  String   @default("part") // "part" | "store"
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([filename])
+  @@map("stored_images")
+}

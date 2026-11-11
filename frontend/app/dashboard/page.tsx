@@ -1954,8 +1954,7 @@ export default function DashboardPage() {
                     <div className="relative h-36 bg-gray-900 overflow-hidden">
                       <img
                         src={
-                          loc.imageUrl ||
-                          loc.store?.imageUrl ||
+                          resolveImageUrl(loc.imageUrl || loc.store?.imageUrl) ||
                           'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=900&q=80'
                         }
                         alt={loc.name}
@@ -3560,7 +3559,7 @@ export default function DashboardPage() {
                         }`}
                       >
                         <img
-                          src={img.previewUrl}
+                          src={img.file ? img.previewUrl : resolveImageUrl(img.previewUrl)}
                           alt={img.name || `Foto ${idx + 1}`}
                           className="w-full h-full object-cover"
                           onError={e => ((e.target as any).src = '/assets/engine.svg')}
@@ -4251,7 +4250,7 @@ export default function DashboardPage() {
                         }`}
                       >
                         <img
-                          src={img.previewUrl}
+                          src={img.file ? img.previewUrl : resolveImageUrl(img.previewUrl)}
                           alt={img.name || `Foto ${idx + 1}`}
                           className="w-full h-full object-cover"
                           onError={e => ((e.target as any).src = '/assets/engine.svg')}

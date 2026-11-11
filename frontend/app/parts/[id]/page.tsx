@@ -391,7 +391,7 @@ function ProductDetailContent() {
                 >
                   <div className="h-32 bg-[var(--surface-container)] rounded-lg p-2 mb-3 flex items-center justify-center">
                     <img
-                      src={p.imageUrl || images[0]}
+                      src={resolveImageUrl(p.imageUrl) || images[0]}
                       alt={p.name}
                       className="max-h-full max-w-full object-contain"
                     />

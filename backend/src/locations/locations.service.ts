@@ -1,9 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { join, extname } from 'path';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { MediaService } from '../media/media.service';
 import { CreateStoreDto, CreateLocationDto, UpdateLocationDto, OnboardStoreDto } from './dto/locations.dto';
 
 @Injectable()
@@ -11,6 +9,7 @@ export class LocationsService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private media: MediaService,
   ) {}
 
   async onboardStoreForUser(userId: string, dto: OnboardStoreDto) {
@@ -132,20 +131,12 @@ export class LocationsService {
     };
   }
 
-  saveStoreImage(file: Express.Multer.File): { imageUrl: string } {
-    const uploadsDir = join(process.cwd(), 'uploads');
-    if (!existsSync(uploadsDir)) {
-      mkdirSync(uploadsDir, { recursive: true });
-    }
-    const ext = extname(file.originalname || '.jpg').toLowerCase() || '.jpg';
-    const fileName = `store_${randomUUID()}${ext}`;
-    const fullPath = join(uploadsDir, fileName);
-    writeFileSync(fullPath, file.buffer);
-    const baseUrl =
-      process.env.API_PUBLIC_URL ||
-      process.env.RENDER_EXTERNAL_URL ||
-      '';
-    return { imageUrl: baseUrl ? `${baseUrl}/uploads/${fileName}` : `/uploads/${fileName}` };
+  async saveStoreImage(
+    file: Express.Multer.File,
+    requestOrigin?: string,
+  ): Promise<{ imageUrl: string }> {
+    const saved = await this.media.saveImage(file, 'store', requestOrigin);
+    return { imageUrl: saved.url };
   }
 
   // ============ STORES (Almacenes) ============

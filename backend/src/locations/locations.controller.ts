@@ -1,14 +1,16 @@
 import {
-  Controller, Get, Post, Put, Delete, Body, Param, Query,
+  Controller, Get, Post, Put, Delete, Body, Param, Query, Req,
   UseGuards, UseInterceptors, UploadedFile, ParseUUIDPipe, HttpCode, HttpStatus, BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery } from '@nestjs/swagger';
+import { Request } from 'express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { LocationsService } from './locations.service';
+import { MediaService } from '../media/media.service';
 import { CreateStoreDto, CreateLocationDto, UpdateLocationDto, OnboardStoreDto } from './dto/locations.dto';
 
 @ApiTags('Stores & Locations')
@@ -59,11 +61,11 @@ export class LocationsController {
       },
     }),
   )
-  async uploadStoreImage(@UploadedFile() file?: Express.Multer.File) {
+  async uploadStoreImage(@UploadedFile() file?: Express.Multer.File, @Req() req?: Request) {
     if (!file || !file.buffer) {
       throw new BadRequestException('Debes enviar una imagen válida en el campo "image"');
     }
-    return this.locationsService.saveStoreImage(file);
+    return this.locationsService.saveStoreImage(file, MediaService.resolveRequestOrigin(req));
   }
 
   @Post('stores')

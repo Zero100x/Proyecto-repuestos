@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { fetchStores, fetchLocations, buildWhatsAppLink, calculateHaversineDistance } from '../../lib/api';
+import { fetchStores, fetchLocations, buildWhatsAppLink, calculateHaversineDistance, resolveImageUrl } from '../../lib/api';
 import { Store, Location } from '../../lib/types';
 import InteractiveStoresMap from '../../components/InteractiveStoresMap';
 
@@ -527,7 +527,7 @@ export default function StoresDirectoryPage() {
                       <div className="flex items-start gap-3.5 min-w-0 flex-1">
                         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 flex-shrink-0 shadow-2xs">
                           <img
-                            src={store.imageUrl}
+                            src={resolveImageUrl(store.imageUrl)}
                             alt={store.name}
                             className="w-full h-full object-cover"
                             onError={e => {
@@ -970,7 +970,7 @@ export default function StoresDirectoryPage() {
               {/* Store Facade Photo Banner */}
               <div className="relative h-28 rounded-xl overflow-hidden border border-gray-200 bg-gray-900">
                 <img
-                  src={selectedStore.imageUrl}
+                  src={resolveImageUrl(selectedStore.imageUrl)}
                   alt={selectedStore.name}
                   className="w-full h-full object-cover opacity-90"
                   onError={e => {

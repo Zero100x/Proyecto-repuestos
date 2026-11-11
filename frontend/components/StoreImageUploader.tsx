@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { uploadStoreImage } from '../lib/api';
+import { uploadStoreImage, resolveImageUrl } from '../lib/api';
 
 interface StoreImageUploaderProps {
   value: string;
@@ -189,7 +189,7 @@ export default function StoreImageUploader({
       {value && !compact && (
         <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-900 h-36 shadow-xs">
           <img
-            src={value}
+            src={resolveImageUrl(value)}
             alt="Vista previa de almacén"
             className="w-full h-full object-cover opacity-90"
             onError={e => {

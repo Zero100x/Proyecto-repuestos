@@ -11,18 +11,20 @@ import {
   UseInterceptors,
   UploadedFile,
   Header,
+  Req,
   Res,
   ParseUUIDPipe,
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery } from '@nestjs/swagger';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { InventoryService, AuthUser } from './inventory.service';
+import { MediaService } from '../media/media.service';
 import { CreatePartWithStockDto, UpdateStockDto, UpdatePartAndStockDto } from './dto/inventory.dto';
 
 @ApiTags('Inventory Management (B2B)')
@@ -134,11 +136,11 @@ export class InventoryController {
       cb(null, true);
     },
   }))
-  async uploadImage(@UploadedFile() file?: Express.Multer.File) {
+  async uploadImage(@UploadedFile() file?: Express.Multer.File, @Req() req?: Request) {
     if (!file || !file.buffer) {
       throw new BadRequestException('Debes enviar una imagen válida en el campo "image"');
     }
-    return this.inventoryService.savePartImage(file);
+    return this.inventoryService.savePartImage(file, MediaService.resolveRequestOrigin(req));
   }
 
   @Post('parts')

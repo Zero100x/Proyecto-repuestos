@@ -2,11 +2,9 @@ import {
   Injectable, BadRequestException, ForbiddenException, NotFoundException, Logger,
 } from '@nestjs/common';
 import { PartCondition, Prisma } from '@prisma/client';
-import { join, extname } from 'path';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CatalogService } from '../catalog/catalog.service';
+import { MediaService } from '../media/media.service';
 import { parseCsv, slugify } from './csv.util';
 import {
   CreatePartWithStockDto, UpdateStockDto, UpdatePartAndStockDto, BulkUploadReport, BulkUploadRowError,
@@ -40,6 +38,7 @@ export class InventoryService {
   constructor(
     private prisma: PrismaService,
     private catalog: CatalogService,
+    private media: MediaService,
   ) {}
 
   // ============ SCOPING ============
@@ -756,37 +755,14 @@ export class InventoryService {
   }
 
   /**
-   * Guarda una imagen de repuesto en disco y devuelve la ruta relativa pública
+   * Guarda una imagen de repuesto en PostgreSQL y devuelve su URL pública persistente
    */
-  async savePartImage(file: Express.Multer.File): Promise<{ url: string; filename: string }> {
-    const ext = extname(file.originalname).toLowerCase() || '.jpg';
-    const cleanExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'].includes(ext) ? ext : '.jpg';
-    const filename = `part-${Date.now()}-${randomUUID().slice(0, 8)}${cleanExt}`;
-
-    // Directorio de subida en backend
-    const backendUploadDir = join(process.cwd(), 'uploads', 'parts');
-    if (!existsSync(backendUploadDir)) {
-      mkdirSync(backendUploadDir, { recursive: true });
-    }
-    writeFileSync(join(backendUploadDir, filename), file.buffer);
-
-    // Si existe el frontend en desarrollo local, sincronizar copia en public/uploads/parts
-    try {
-      const frontendUploadDir = join(process.cwd(), '..', 'frontend', 'public', 'uploads', 'parts');
-      if (!existsSync(frontendUploadDir)) {
-        mkdirSync(frontendUploadDir, { recursive: true });
-      }
-      writeFileSync(join(frontendUploadDir, filename), file.buffer);
-    } catch (e) {
-      // Ignorar si no aplica
-    }
-
-    const baseUrl =
-      process.env.API_PUBLIC_URL ||
-      process.env.RENDER_EXTERNAL_URL ||
-      '';
-    const publicUrl = baseUrl ? `${baseUrl}/uploads/parts/${filename}` : `/uploads/parts/${filename}`;
-    return { url: publicUrl, filename };
+  async savePartImage(
+    file: Express.Multer.File,
+    requestOrigin?: string,
+  ): Promise<{ url: string; filename: string }> {
+    const saved = await this.media.saveImage(file, 'part', requestOrigin);
+    return { url: saved.url, filename: saved.filename };
   }
 }
 

@@ -51,13 +51,13 @@ export function resolveImageUrl(url?: string | null): string {
     return trimmed;
   }
 
-  if (trimmed.startsWith('/uploads/')) {
-    const backendOrigin = API_BASE ? API_BASE.replace(/\/api\/?$/, '') : 'http://localhost:3001';
+  const backendOrigin = API_BASE ? API_BASE.replace(/\/api\/?$/, '') : 'http://localhost:3001';
+
+  if (trimmed.startsWith('/api/media/') || trimmed.startsWith('/uploads/')) {
     return `${backendOrigin}${trimmed}`;
   }
 
-  if (trimmed.startsWith('uploads/')) {
-    const backendOrigin = API_BASE ? API_BASE.replace(/\/api\/?$/, '') : 'http://localhost:3001';
+  if (trimmed.startsWith('api/media/') || trimmed.startsWith('uploads/')) {
     return `${backendOrigin}/${trimmed}`;
   }
 

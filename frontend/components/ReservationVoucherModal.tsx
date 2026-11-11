@@ -52,7 +52,7 @@ export default function ReservationVoucherModal({
         <div className="px-6 py-4 bg-gradient-to-r from-emerald-600 via-teal-700 to-[var(--primary)] text-white flex justify-between items-center print:bg-none print:text-black print:border-b">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-              <span className="material-symbols-outlined text-xl">qr_code_2</span>
+              <span className="material-symbols-outlined text-xl">receipt_long</span>
             </div>
             <div>
               <h2 className="font-heading text-base font-bold leading-tight">
@@ -95,60 +95,16 @@ export default function ReservationVoucherModal({
             </div>
 
             {copied && (
-              <span className="text-[10px] font-mono font-bold text-emerald-600 animate-in fade-in">
-                ¡Código copiado al portapapeles!
-              </span>
-            )}
-
-            {/* QR Code SVG Visual Representation */}
-            <div className="mt-3 flex justify-center">
-              <div className="p-2.5 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col items-center">
-                <svg
-                  className="w-28 h-28 text-gray-900"
-                  viewBox="0 0 100 100"
-                  fill="currentColor"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  {/* Outer corner 1 */}
-                  <rect x="5" y="5" width="28" height="28" rx="4" fill="black" />
-                  <rect x="9" y="9" width="20" height="20" rx="2" fill="white" />
-                  <rect x="13" y="13" width="12" height="12" fill="black" />
-
-                  {/* Outer corner 2 */}
-                  <rect x="67" y="5" width="28" height="28" rx="4" fill="black" />
-                  <rect x="71" y="9" width="20" height="20" rx="2" fill="white" />
-                  <rect x="75" y="13" width="12" height="12" fill="black" />
-
-                  {/* Outer corner 3 */}
-                  <rect x="5" y="67" width="28" height="28" rx="4" fill="black" />
-                  <rect x="9" y="71" width="20" height="20" rx="2" fill="white" />
-                  <rect x="13" y="75" width="12" height="12" fill="black" />
-
-                  {/* Barcode / QR pattern elements */}
-                  <rect x="38" y="8" width="6" height="6" fill="black" />
-                  <rect x="48" y="8" width="12" height="6" fill="black" />
-                  <rect x="38" y="20" width="10" height="6" fill="black" />
-                  <rect x="52" y="20" width="8" height="6" fill="black" />
-                  <rect x="8" y="38" width="6" height="12" fill="black" />
-                  <rect x="20" y="38" width="10" height="6" fill="black" />
-                  <rect x="38" y="38" width="14" height="14" rx="2" fill="black" />
-                  <rect x="58" y="38" width="8" height="8" fill="black" />
-                  <rect x="72" y="38" width="20" height="6" fill="black" />
-                  <rect x="78" y="48" width="14" height="6" fill="black" />
-                  <rect x="8" y="56" width="18" height="6" fill="black" />
-                  <rect x="38" y="58" width="8" height="14" fill="black" />
-                  <rect x="52" y="56" width="14" height="6" fill="black" />
-                  <rect x="72" y="60" width="8" height="18" fill="black" />
-                  <rect x="86" y="60" width="6" height="12" fill="black" />
-                  <rect x="38" y="78" width="16" height="8" fill="black" />
-                  <rect x="60" y="82" width="18" height="6" fill="black" />
-                  <rect x="84" y="78" width="8" height="14" fill="black" />
-                </svg>
-                <span className="font-mono text-[9px] text-gray-500 mt-1 uppercase font-semibold">
-                  Escanear en Mostrador
+              <div className="mb-1">
+                <span className="text-[10px] font-mono font-bold text-emerald-600 animate-in fade-in">
+                  ¡Código copiado al portapapeles!
                 </span>
               </div>
-            </div>
+            )}
+
+            <p className="font-sans text-[11px] text-[var(--secondary)] mt-1">
+              Indica o presenta este código al asesor en caja para validar tu reserva.
+            </p>
 
             {/* Expiration warning pill */}
             <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 font-mono text-[11px] font-bold border border-amber-200">

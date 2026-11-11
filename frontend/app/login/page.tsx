@@ -527,7 +527,7 @@ export default function LoginPage() {
                     </div>
                     <div>
                       <div className="font-heading text-xs font-bold text-white">Reservas Click &amp; Collect en Sede</div>
-                      <div className="font-sans text-[11px] text-slate-300">Voucher digital con código QR para retiro en mostrador</div>
+                      <div className="font-sans text-[11px] text-slate-300">Voucher digital con código único para retiro en mostrador</div>
                     </div>
                   </div>
 

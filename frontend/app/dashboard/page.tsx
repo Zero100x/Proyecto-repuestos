@@ -1546,7 +1546,7 @@ export default function DashboardPage() {
                 : 'text-[var(--secondary)] hover:text-[var(--primary)]'
             }`}
           >
-            <span className="material-symbols-outlined text-base">qr_code_scanner</span>
+            <span className="material-symbols-outlined text-base">shopping_bag</span>
             <span>Reservas Click & Collect</span>
             {reservationStats && (reservationStats.pendingCount ?? reservationStats.pending ?? 0) > 0 && (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500 text-white animate-pulse">
@@ -2302,11 +2302,11 @@ export default function DashboardPage() {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
                 <div className="max-w-2xl">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[11px] font-bold border border-emerald-500/30 mb-2">
-                    <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
+                    <span className="material-symbols-outlined text-sm">receipt_long</span>
                     CLICK &amp; COLLECT — SISTEMA DE VOUCHERS Y ENTREGAS EN SEDE
                   </div>
                   <h3 className="font-heading text-xl sm:text-2xl font-extrabold text-white mb-1">
-                    Control de Retiro en Tienda y Validación QR
+                    Control de Retiro en Tienda y Vouchers
                   </h3>
                   <p className="font-sans text-xs sm:text-sm text-emerald-100/80 leading-relaxed">
                     Gestiona los pedidos reservados en línea con retiro físico. Al marcar{' '}
@@ -2613,8 +2613,7 @@ export default function DashboardPage() {
                             {/* Code / Voucher */}
                             <td className="py-4 px-4 align-top">
                               <div className="flex items-center gap-1.5 mb-1">
-                                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-900 text-white tracking-wider flex items-center gap-1">
-                                  <span className="material-symbols-outlined text-xs">qr_code</span>
+                                <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded bg-slate-900 text-white tracking-wider">
                                   {res.code}
                                 </span>
                                 <button
@@ -2802,9 +2801,9 @@ export default function DashboardPage() {
                                     type="button"
                                     onClick={() => setSelectedVoucherReservation(res)}
                                     className="flex-1 px-2.5 py-1 bg-white border border-[var(--outline-variant)] text-[var(--primary)] hover:bg-gray-50 rounded-lg font-heading text-[10px] font-bold transition flex items-center justify-center gap-1"
-                                    title="Ver código QR y comprobante para imprimir"
+                                    title="Ver voucher y comprobante para imprimir"
                                   >
-                                    <span className="material-symbols-outlined text-xs">qr_code_2</span>
+                                    <span className="material-symbols-outlined text-xs">receipt_long</span>
                                     <span>Voucher</span>
                                   </button>
 

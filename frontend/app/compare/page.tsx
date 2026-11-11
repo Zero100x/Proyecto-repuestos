@@ -186,6 +186,9 @@ export default function ComparePage() {
           return (
             origD.address !== hydD.address ||
             origD.storeName !== hydD.storeName ||
+            original.minPrice !== h.minPrice ||
+            original.totalStock !== h.totalStock ||
+            original.name !== h.name ||
             !original.inventory?.length ||
             (original.inventory?.length || 0) !== (h.inventory?.length || 0)
           );

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useTransition } from 'react';
+import React, { useState, useEffect, useCallback, useTransition, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -358,15 +358,46 @@ export default function DashboardPage() {
     [searchQuery, filterLocation, filterStatus, currentPage],
   );
 
+  // Sprint 4: Load Leads, Conversion KPIs & Unmet Demand
+  const loadLeadsData = useCallback(async (activeJwt: string, status?: string) => {
+    setLeadsLoading(true);
+    try {
+      const [leadsRes, statsRes, unmetRes] = await Promise.all([
+        fetchStoreLeads(activeJwt, {
+          status: status && status !== 'all' ? (status as LeadStatus) : undefined,
+        }),
+        fetchStoreLeadStats(activeJwt).catch(() => null),
+        fetchUnmetDemand(activeJwt).catch(() => []),
+      ]);
+      setLeadsList(leadsRes.data || []);
+      setLeadStats(statsRes);
+      setUnmetDemand(unmetRes || []);
+    } catch (err: any) {
+      console.warn('Error loading leads data:', err);
+    } finally {
+      setLeadsLoading(false);
+    }
+  }, []);
+
+  const reservationSearchRef = useRef(reservationSearch);
+  reservationSearchRef.current = reservationSearch;
+  const reservationFilterStatusRef = useRef(reservationFilterStatus);
+  reservationFilterStatusRef.current = reservationFilterStatus;
+
   // Load Click & Collect Reservations Data
   const loadReservationsData = useCallback(
-    async (activeJwt: string, status?: string, query?: string) => {
-      setReservationsLoading(true);
+    async (activeJwt: string, status?: string, query?: string, options?: { silent?: boolean }) => {
+      if (!options?.silent) {
+        setReservationsLoading(true);
+      }
       try {
+        const activeStatus = status !== undefined ? status : reservationFilterStatusRef.current;
+        const activeQuery = query !== undefined ? query : reservationSearchRef.current;
         const [resList, resStats] = await Promise.all([
           fetchStoreReservations(activeJwt, {
-            status: status && status !== 'all' ? (status as ReservationStatus) : undefined,
-            q: query !== undefined ? (query.trim() || undefined) : (reservationSearch.trim() || undefined),
+            status: activeStatus && activeStatus !== 'all' ? (activeStatus as ReservationStatus) : undefined,
+            q: activeQuery.trim() || undefined,
+            limit: 100,
           }),
           fetchStoreReservationStats(activeJwt).catch(() => null),
         ]);
@@ -375,10 +406,12 @@ export default function DashboardPage() {
       } catch (err: any) {
         console.warn('Error loading reservations data:', err);
       } finally {
-        setReservationsLoading(false);
+        if (!options?.silent) {
+          setReservationsLoading(false);
+        }
       }
     },
-    [reservationSearch],
+    [],
   );
 
   const hasStore = Boolean(
@@ -398,7 +431,39 @@ export default function DashboardPage() {
       loadLeadsData(token);
       loadReservationsData(token);
     }
-  }, [token, hasStore, loadMetadata, loadSummary, loadInventory, loadReservationsData]);
+  }, [token, hasStore, loadMetadata, loadSummary, loadInventory, loadLeadsData, loadReservationsData]);
+
+  // Auto-refresh reservations & inventory when returning focus or keeping Reservations tab open
+  useEffect(() => {
+    if (!token || !hasStore) return;
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState !== 'visible') return;
+      loadReservationsData(token, undefined, undefined, { silent: true });
+      loadSummary(token);
+      if (activeTab === 'inventory' || activeTab === 'reservations') {
+        loadInventory(token);
+      }
+    };
+
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+
+    const intervalId =
+      activeTab === 'reservations'
+        ? setInterval(() => {
+            if (document.visibilityState === 'visible') {
+              loadReservationsData(token, undefined, undefined, { silent: true });
+            }
+          }, 20000)
+        : undefined;
+
+    return () => {
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [token, hasStore, activeTab, loadReservationsData, loadSummary, loadInventory]);
 
   // Handle Store Onboarding for accounts without a store yet
   const handleOnboardStoreSubmit = async (e: React.FormEvent) => {
@@ -472,8 +537,9 @@ export default function DashboardPage() {
       );
       setEditingId(null);
       showToast(`Stock de "${item.part.name}" actualizado y sincronizado en Meilisearch`, 'success');
-      // Refresh summary counts
+      // Refresh summary counts & reservations view
       loadSummary(token);
+      loadReservationsData(token, undefined, undefined, { silent: true });
     } catch (err: any) {
       showToast(err.message || 'Error al actualizar el registro', 'error');
     } finally {
@@ -490,6 +556,7 @@ export default function DashboardPage() {
       showToast(`Repuesto removido del inventario del almacén`, 'info');
       setItemToDelete(null);
       loadSummary(token);
+      loadReservationsData(token, undefined, undefined, { silent: true });
     } catch (err: any) {
       showToast(err.message || 'Error al eliminar registro', 'error');
     }
@@ -956,6 +1023,7 @@ export default function DashboardPage() {
       setEditingPartItem(null);
       loadInventory(token);
       loadSummary(token);
+      loadReservationsData(token, undefined, undefined, { silent: true });
     } catch (err: any) {
       setEditPartError(err.message || 'No se pudo actualizar la ficha del repuesto');
     } finally {
@@ -1052,33 +1120,13 @@ export default function DashboardPage() {
       loadMetadata(token);
       loadSummary(token);
       loadInventory(token);
+      loadReservationsData(token, undefined, undefined, { silent: true });
     } catch (err: any) {
       showToast(err.message || 'Error al actualizar los datos de la sede', 'error');
     } finally {
       setSavingLocEdit(false);
     }
   };
-
-  // Sprint 4: Load Leads, Conversion KPIs & Unmet Demand
-  const loadLeadsData = useCallback(async (activeJwt: string, status?: string) => {
-    setLeadsLoading(true);
-    try {
-      const [leadsRes, statsRes, unmetRes] = await Promise.all([
-        fetchStoreLeads(activeJwt, {
-          status: status && status !== 'all' ? (status as LeadStatus) : undefined,
-        }),
-        fetchStoreLeadStats(activeJwt).catch(() => null),
-        fetchUnmetDemand(activeJwt).catch(() => []),
-      ]);
-      setLeadsList(leadsRes.data || []);
-      setLeadStats(statsRes);
-      setUnmetDemand(unmetRes || []);
-    } catch (err: any) {
-      console.warn('Error loading leads data:', err);
-    } finally {
-      setLeadsLoading(false);
-    }
-  }, []);
 
   const handleStatusChange = async (leadId: string, newStatus: LeadStatus) => {
     if (!token) return;
@@ -1101,15 +1149,14 @@ export default function DashboardPage() {
     if (!token) return;
     setUpdatingReservationId(reservation.id);
     try {
-      const updated = await updateReservationStatus(token, reservation.id, {
+      await updateReservationStatus(token, reservation.id, {
         status: ReservationStatus.COMPLETED,
       });
       showToast(
         `¡Entrega en mostrador confirmada! Reserva ${reservation.code} entregada y ${reservation.quantity} unidad(es) descontada(s) del stock físico.`,
         'success',
       );
-      setReservationsList(prev => prev.map(r => (r.id === reservation.id ? updated : r)));
-      fetchStoreReservationStats(token).then(setReservationStats).catch(() => {});
+      await loadReservationsData(token, reservationFilterStatus, undefined, { silent: true });
       loadSummary(token);
       loadInventory(token);
     } catch (err: any) {
@@ -1126,12 +1173,11 @@ export default function DashboardPage() {
     }
     setUpdatingReservationId(reservation.id);
     try {
-      const updated = await updateReservationStatus(token, reservation.id, {
+      await updateReservationStatus(token, reservation.id, {
         status: ReservationStatus.CANCELLED,
       });
       showToast(`Reserva ${reservation.code} cancelada`, 'info');
-      setReservationsList(prev => prev.map(r => (r.id === reservation.id ? updated : r)));
-      fetchStoreReservationStats(token).then(setReservationStats).catch(() => {});
+      await loadReservationsData(token, reservationFilterStatus, undefined, { silent: true });
     } catch (err: any) {
       showToast(err.message || 'Error al cancelar la reserva', 'error');
     } finally {
@@ -2347,7 +2393,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <div className="font-heading text-3xl font-extrabold text-[var(--primary)] mb-0.5">
-                    {reservationsLoading ? '...' : reservationStats?.pendingCount ?? 0}
+                    {reservationsLoading ? '...' : reservationStats?.pendingCount ?? reservationStats?.pending ?? 0}
                   </div>
                   <div className="font-sans text-xs text-amber-700 font-medium flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
@@ -2368,7 +2414,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <div className="font-heading text-3xl font-extrabold text-rose-600 mb-0.5">
-                    {reservationsLoading ? '...' : reservationStats?.expiringSoonCount ?? 0}
+                    {reservationsLoading ? '...' : reservationStats?.expiringSoonCount ?? reservationStats?.expiringSoon ?? 0}
                   </div>
                   <div className="font-sans text-xs text-rose-700">
                     Menos de 12 horas de validez (48h total)
@@ -2388,7 +2434,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <div className="font-heading text-3xl font-extrabold text-emerald-700 mb-0.5">
-                    {reservationsLoading ? '...' : reservationStats?.completedCount ?? 0}
+                    {reservationsLoading ? '...' : reservationStats?.completedCount ?? reservationStats?.completed ?? 0}
                   </div>
                   <div className="font-sans text-xs text-emerald-700 flex items-center gap-1 font-medium">
                     <span className="material-symbols-outlined text-xs">check_circle</span>
@@ -2409,7 +2455,9 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <div className="font-heading text-2xl font-extrabold text-[var(--primary)] mb-0.5">
-                    {reservationsLoading ? '...' : formatPriceCOP(reservationStats?.pendingValueCOP ?? 0)}
+                    {reservationsLoading
+                      ? '...'
+                      : formatPriceCOP(reservationStats?.pendingValueCOP ?? reservationStats?.totalValuePending ?? 0)}
                   </div>
                   <div className="font-sans text-xs text-[var(--secondary)]">
                     Total en reservas pendientes de cobro
@@ -2464,7 +2512,7 @@ export default function DashboardPage() {
                         : 'bg-white border border-[var(--outline-variant)] text-[var(--secondary)] hover:bg-gray-50'
                     }`}
                   >
-                    Todas ({reservationStats?.totalReservations ?? reservationsList.length})
+                    Todas ({reservationStats?.totalReservations ?? reservationStats?.total ?? reservationsList.length})
                   </button>
 
                   <button
@@ -2480,7 +2528,7 @@ export default function DashboardPage() {
                     }`}
                   >
                     <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                    <span>Pendientes ({reservationStats?.pendingCount ?? 0})</span>
+                    <span>Pendientes ({reservationStats?.pendingCount ?? reservationStats?.pending ?? 0})</span>
                   </button>
 
                   <button
@@ -2496,7 +2544,7 @@ export default function DashboardPage() {
                     }`}
                   >
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span>Entregadas ({reservationStats?.completedCount ?? 0})</span>
+                    <span>Entregadas ({reservationStats?.completedCount ?? reservationStats?.completed ?? 0})</span>
                   </button>
 
                   <button
@@ -2511,7 +2559,7 @@ export default function DashboardPage() {
                         : 'bg-white border border-[var(--outline-variant)] text-[var(--secondary)] hover:bg-gray-50'
                     }`}
                   >
-                    Canceladas ({reservationStats?.cancelledCount ?? 0})
+                    Canceladas ({reservationStats?.cancelledCount ?? reservationStats?.cancelled ?? 0})
                   </button>
 
                   <button
@@ -2526,7 +2574,7 @@ export default function DashboardPage() {
                         : 'bg-white border border-[var(--outline-variant)] text-rose-800 hover:bg-rose-50'
                     }`}
                   >
-                    Vencidas ({reservationStats?.expiredCount ?? 0})
+                    Vencidas ({reservationStats?.expiredCount ?? reservationStats?.expired ?? 0})
                   </button>
                 </div>
               </div>
@@ -2686,6 +2734,20 @@ export default function DashboardPage() {
                                 <span className="font-mono text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold">
                                   x {res.quantity} {res.quantity === 1 ? 'unidad' : 'unidades'}
                                 </span>
+                                {res.inventory && (
+                                  <span
+                                    className={`font-mono text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                      !res.inventory.isAvailable || res.inventory.stock === 0
+                                        ? 'bg-rose-100 text-rose-800'
+                                        : res.inventory.stock < res.quantity
+                                          ? 'bg-amber-100 text-amber-800'
+                                          : 'bg-blue-50 text-blue-800'
+                                    }`}
+                                    title="Existencias físicas actuales en catálogo para esta sede"
+                                  >
+                                    Stock bodega: {res.inventory.stock}
+                                  </span>
+                                )}
                               </div>
                               {res.notes && (
                                 <div className="font-sans text-[10px] text-gray-500 italic mt-1 line-clamp-1">
@@ -2712,6 +2774,11 @@ export default function DashboardPage() {
                               {res.quantity > 1 && (
                                 <div className="font-sans text-[10px] text-[var(--secondary)]">
                                   {formatPriceCOP(res.unitPrice)} c/u
+                                </div>
+                              )}
+                              {res.inventory && res.inventory.price !== res.unitPrice && (
+                                <div className="font-sans text-[10px] text-amber-700 font-semibold">
+                                  Catálogo hoy: {formatPriceCOP(res.inventory.price)} c/u
                                 </div>
                               )}
                             </td>

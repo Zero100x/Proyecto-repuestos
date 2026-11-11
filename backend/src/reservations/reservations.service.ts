@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MeilisearchService } from '../search/meilisearch.service';
+import { CatalogService } from '../catalog/catalog.service';
 import { CreateReservationDto, UpdateReservationStatusDto } from './dto/reservations.dto';
 import { ReservationStatus } from '@prisma/client';
 
@@ -9,6 +10,7 @@ export class ReservationsService {
   constructor(
     private prisma: PrismaService,
     private meilisearch: MeilisearchService,
+    private catalogService: CatalogService,
   ) {}
 
   /**
@@ -281,6 +283,21 @@ export class ReservationsService {
               address: true,
             },
           },
+          inventory: {
+            select: {
+              id: true,
+              price: true,
+              stock: true,
+              isAvailable: true,
+            },
+          },
+          store: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
+          },
         },
       }),
       this.prisma.reservation.count({ where }),
@@ -303,6 +320,18 @@ export class ReservationsService {
   async getStoreReservationStats(storeId: string) {
     const now = new Date();
     const twelveHoursFromNow = new Date(Date.now() + 12 * 60 * 60 * 1000);
+
+    // Expirar automáticamente reservas vencidas antes de calcular estadísticas
+    await this.prisma.reservation.updateMany({
+      where: {
+        storeId,
+        status: ReservationStatus.PENDING,
+        expiresAt: { lt: now },
+      },
+      data: {
+        status: ReservationStatus.EXPIRED,
+      },
+    });
 
     const [allReservations, pendingExpiringSoon] = await Promise.all([
       this.prisma.reservation.findMany({
@@ -357,6 +386,13 @@ export class ReservationsService {
       conversionRate,
       totalValuePending,
       totalValueCompleted,
+      totalReservations: total,
+      pendingCount: byStatus.PENDING,
+      expiringSoonCount: pendingExpiringSoon,
+      completedCount: byStatus.COMPLETED,
+      cancelledCount: byStatus.CANCELLED,
+      expiredCount: byStatus.EXPIRED,
+      pendingValueCOP: totalValuePending,
     };
   }
 
@@ -386,6 +422,24 @@ export class ReservationsService {
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
+      // Si se completó la entrega, descontar existencias físicas reales del inventario primero
+      if (dto.status === ReservationStatus.COMPLETED && reservation.inventoryId) {
+        const currentInv = await tx.inventory.findUnique({
+          where: { id: reservation.inventoryId },
+          select: { stock: true },
+        });
+        if (currentInv) {
+          const nextStock = Math.max(0, currentInv.stock - reservation.quantity);
+          await tx.inventory.update({
+            where: { id: reservation.inventoryId },
+            data: {
+              stock: nextStock,
+              isAvailable: nextStock > 0,
+            },
+          });
+        }
+      }
+
       const res = await tx.reservation.update({
         where: { id: reservationId },
         data: {
@@ -395,23 +449,47 @@ export class ReservationsService {
           notes: dto.notes ? `${reservation.notes ? reservation.notes + ' | ' : ''}${dto.notes}` : reservation.notes,
         },
         include: {
-          part: true,
-          location: true,
+          part: {
+            select: {
+              id: true,
+              name: true,
+              brand: true,
+              imageUrl: true,
+              partNumbers: true,
+            },
+          },
+          location: {
+            select: {
+              id: true,
+              name: true,
+              city: true,
+              address: true,
+            },
+          },
+          inventory: {
+            select: {
+              id: true,
+              price: true,
+              stock: true,
+              isAvailable: true,
+            },
+          },
+          store: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
+          },
         },
       });
 
-      // Si se completó la entrega, descontar existencias físicas reales del inventario
-      if (dto.status === ReservationStatus.COMPLETED && reservation.inventoryId) {
-        await tx.inventory.update({
-          where: { id: reservation.inventoryId },
-          data: {
-            stock: { decrement: reservation.quantity },
-          },
-        });
-      }
-
       return res;
     });
+
+    if (dto.status === ReservationStatus.COMPLETED) {
+      await this.catalogService.syncPartToSearch(reservation.partId).catch(() => {});
+    }
 
     return updated;
   }

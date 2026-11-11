@@ -444,6 +444,12 @@ export interface ReservationItem {
     phone?: string | null;
     email?: string | null;
   };
+  inventory?: {
+    id: string;
+    price: number;
+    stock: number;
+    isAvailable: boolean;
+  } | null;
 }
 
 export interface ReservationStats {
